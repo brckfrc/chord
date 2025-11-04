@@ -1,0 +1,98 @@
+using Microsoft.EntityFrameworkCore;
+using ChordAPI.Models.Entities;
+
+namespace ChordAPI.Data;
+
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+    }
+
+    public DbSet<User> Users { get; set; }
+    public DbSet<Guild> Guilds { get; set; }
+    public DbSet<GuildMember> GuildMembers { get; set; }
+    public DbSet<Channel> Channels { get; set; }
+    public DbSet<Message> Messages { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // User configuration
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(e => e.Email).IsUnique();
+            entity.HasIndex(e => e.Username).IsUnique();
+            
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // Guild configuration
+        modelBuilder.Entity<Guild>(entity =>
+        {
+            entity.HasOne(g => g.Owner)
+                .WithMany()
+                .HasForeignKey(g => g.OwnerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // GuildMember configuration (composite key)
+        modelBuilder.Entity<GuildMember>(entity =>
+        {
+            entity.HasKey(gm => new { gm.GuildId, gm.UserId });
+
+            entity.HasOne(gm => gm.Guild)
+                .WithMany(g => g.Members)
+                .HasForeignKey(gm => gm.GuildId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(gm => gm.User)
+                .WithMany(u => u.GuildMemberships)
+                .HasForeignKey(gm => gm.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(e => e.JoinedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // Channel configuration
+        modelBuilder.Entity<Channel>(entity =>
+        {
+            entity.HasOne(c => c.Guild)
+                .WithMany(g => g.Channels)
+                .HasForeignKey(c => c.GuildId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // Message configuration
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.HasOne(m => m.Channel)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(m => m.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(m => m.Author)
+                .WithMany(u => u.Messages)
+                .HasForeignKey(m => m.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(m => m.ChannelId);
+            entity.HasIndex(m => m.CreatedAt);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+    }
+}
+
+
+
+
+
+

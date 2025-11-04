@@ -1,0 +1,6 @@
+@ChordAPI_HostAddress = http://localhost:5049
+
+GET {{ChordAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
