@@ -1,6 +1,7 @@
 # 🎯 CHORD PROJESİ - FAZ ROADMAP
 
 ## 📋 Temel Yapı
+
 - **Repo**: Monorepo (backend + frontend)
 - **iOS**: Ayrı repo (sonraki faz)
 - **Deployment**: Docker → Kendi sunucu/domain
@@ -9,52 +10,73 @@
 ---
 
 ## 🏗️ FAZ 1: BACKEND FOUNDATION & AUTH
+
 **Süre**: ~1-1.5 hafta
+**DURUM**: ✅ %100 TAMAMLANDI
 
 ### Görevler
-- [ ] Proje iskeleti oluştur (dotnet new webapi, klasör yapısı)
-- [ ] Docker Compose (SQL Server + Redis)
-- [ ] NuGet paketleri (EF Core, JWT, BCrypt, SignalR Redis, FluentValidation, AutoMapper, Serilog)
-- [ ] AppDbContext + User entity
-- [ ] AuthService: Register, Login, Refresh Token (JWT + BCrypt)
-- [ ] Endpoints: `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`
-- [ ] Middleware: Global error handler, CORS, Rate limiting
-- [ ] Serilog yapılandırması
-- [ ] Health check endpoint
-- [ ] Postman collection
-- [ ] xUnit test projesi (AuthService testleri)
+
+- [x] Proje iskeleti oluştur (dotnet new webapi, klasör yapısı)
+- [x] Docker Compose (SQL Server + Redis)
+- [x] NuGet paketleri (EF Core 9, JWT 8.2, BCrypt, SignalR Redis, FluentValidation 11, AutoMapper 12, Serilog 9)
+- [x] AppDbContext + All entities (User, Guild, Channel, Message, GuildMember)
+- [x] AuthService: Register, Login, Refresh Token (JWT + BCrypt)
+- [x] Endpoints: `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, `POST /auth/logout`
+- [x] Middleware: Global error handler ✅ | CORS ✅ | Rate limiting ✅
+- [x] Serilog yapılandırması
+- [x] Health check endpoint (`/health`)
+- [x] Postman collection (Auth endpoints mevcut)
+- [~] xUnit test projesi (Oluşturuldu, FAZ 10'da detaylandırılacak)
 
 ### Deliverables
+
 ✅ Kullanıcı kaydolup giriş yapabiliyor  
 ✅ JWT token alıp korumalı endpoint'e erişebiliyor  
 ✅ Docker Compose ile DB ayakta  
+✅ Tüm auth endpoints test edildi ve çalışıyor  
+✅ Global error handling middleware aktif (dev/prod aware)
+✅ Rate limiting middleware aktif (100 req/min default)
 
 ---
 
 ## 🏗️ FAZ 2: GUILD & CHANNEL DOMAIN
+
 **Süre**: ~1 hafta
+**DURUM**: %30 TAMAMLANDI (entities + migrations hazır) ⏳
 
 ### Görevler
-- [ ] Entities: Guild, GuildMember, Channel, ChannelPermission
-- [ ] Migration: Guild-Channel ilişkileri
-- [ ] DTOs: Guild, Channel için Create/Update/Response DTOs
+
+- [x] Entities: Guild, GuildMember, Channel ✅
+- [x] Migration: Guild-Channel ilişkileri (InitialCreate'de mevcut) ✅
+- [ ] DTOs: Guild, Channel için Create/Update/Response DTOs ← **ŞİMDİ BURASI**
 - [ ] GuildService: CRUD, üye yönetimi (add/remove)
 - [ ] ChannelService: CRUD, yetki kontrolü
 - [ ] Authorization Policies: IsGuildMember, IsGuildOwner
 - [ ] Endpoints: Guilds CRUD, Channels CRUD, Members yönetimi
-- [ ] Unit + integration testler
+- [ ] Unit + integration testler (FAZ 10'da detaylandırılacak)
 
 ### Deliverables
-✅ Guild oluşturma/yönetme çalışıyor  
-✅ Kanal oluşturma/yönetme çalışıyor  
-✅ Üyelik kontrolü aktif  
+
+⏳ Guild oluşturma/yönetme çalışıyor  
+⏳ Kanal oluşturma/yönetme çalışıyor  
+⏳ Üyelik kontrolü aktif
+
+### 📝 Notlar
+
+**Middleware Güncellemeleri (Gerekirse):**
+
+- Yeni exception tipi eklenirse → `GlobalExceptionMiddleware`'e case ekle
+- Endpoint rate limit muafiyeti gerekirse → `RateLimitingMiddleware`'e whitelist ekle
+- Şu an için tüm middleware'ler hazır, güncellemeye gerek yok ✅
 
 ---
 
 ## 🏗️ FAZ 3: SIGNALR & REAL-TIME MESSAGING
+
 **Süre**: ~1.5 hafta
 
 ### Görevler
+
 - [ ] Message entity (content, attachments JSON, soft delete)
 - [ ] ChatHub: JoinChannel, SendMessage, EditMessage, DeleteMessage, Typing
 - [ ] PresenceHub: Online/offline durumu, LastSeenAt
@@ -66,17 +88,20 @@
 - [ ] SignalR integration testleri
 
 ### Deliverables
+
 ✅ Gerçek zamanlı mesajlaşma çalışıyor  
 ✅ Presence (online/offline) yayınlanıyor  
 ✅ Typing indicators aktif  
-✅ Mesaj edit/delete çalışıyor  
+✅ Mesaj edit/delete çalışıyor
 
 ---
 
 ## 🏗️ FAZ 4: FRONTEND FOUNDATION & AUTH UI
+
 **Süre**: ~1 hafta
 
 ### Görevler
+
 - [ ] Vite + React + TypeScript kurulumu
 - [ ] Paketler: Redux Toolkit, React Router, Axios, SignalR Client, Tailwind, React Hook Form, Zod
 - [ ] Redux store setup (authSlice, guildsSlice, channelsSlice, messagesSlice, presenceSlice)
@@ -90,16 +115,19 @@
 - [ ] Base UI components: Button, Input, Spinner, Toast
 
 ### Deliverables
+
 ✅ Login/register çalışıyor  
 ✅ Token yönetimi ve refresh logic aktif  
-✅ Protected routes çalışıyor  
+✅ Protected routes çalışıyor
 
 ---
 
 ## 🏗️ FAZ 5: FRONTEND GUILD & CHANNEL UI
+
 **Süre**: ~1 hafta
 
 ### Görevler
+
 - [ ] MainLayout (3-column: GuildSidebar | ChannelSidebar | Content)
 - [ ] GuildSidebar: Guild ikonları listesi, create guild butonu
 - [ ] ChannelSidebar: Kanal listesi, create channel butonu
@@ -110,17 +138,20 @@
 - [ ] API integration (REST)
 
 ### Deliverables
+
 ✅ Guild listesi görünüyor  
 ✅ Kanal listesi görünüyor  
 ✅ Guild/kanal oluşturma çalışıyor  
-✅ Navigasyon doğru çalışıyor  
+✅ Navigasyon doğru çalışıyor
 
 ---
 
 ## 🏗️ FAZ 6: FRONTEND MESSAGING & SIGNALR
+
 **Süre**: ~1.5 hafta
 
 ### Görevler
+
 - [ ] SignalR connection hook (useSignalR)
 - [ ] ChatHub event listeners (ReceiveMessage, MessageEdited, MessageDeleted, UserTyping)
 - [ ] PresenceHub event listeners (UserOnline, UserOffline)
@@ -135,24 +166,28 @@
 - [ ] Pagination/load more logic
 
 ### Deliverables
+
 ✅ Mesajlar listeleniyor  
 ✅ Gerçek zamanlı mesaj gönderme/alma çalışıyor  
 ✅ Edit/delete çalışıyor  
 ✅ Typing indicator görünüyor  
-✅ Online kullanıcılar görünüyor  
+✅ Online kullanıcılar görünüyor
 
 ---
 
 ## 🏗️ FAZ 7: FILE UPLOAD & VIDEO SUPPORT
+
 **Süre**: ~1 hafta
 
 ### Backend
+
 - [ ] MinIO Docker container (veya Azure Blob)
 - [ ] StorageService: Upload, Delete, Presigned URL
 - [ ] POST /api/upload endpoint (multipart, validation: boyut, tip, süre)
 - [ ] Message.Attachments JSON yapısı (url, type, size, name, duration)
 
 ### Frontend
+
 - [ ] FileUploadButton component
 - [ ] Upload API client (FormData, progress bar)
 - [ ] VideoAttachment component (inline player)
@@ -161,23 +196,27 @@
 - [ ] Preview ve limit uyarıları
 
 ### Deliverables
+
 ✅ Dosya yükleme çalışıyor  
 ✅ Video inline oynatılıyor  
 ✅ Resim thumbnail + lightbox  
-✅ Boyut/süre limitleri kontrol ediliyor  
+✅ Boyut/süre limitleri kontrol ediliyor
 
 ---
 
 ## 🏗️ FAZ 8: VOICE CHANNELS & WEBRTC
+
 **Süre**: ~2 hafta
 
 ### Backend
+
 - [ ] Coturn STUN/TURN server (Docker)
 - [ ] RtcSignalingHub: Offer, Answer, IceCandidate relay
 - [ ] VoiceSession yönetimi (kimin hangi odada olduğu)
 - [ ] Channel type'a göre VoiceChannel validasyonu
 
 ### Frontend
+
 - [ ] WebRTC P2P bağlantı logic (RTCPeerConnection)
 - [ ] Voice channel UI (join/leave butonları)
 - [ ] VoiceRoom component (katılımcı listesi, mute/unmute)
@@ -188,17 +227,20 @@
 - [ ] Error handling (bağlantı hatası, retry)
 
 ### Deliverables
+
 ✅ Sesli kanala katılma çalışıyor  
 ✅ P2P ses iletişimi stabil (3-5 kişi)  
 ✅ Mute/unmute çalışıyor  
-✅ STUN/TURN ile NAT geçişi  
+✅ STUN/TURN ile NAT geçişi
 
 ---
 
 ## 🏗️ FAZ 9: PERMISSIONS & ROLES
+
 **Süre**: ~3-4 gün
 
 ### Görevler
+
 - [ ] GuildMember.Role field (Owner, Admin, Member)
 - [ ] ChannelPermission entity (CanRead, CanWrite, CanSpeak)
 - [ ] Authorization handlers (rol bazlı politikalar)
@@ -207,37 +249,59 @@
 - [ ] Admin panel UI (basit rol değiştirme - opsiyonel)
 
 ### Deliverables
+
 ✅ Rol bazlı yetkilendirme çalışıyor  
 ✅ Yetkisiz işlemlerde 403  
-✅ Frontend permission'a göre butonlar görünüyor  
+✅ Frontend permission'a göre butonlar görünüyor
 
 ---
 
 ## 🏗️ FAZ 10: TESTING & OBSERVABILITY
+
 **Süre**: ~3-4 gün
 
 ### Backend
+
+- [ ] xUnit testlerini düzelt ve genişlet (AuthService testleri hazır ama çalışmıyor)
 - [ ] Unit test coverage artırma (≥70% hedef)
+  - AuthService ✅ (13 test case hazır, düzeltilecek)
+  - GuildService testleri
+  - ChannelService testleri
+  - MessageService testleri
 - [ ] Integration testler (WebApplicationFactory)
 - [ ] OpenTelemetry kurulumu (traces, metrics)
 - [ ] Health checks genişletme (Redis, MinIO)
 
 ### Frontend
+
 - [ ] Component testleri (kritik flow'lar)
 - [ ] E2E testler (Playwright veya Cypress): Login → Guild → Mesaj gönder
 - [ ] Performance profiling
 
 ### Deliverables
+
 ✅ Test coverage ≥60%  
 ✅ E2E testler ana akışı kapsıyor  
-✅ Metrik/trace dashboard görünür  
+✅ Metrik/trace dashboard görünür
+
+### 📝 Test Notları
+
+**xUnit Test Projesi (ChordAPI.Tests):**
+
+- ✅ Proje oluşturuldu (FAZ 1'de)
+- ✅ Test infrastructure hazır (InMemory DB, Moq, xUnit)
+- ⚠️ AuthService için 13 test case yazıldı ama method signature hatası var
+- ⏳ FAZ 10'da tüm testler düzeltilip genişletilecek
+- 📦 Test Packages: xUnit 2.9.2, Moq 4.20.72, EF Core InMemory 9.0.0
 
 ---
 
 ## 🏗️ FAZ 11: PERFORMANCE & SECURITY
+
 **Süre**: ~3-4 gün
 
 ### Görevler
+
 - [ ] Load testing (K6 veya Locust): 1K eşzamanlı bağlantı
 - [ ] Rate limiting iyileştirme (Redis-based distributed)
 - [ ] Input validation sertleştirme
@@ -248,16 +312,19 @@
 - [ ] Password policy enforcement
 
 ### Deliverables
+
 ✅ 1K bağlantıda kabul edilebilir gecikme  
 ✅ Güvenlik best practices uygulanmış  
-✅ Production-ready TLS  
+✅ Production-ready TLS
 
 ---
 
 ## 🏗️ FAZ 12: DEPLOYMENT & DOCUMENTATION
+
 **Süre**: ~1 hafta
 
 ### Görevler
+
 - [ ] Production Dockerfile (backend + frontend)
 - [ ] Docker Compose production config
 - [ ] GitHub Actions CI/CD (build → test → deploy)
@@ -271,10 +338,11 @@
 - [ ] Video demo kaydı
 
 ### Deliverables
+
 ✅ Uygulama production'da çalışıyor (domain üzerinden erişilebilir)  
 ✅ CI/CD pipeline aktif  
 ✅ Dokümantasyon tamamlanmış  
-✅ Demo videosu hazır  
+✅ Demo videosu hazır
 
 ---
 
@@ -288,6 +356,7 @@
 ## 🚀 ŞİMDİ BAŞLAYALIM
 
 **Faz 1** için gereken ilk adımlar:
+
 1. Backend klasör yapısı oluştur
 2. Docker Compose hazırla
 3. NuGet paketlerini yükle

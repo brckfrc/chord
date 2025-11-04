@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using ChordAPI.Data;
 using ChordAPI.Services;
+using ChordAPI.Middleware;
 using Serilog;
 
 // Load .env file
@@ -130,6 +131,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseSerilogRequestLogging();
+
+// Global exception handler
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+// Rate limiting
+app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseCors("AllowFrontend");
 

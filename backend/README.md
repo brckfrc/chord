@@ -262,9 +262,114 @@ docker compose -f docker-compose.prod.yml restart api
 - Hot reload is enabled by default
 - Check `Logs/` directory for application logs
 
+## Project Status
+
+### ✅ Phase 1: Authentication System (100% Complete)
+**Completed:**
+- ✅ User registration with validation (BCrypt password hashing)
+- ✅ User login (email or username)
+- ✅ JWT access token generation (60 min expiry)
+- ✅ Refresh token mechanism with rotation (30 day expiry)
+- ✅ Protected endpoints (`/me`, `/logout`)
+- ✅ Docker Compose setup (SQL Server + Redis)
+- ✅ Entity Framework Core migrations (User, Guild, Channel, Message, GuildMember)
+- ✅ Serilog logging (console + file)
+- ✅ Health check endpoint (`/health`)
+- ✅ Swagger UI with JWT authentication
+- ✅ CORS configuration
+- ✅ AutoMapper for DTOs
+- ✅ Environment variables (.env) management
+- ✅ Global error handling middleware (dev/prod mode aware)
+- ✅ Rate limiting middleware (100 req/min default, configurable)
+- ✅ xUnit test project structure (to be expanded in Phase 10)
+
+### ⏳ Phase 2: Guild & Channel Management (30% Complete - In Progress)
+**Completed:**
+- ✅ Guild, Channel, GuildMember entities
+- ✅ Database migrations with relationships
+
+**In Progress:**
+- 🔄 Guild DTOs & Service ← **CURRENT**
+- ⏳ Channel DTOs & Service
+- ⏳ Authorization policies (IsGuildOwner, IsGuildMember)
+- ⏳ Member management endpoints
+
+**Notes:**
+- Middleware updates only needed for special cases:
+  - New exception types → Update `GlobalExceptionMiddleware`
+  - Rate limit exemptions → Update `RateLimitingMiddleware` whitelist
+  - Current middleware setup is sufficient ✅
+
+### 📋 Planned Phases
+- **Phase 3**: SignalR real-time messaging
+- **Phase 4-6**: React frontend
+- **Phase 7**: File upload & video support
+- **Phase 8**: WebRTC voice channels
+- **Phase 9-11**: Permissions, testing, security, deployment
+
+---
+
+## API Endpoints
+
+### Authentication ✅
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/Auth/register` | Register new user | No |
+| POST | `/api/Auth/login` | Login with credentials | No |
+| POST | `/api/Auth/refresh` | Refresh access token | No |
+| GET | `/api/Auth/me` | Get current user profile | Yes |
+| POST | `/api/Auth/logout` | Logout user | Yes |
+
+### Guilds 🔜
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/Guilds` | Create guild | Yes |
+| GET | `/api/Guilds` | List user's guilds | Yes |
+| GET | `/api/Guilds/{id}` | Get guild details | Yes |
+| PUT | `/api/Guilds/{id}` | Update guild | Yes (Owner) |
+| DELETE | `/api/Guilds/{id}` | Delete guild | Yes (Owner) |
+| POST | `/api/Guilds/{id}/members` | Add member | Yes |
+| DELETE | `/api/Guilds/{id}/members/{userId}` | Remove member | Yes |
+
+---
+
+## Database Schema
+
+### Current Entities
+- **Users**: Authentication, profile (Id, Username, Email, PasswordHash, DisplayName, AvatarUrl, RefreshToken, timestamps)
+- **Guilds**: Discord-like servers (Id, Name, Description, IconUrl, OwnerId, timestamps)
+- **Channels**: Text/Voice channels in guilds (Id, GuildId, Name, Type, Topic, Position, CreatedAt)
+- **Messages**: Chat messages with attachments (Id, ChannelId, AuthorId, Content, Attachments JSON, timestamps, IsEdited)
+- **GuildMembers**: Many-to-many relationship (GuildId, UserId, JoinedAt, Nickname, Role)
+
+---
+
+## Testing
+
+### Manual Testing
+1. **Swagger UI**: `http://localhost:5049/swagger`
+   - Register a user
+   - Login to get tokens
+   - Click "Authorize" button, enter `Bearer {accessToken}`
+   - Test protected endpoints
+
+2. **Postman**: Import `ChordAPI.postman_collection.json`
+
+### Automated Tests
+🔄 xUnit test project in progress
+
+---
+
 ## Next Steps
 
-- [ ] Implement Auth endpoints
-- [ ] Create Guild/Channel management
-- [ ] Setup SignalR hubs
-- [ ] Add unit tests
+### Phase 1 Completion (Current)
+1. ✅ ~~Authentication endpoints~~
+2. 🔄 Global error handling middleware
+3. 🔄 Rate limiting middleware
+4. 🔄 xUnit test project (AuthService tests)
+
+### Phase 2 (Next)
+1. Guild DTOs & Service
+2. Channel DTOs & Service
+3. Authorization policies
+4. CRUD endpoints

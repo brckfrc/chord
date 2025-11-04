@@ -32,4 +32,10 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="ChordAPI.Tests\**" />
+    <EmbeddedResource Remove="ChordAPI.Tests\**" />
+    <None Remove="ChordAPI.Tests\**" />
+  </ItemGroup>
+
 </Project>
