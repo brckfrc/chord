@@ -42,26 +42,36 @@
 ## 🏗️ FAZ 2: GUILD & CHANNEL DOMAIN
 
 **Süre**: ~1 hafta
-**DURUM**: %30 TAMAMLANDI (entities + migrations hazır) ⏳
+**DURUM**: ✅ %100 TAMAMLANDI
 
 ### Görevler
 
 - [x] Entities: Guild, GuildMember, Channel ✅
 - [x] Migration: Guild-Channel ilişkileri (InitialCreate'de mevcut) ✅
-- [ ] DTOs: Guild, Channel için Create/Update/Response DTOs ← **ŞİMDİ BURASI**
-- [ ] GuildService: CRUD, üye yönetimi (add/remove)
-- [ ] ChannelService: CRUD, yetki kontrolü
-- [ ] Authorization Policies: IsGuildMember, IsGuildOwner
-- [ ] Endpoints: Guilds CRUD, Channels CRUD, Members yönetimi
-- [ ] Unit + integration testler (FAZ 10'da detaylandırılacak)
+- [x] DTOs: Guild, Channel için Create/Update/Response DTOs ✅
+- [x] GuildService: CRUD, üye yönetimi (add/remove) ✅
+- [x] ChannelService: CRUD, yetki kontrolü ✅
+- [~] Authorization Policies: IsGuildMember, IsGuildOwner (Service içinde kontrol ediliyor, FAZ 9'da policy'ye çevrilecek)
+- [x] Endpoints: Guilds CRUD, Channels CRUD, Members yönetimi ✅
+- [~] Unit + integration testler (FAZ 10'da detaylandırılacak)
 
 ### Deliverables
 
-⏳ Guild oluşturma/yönetme çalışıyor  
-⏳ Kanal oluşturma/yönetme çalışıyor  
-⏳ Üyelik kontrolü aktif
+✅ Guild oluşturma/yönetme çalışıyor  
+✅ Kanal oluşturma/yönetme çalışıyor  
+✅ Üyelik kontrolü aktif (service layer'da)
 
 ### 📝 Notlar
+
+**Position System (Scoped by Type):**
+
+- ✅ Channel position'ları type bazında izole edildi (TEXT: 0,1,2... VOICE: 0,1,2...)
+- ✅ Unique index eklendi: `(GuildId, Type, Position)` - Duplicate position artık imkansız
+- ✅ Migration: `ScopedChannelPositionByType` - Mevcut position'ları type bazında resetledi
+- ✅ CREATE: Her type kendi max position'ını hesaplar, otomatik sona ekler
+- ✅ UPDATE: Position değişiminde sadece aynı type'daki channel'ları kaydırır
+- ✅ DELETE: Silinen channel'dan sonraki sadece aynı type'daki channel'ları yukarı kaydırır
+- ✅ Frontend'te text/voice ayrımı için hazır (her grup 0'dan başlar)
 
 **Middleware Güncellemeleri (Gerekirse):**
 

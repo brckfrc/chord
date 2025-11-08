@@ -55,6 +55,9 @@ namespace ChordAPI.Migrations
 
                     b.HasIndex("GuildId");
 
+                    b.HasIndex("GuildId", "Type", "Position")
+                        .IsUnique();
+
                     b.ToTable("Channels");
                 });
 

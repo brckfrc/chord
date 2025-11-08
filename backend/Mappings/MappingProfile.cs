@@ -11,7 +11,16 @@ public class MappingProfile : Profile
         // User mappings
         CreateMap<User, UserDto>();
         
-        // Add more mappings as needed for Guilds, Channels, Messages, etc.
+        // Guild mappings
+        CreateMap<Guild, GuildResponseDto>()
+            .ForMember(dest => dest.MemberCount, opt => opt.MapFrom(src => src.Members.Count))
+            .ForMember(dest => dest.ChannelCount, opt => opt.MapFrom(src => src.Channels.Count));
+        
+        // Channel mappings
+        CreateMap<Channel, ChannelResponseDto>();
+        
+        // GuildMember mappings
+        CreateMap<GuildMember, GuildMemberDto>();
     }
 }
 
