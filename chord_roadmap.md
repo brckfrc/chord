@@ -190,6 +190,64 @@
 
 ---
 
+## 🏗️ FAZ 3.5: CORE UX FEATURES ⭐ YENİ
+
+**Süre**: ~2-3 gün  
+**DURUM**: ⏳ Başlanmadı  
+**Neden şimdi**: Kolay implement + Frontend öncesi data model hazır olmalı + Discord temel özellikleri
+
+### Görevler
+
+#### 1. 😊 Message Reactions
+- [ ] MessageReaction entity (MessageId, UserId, Emoji, CreatedAt)
+- [ ] Unique index: (MessageId, UserId, Emoji)
+- [ ] API: POST/DELETE /messages/{id}/reactions
+- [ ] GET /messages/{id}/reactions (grouped by emoji)
+- [ ] ChatHub events: ReactionAdded, ReactionRemoved
+- [ ] AutoMapper: ReactionResponseDto
+- [ ] Migration: CreateMessageReactionsTable
+
+#### 2. 📌 Pinned Messages
+- [ ] Message entity'ye 3 alan ekle: IsPinned, PinnedAt, PinnedByUserId
+- [ ] API: POST/DELETE /channels/{channelId}/messages/{messageId}/pin
+- [ ] GET /channels/{channelId}/pins (list pinned messages)
+- [ ] ChatHub events: MessagePinned, MessageUnpinned
+- [ ] Authorization: Sadece guild owner/admin pin yapabilir (şimdilik owner)
+- [ ] Migration: AddPinFieldsToMessages
+
+#### 3. 📍 Unread Messages
+- [ ] ChannelReadState entity (UserId, ChannelId, LastReadMessageId, LastReadAt)
+- [ ] Composite key: (UserId, ChannelId)
+- [ ] API: POST /channels/{channelId}/mark-read
+- [ ] GET /channels/{channelId}/unread-count
+- [ ] GET /users/me/unread-summary (tüm unread'ler)
+- [ ] ChatHub: Auto-update read state on ReceiveMessage (optional)
+- [ ] Migration: CreateChannelReadStatesTable
+
+#### 4. 👤 User Status & Custom Status
+- [ ] UserStatus enum (Online, Idle, DoNotDisturb, Invisible)
+- [ ] User entity'ye 2 alan: Status, CustomStatus
+- [ ] API: PATCH /users/me/status
+- [ ] PresenceHub: UpdateStatus method
+- [ ] Server → Client: UserStatusChanged event
+- [ ] Migration: AddStatusFieldsToUsers
+
+### Deliverables
+
+✅ Reactions çalışıyor (emoji ekle/çıkar, sayı göster)  
+✅ Pinned messages çalışıyor (pin/unpin, listele)  
+✅ Unread tracking çalışıyor (badge sayısı doğru)  
+✅ User status çalışıyor (online/idle/dnd/invisible)
+
+### 📝 Notlar
+
+- **Neden frontend öncesi?** Frontend hazır olunca sadece UI bağlanacak, data model hazır olacak
+- **Test edilebilir**: Swagger/Postman ile hepsi test edilebilir
+- **Kolay**: Toplam ~200 satır kod, kompleks logic yok
+- **Discord parity**: Bu 4 özellik Discord'un temel taşları
+
+---
+
 ## 🏗️ FAZ 4: FRONTEND FOUNDATION & AUTH UI
 
 **Süre**: ~1 hafta
@@ -240,6 +298,42 @@
 
 ---
 
+## 🏗️ FAZ 5.5: GUILD INVITES ⭐ YENİ
+
+**Süre**: ~1 gün  
+**DURUM**: ⏳ Başlanmadı  
+**Neden bu aşamada**: Frontend'de guild yönetimi UI'ı hazır olunca link paylaşımı test edilebilir
+
+### Backend Görevler
+
+- [ ] GuildInvite entity (Id, Code, GuildId, CreatedByUserId, CreatedAt, ExpiresAt, MaxUses, Uses)
+- [ ] Unique index: Code (8 karakterlik random: "abc123XY")
+- [ ] API: POST /guilds/{id}/invites (create invite)
+- [ ] GET /invites/{code} (get invite info - public endpoint)
+- [ ] POST /invites/{code}/accept (join guild via invite)
+- [ ] GET /guilds/{id}/invites (list guild invites)
+- [ ] DELETE /invites/{id} (revoke invite)
+- [ ] Validation: Max uses, expiry check, already member check
+- [ ] Migration: CreateGuildInvitesTable
+
+### Frontend Görevler
+
+- [ ] InviteModal component (create invite form: expiry, max uses)
+- [ ] InviteList component (guild settings'te aktif inviteler)
+- [ ] InviteAcceptPage (/invite/:code route)
+- [ ] Copy invite link butonu
+- [ ] Toast notifications (invite created, copied, accepted)
+- [ ] Invite preview card (guild name, icon, member count)
+
+### Deliverables
+
+✅ Invite link oluşturma çalışıyor  
+✅ Link ile guild'e katılma çalışıyor  
+✅ Expiry ve max uses limitleri doğru çalışıyor  
+✅ Frontend'de davet yönetimi UI'ı tamamlandı
+
+---
+
 ## 🏗️ FAZ 6: FRONTEND MESSAGING & SIGNALR
 
 **Süre**: ~1.5 hafta
@@ -266,6 +360,40 @@
 ✅ Edit/delete çalışıyor  
 ✅ Typing indicator görünüyor  
 ✅ Online kullanıcılar görünüyor
+
+---
+
+## 🏗️ FAZ 6.5: MENTIONS & NOTIFICATIONS ⭐ YENİ
+
+**Süre**: ~1-2 gün  
+**DURUM**: ⏳ Başlanmadı  
+**Neden bu aşamada**: Mesajlaşma UI hazır, mention parse ve bildirim gönderilebilir
+
+### Backend Görevler
+
+- [ ] MessageMention entity (MessageId, MentionedUserId, IsRead, CreatedAt)
+- [ ] MessageService: ExtractMentions helper (regex: @username → userId)
+- [ ] CreateMessage'da mention parse + MessageMention kaydet
+- [ ] API: GET /users/me/mentions?unread=true
+- [ ] PATCH /mentions/{id}/mark-read
+- [ ] ChatHub: Server → Client event: UserMentioned
+- [ ] Migration: CreateMessageMentionsTable
+
+### Frontend Görevler
+
+- [ ] MessageComposer: @ yazınca autocomplete (guild members)
+- [ ] MessageItem: Mention highlight (blue background)
+- [ ] MentionsPanel component (unread mentions listesi)
+- [ ] Badge on user avatar (unread mention count)
+- [ ] Browser notification (Notification API)
+- [ ] Click to jump to mentioned message
+
+### Deliverables
+
+✅ @mention autocomplete çalışıyor  
+✅ Mention edilen kullanıcıya bildirim gidiyor  
+✅ Unread mentions listesi çalışıyor  
+✅ Click to jump çalışıyor
 
 ---
 
@@ -350,11 +478,63 @@
 
 ---
 
+## 🏗️ FAZ 9.5: DIRECT MESSAGES & FRIENDS ⭐ YENİ
+
+**Süre**: ~3-4 gün  
+**DURUM**: ⏳ Başlanmadı  
+**Neden bu aşamada**: Permissions hazır, private messaging için rol sistemi gerekli
+
+### Backend Görevler
+
+#### 1. Friend System
+
+- [ ] Friendship entity (Id, RequesterId, AddresseeId, Status, CreatedAt, AcceptedAt)
+- [ ] FriendshipStatus enum (Pending, Accepted, Blocked)
+- [ ] Unique index: (RequesterId, AddresseeId)
+- [ ] API: POST /friends/request
+- [ ] POST /friends/{id}/accept, /decline, /block
+- [ ] DELETE /friends/{id} (unfriend)
+- [ ] GET /friends, /friends/pending, /friends/blocked
+- [ ] Migration: CreateFriendshipsTable
+
+#### 2. Direct Messages
+
+- [ ] ChannelType.DirectMessage ekle
+- [ ] DirectMessageChannel entity (ChannelId, User1Id, User2Id)
+- [ ] Unique index: (User1Id, User2Id) where User1Id < User2Id
+- [ ] API: POST /users/{userId}/dm (create/get DM channel)
+- [ ] GET /users/me/dms (list all DM channels)
+- [ ] Permission check: Sadece friends DM gönderebilir
+- [ ] ChatHub: DM channel'lar için aynı message logic
+- [ ] Migration: AddDirectMessageSupport
+
+### Frontend Görevler
+
+- [ ] FriendsTab component (sidebar'da guild listesinin altında)
+- [ ] FriendsList component (online/offline/pending)
+- [ ] AddFriendModal (username ile ekleme)
+- [ ] DMChannelList (DM listesi, son mesaj önizlemesi)
+- [ ] DMChannel route (/dm/:channelId)
+- [ ] Accept/decline friend request butonları
+- [ ] Online status indicator (friend list)
+
+### Deliverables
+
+✅ Arkadaş ekleme/kabul etme çalışıyor  
+✅ DM channel oluşturma çalışıyor  
+✅ Friend-only DM kontrolü çalışıyor  
+✅ Frontend'de DM UI tamamlandı
+
+---
+
 ## 🏗️ FAZ 10: TESTING & OBSERVABILITY
 
-**Süre**: ~3-4 gün
+**Süre**: ~4-5 gün (Audit Log eklendi)  
+**DURUM**: ⏳ Başlanmadı
 
-### Backend
+### Görevler
+
+#### Mevcut Testler
 
 - [ ] xUnit testlerini düzelt ve genişlet (AuthService testleri hazır ama çalışmıyor)
 - [ ] Unit test coverage artırma (≥70% hedef)
@@ -366,7 +546,17 @@
 - [ ] OpenTelemetry kurulumu (traces, metrics)
 - [ ] Health checks genişletme (Redis, MinIO)
 
-### Frontend
+#### ⭐ YENİ: Audit Log
+
+- [ ] AuditLog entity (Id, GuildId, UserId, Action, TargetType, TargetId, Changes, IpAddress, Timestamp)
+- [ ] AuditAction enum (MemberJoin, MemberKick, ChannelCreate, MessageDelete, RoleUpdate, etc.)
+- [ ] Middleware: AuditLogMiddleware (önemli işlemleri logla)
+- [ ] Service method'larına audit log kaydetme
+- [ ] API: GET /guilds/{id}/audit-logs?limit=50
+- [ ] Frontend: AuditLogPanel (guild settings)
+- [ ] Migration: CreateAuditLogsTable
+
+### Frontend (Mevcut)
 
 - [ ] Component testleri (kritik flow'lar)
 - [ ] E2E testler (Playwright veya Cypress): Login → Guild → Mesaj gönder
@@ -376,7 +566,8 @@
 
 ✅ Test coverage ≥60%  
 ✅ E2E testler ana akışı kapsıyor  
-✅ Metrik/trace dashboard görünür
+✅ Metrik/trace dashboard görünür  
+✅ Audit log çalışıyor (kim ne yaptı izlenebiliyor)
 
 ### 📝 Test Notları
 
@@ -392,9 +583,10 @@
 
 ## 🏗️ FAZ 11: PERFORMANCE & SECURITY
 
-**Süre**: ~3-4 gün
+**Süre**: ~4-5 gün (Notification Settings eklendi)  
+**DURUM**: ⏳ Başlanmadı
 
-### Görevler
+### Görevler (Mevcut)
 
 - [ ] Load testing (K6 veya Locust): 1K eşzamanlı bağlantı
 - [ ] Rate limiting iyileştirme (Redis-based distributed)
@@ -405,11 +597,23 @@
 - [ ] Sensitive data masking (logs)
 - [ ] Password policy enforcement
 
+### ⭐ YENİ: Notification Settings
+
+- [ ] NotificationSetting entity (UserId, GuildId, ChannelId, NotifyOnMessage, NotifyOnMention, NotifyOnReply, MuteUntil)
+- [ ] Default settings (all channels: all notifications)
+- [ ] API: GET/PATCH /users/me/notification-settings
+- [ ] Scope: Global, Guild, Channel (cascading)
+- [ ] Frontend: NotificationSettingsModal (per-channel veya global)
+- [ ] Mute channel (1h, 8h, 24h, until unmute)
+- [ ] Browser notification filtering (settings'e göre)
+- [ ] Migration: CreateNotificationSettingsTable
+
 ### Deliverables
 
 ✅ 1K bağlantıda kabul edilebilir gecikme  
 ✅ Güvenlik best practices uygulanmış  
-✅ Production-ready TLS
+✅ Production-ready TLS  
+✅ Bildirim tercihleri çalışıyor (mute/unmute)
 
 ---
 
@@ -440,21 +644,51 @@
 
 ---
 
-## 🎯 ÖNCELİK SIRASI
+## 🎯 YENİ ÖNCELİK SIRASI
 
-1. **İlk 4 Faz** → Core functionality (auth, messaging, UI)
-2. **Faz 5-7** → Advanced features (voice, files)
-3. **Faz 8-10** → Polish (permissions, testing, security)
-4. **Faz 11** → Production deployment
+1. **Faz 1-3** ✅ Core backend (auth, messaging, real-time)
+2. **Faz 3.5** 🟡 **ŞİMDİ YAPILACAK** → Reactions, Pins, Unread, Status (kolay, kritik UX)
+3. **Faz 4-6** → Frontend temel yapı + messaging UI
+4. **Faz 5.5, 6.5** → Guild invites, Mentions (frontend hazır olduktan sonra)
+5. **Faz 7-8** → File upload, voice channels
+6. **Faz 9-9.5** → Permissions + DMs + Friends
+7. **Faz 10-11** → Testing, audit log, notifications, security
+8. **Faz 12** → Production deployment
 
-## 🚀 ŞİMDİ BAŞLAYALIM
+---
 
-**Faz 1** için gereken ilk adımlar:
+## 🚀 SONRAKİ ADIM: FAZ 3.5
 
-1. Backend klasör yapısı oluştur
-2. Docker Compose hazırla
-3. NuGet paketlerini yükle
-4. AppDbContext + User entity
-5. Auth endpoints
+**Hemen yapılacaklar:**
 
-**Agent mode'a geçmeye hazır mısın?** Backend iskeletini hızlıca kurabiliriz 🎯
+1. ✅ Migration: CreateMessageReactionsTable
+2. ✅ MessageReaction entity + repository
+3. ✅ API: POST/DELETE /messages/{id}/reactions
+4. ✅ ChatHub: ReactionAdded/Removed events
+5. ✅ Message.IsPinned fields + migration
+6. ✅ Pin/unpin endpoints
+7. ✅ ChannelReadState entity + endpoints
+8. ✅ User.Status + CustomStatus fields
+9. ✅ PresenceHub: UpdateStatus method
+
+**Tahmini süre**: 2-3 gün (her özellik ~4 saat)  
+**Test edilebilir**: Her özellik Swagger'dan test edilebilir
+
+---
+
+## 📊 ÖZELLIK ÖZETİ
+
+| Özellik | Faz | Zorluk | Frontend Bağımlılığı | Öncelik |
+|---------|-----|--------|----------------------|---------|
+| Reactions | 3.5 | Kolay | Hayır | ⭐⭐⭐⭐⭐ |
+| Pinned Messages | 3.5 | Çok Kolay | Hayır | ⭐⭐⭐⭐ |
+| Unread Messages | 3.5 | Kolay | Hayır | ⭐⭐⭐⭐⭐ |
+| User Status | 3.5 | Çok Kolay | Hayır | ⭐⭐⭐ |
+| Guild Invites | 5.5 | Orta | Evet (Guild UI) | ⭐⭐⭐⭐ |
+| Mentions | 6.5 | Orta | Evet (Message UI) | ⭐⭐⭐⭐ |
+| DMs | 9.5 | Orta | Evet (Permissions) | ⭐⭐⭐⭐ |
+| Friends | 9.5 | Orta | Evet (Permissions) | ⭐⭐⭐ |
+| Audit Log | 10 | Kolay | Hayır | ⭐⭐⭐ |
+| Notification Settings | 11 | Orta | Evet (Full UI) | ⭐⭐⭐ |
+
+---

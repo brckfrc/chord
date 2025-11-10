@@ -323,11 +323,26 @@ docker compose -f docker-compose.prod.yml restart api
 - **ChatHub JoinVoiceChannel**: Voice presence (visible to all, includes mute/deafen state)
 - Users can be in one voice channel while viewing any text channel
 
+### 🟡 Phase 3.5: Core UX Features (Next - 2-3 days)
+**Upcoming:**
+- ⏳ Message Reactions (emoji reactions like Discord)
+- ⏳ Pinned Messages (pin important messages to top)
+- ⏳ Unread Messages tracking (last read position, unread count)
+- ⏳ User Status (Online/Idle/DND/Invisible + custom status)
+
+**Why now?** These are easy to implement, frontend-independent, and critical for Discord-like UX.
+
 ### 📋 Planned Phases
 - **Phase 4-6**: React frontend (auth, guilds, channels, messages, SignalR integration)
+- **Phase 5.5**: Guild invites (invite links to join guilds)
+- **Phase 6.5**: Mentions & notifications (@username mentions)
 - **Phase 7**: File upload & video support
 - **Phase 8**: WebRTC voice channels (STUN/TURN, actual audio streaming)
-- **Phase 9-11**: Permissions, testing, security, deployment
+- **Phase 9**: Permissions & roles
+- **Phase 9.5**: Direct Messages & Friends (1-1 messaging, friend system)
+- **Phase 10**: Testing, observability & audit logs
+- **Phase 11**: Performance, security & notification settings
+- **Phase 12**: Production deployment
 
 ---
 
