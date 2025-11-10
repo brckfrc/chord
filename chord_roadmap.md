@@ -84,25 +84,109 @@
 ## 🏗️ FAZ 3: SIGNALR & REAL-TIME MESSAGING
 
 **Süre**: ~1.5 hafta
+**DURUM**: ✅ %100 TAMAMLANDI (Integration testleri FAZ 10'da)
 
 ### Görevler
 
-- [ ] Message entity (content, attachments JSON, soft delete)
-- [ ] ChatHub: JoinChannel, SendMessage, EditMessage, DeleteMessage, Typing
-- [ ] PresenceHub: Online/offline durumu, LastSeenAt
-- [ ] Redis backplane konfigürasyonu
-- [ ] Connection mapping service (userId ↔ connectionId)
-- [ ] MessageService: CRUD, pagination
-- [ ] REST endpoints (fallback): GET/POST /channels/{id}/messages
-- [ ] Hub event dokümantasyonu (ReceiveMessage, MessageEdited, UserOnline vs.)
-- [ ] SignalR integration testleri
+- [x] Message entity (content, attachments JSON, soft delete) ✅
+- [x] ChatHub: JoinChannel, SendMessage, EditMessage, DeleteMessage, Typing ✅
+- [x] ChatHub: Voice channel methods (JoinVoiceChannel, LeaveVoiceChannel, UpdateVoiceState) ✅
+- [x] PresenceHub: Online/offline durumu, LastSeenAt ✅
+- [x] Redis backplane konfigürasyonu ✅
+- [x] Connection mapping service (SignalR built-in kullanılıyor) ✅
+- [x] MessageService: CRUD, pagination ✅
+- [x] REST endpoints (fallback): GET/POST /channels/{id}/messages ✅
+- [x] Hub event dokümantasyonu (SIGNALR_EVENTS.md) ✅
+- [x] Voice channel presence infrastructure ✅
+- [~] SignalR integration testleri (FAZ 10'da detaylandırılacak)
 
 ### Deliverables
 
-✅ Gerçek zamanlı mesajlaşma çalışıyor  
-✅ Presence (online/offline) yayınlanıyor  
-✅ Typing indicators aktif  
-✅ Mesaj edit/delete çalışıyor
+✅ Message entity ve DTOs hazır  
+✅ MessageService: CRUD, pagination, soft delete  
+✅ REST endpoints: GET/POST/PUT/DELETE messages  
+✅ ChatHub: Real-time messaging (send, edit, delete, typing)  
+✅ ChatHub: Voice channel presence (join, leave, mute/deafen state)  
+✅ PresenceHub: Online/offline status tracking  
+✅ Redis backplane configured  
+✅ JWT authentication for SignalR  
+✅ Kapsamlı event dokümantasyonu (text + voice)
+
+### 📝 Notlar
+
+**SignalR Configuration:**
+
+- ✅ Hub endpoints: `/hubs/chat`, `/hubs/presence`
+- ✅ JWT authentication via query string (`?access_token=...`)
+- ✅ Redis backplane for horizontal scaling
+- ✅ Automatic reconnection support
+- ✅ Channel-based message broadcasting
+
+**Message REST API:**
+
+- ✅ `GET /api/channels/{channelId}/messages` - Paginated message list
+- ✅ `GET /api/channels/{channelId}/messages/{id}` - Get single message
+- ✅ `POST /api/channels/{channelId}/messages` - Create message
+- ✅ `PUT /api/channels/{channelId}/messages/{id}` - Edit message (author only)
+- ✅ `DELETE /api/channels/{channelId}/messages/{id}` - Soft delete (author or guild owner)
+
+**SignalR Events:**
+
+**Client → Server (Text Channels):**
+
+- `JoinChannel(channelId)` - Subscribe to channel messages
+- `LeaveChannel(channelId)` - Unsubscribe from channel
+- `SendMessage(channelId, dto)` - Send message
+- `EditMessage(channelId, messageId, dto)` - Edit message
+- `DeleteMessage(channelId, messageId)` - Delete message
+- `Typing(channelId)` - Broadcast typing indicator
+
+**Client → Server (Voice Channels):**
+
+- `JoinVoiceChannel(channelId)` - Join voice channel (show as active participant)
+- `LeaveVoiceChannel(channelId)` - Leave voice channel
+- `UpdateVoiceState(channelId, isMuted, isDeafened)` - Update mute/deafen status
+- `GetVoiceChannelUsers(channelId)` - Get active voice participants
+
+**Client → Server (Presence):**
+
+- `GetOnlineUsers()` - Get online user list
+- `UpdatePresence()` - Keep-alive ping
+
+**Server → Client (Text):**
+
+- `ReceiveMessage(message)` - New message broadcast
+- `MessageEdited(message)` - Message edit broadcast
+- `MessageDeleted(messageId)` - Message delete broadcast
+- `UserTyping({ userId, username })` - Typing indicator
+
+**Server → Client (Voice):**
+
+- `UserJoinedVoiceChannel({ userId, username, displayName, isMuted, isDeafened })` - User joined voice
+- `UserLeftVoiceChannel({ userId, channelId })` - User left voice
+- `UserVoiceStateChanged({ userId, isMuted, isDeafened })` - User toggled mute/deafen
+
+**Server → Client (Presence):**
+
+- `UserOnline(userId)` - User came online
+- `UserOffline(userId)` - User went offline
+- `Error(message)` - Operation failed
+
+**Authorization:**
+
+- ✅ Message author can edit/delete own messages
+- ✅ Guild owner can delete any message in guild
+- ✅ Channel access controlled via guild membership
+- ✅ Soft delete preserves message history
+
+**Voice Channel Architecture:**
+
+- ✅ **Text vs Voice separation**: `JoinChannel` (text message subscription) and `JoinVoiceChannel` (voice presence) are independent
+- ✅ **Global online status**: PresenceHub tracks who's online in the app (not channel-specific)
+- ✅ **Voice presence**: Shows who's actively in voice channels (visible to all, includes mute/deafen state)
+- ✅ **Multiple simultaneous**: Users can be in one voice channel + viewing any text channel
+- ✅ **State management**: Frontend tracks voice participants via join/leave/state change events
+- 🔜 **WebRTC integration**: FAZ 8 will add actual audio streaming (STUN/TURN, P2P connections)
 
 ---
 

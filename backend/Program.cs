@@ -6,6 +6,7 @@ using ChordAPI.Data;
 using ChordAPI.Services;
 using ChordAPI.Middleware;
 using Serilog;
+using StackExchange.Redis;
 
 // Load .env file
 DotNetEnv.Env.Load();
@@ -63,6 +64,7 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IGuildService, GuildService>();
 builder.Services.AddScoped<IChannelService, ChannelService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
 
 // Database - Build connection string from environment variables
 var sqlPassword = Environment.GetEnvironmentVariable("SQL_SA_PASSWORD") ?? throw new InvalidOperationException("SQL_SA_PASSWORD not found in environment");
@@ -114,9 +116,34 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
+
+    // Allow JWT authentication for SignalR
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
+
+// SignalR with Redis backplane
+var redisConnection = Environment.GetEnvironmentVariable("REDIS_CONNECTION") ?? "localhost:6379";
+builder.Services.AddSignalR()
+    .AddStackExchangeRedis(redisConnection, options =>
+    {
+        options.Configuration.ChannelPrefix = RedisChannel.Literal("ChordSignalR");
+    });
 
 // Health checks
 builder.Services.AddHealthChecks()
@@ -147,6 +174,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
+
+// SignalR Hub endpoints
+app.MapHub<ChordAPI.Hubs.ChatHub>("/hubs/chat");
+app.MapHub<ChordAPI.Hubs.PresenceHub>("/hubs/presence");
 
 // Simple test endpoint
 app.MapGet("/", () => new

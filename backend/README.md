@@ -283,28 +283,50 @@ docker compose -f docker-compose.prod.yml restart api
 - ✅ Rate limiting middleware (100 req/min default, configurable)
 - ✅ xUnit test project structure (to be expanded in Phase 10)
 
-### ⏳ Phase 2: Guild & Channel Management (30% Complete - In Progress)
+### ✅ Phase 2: Guild & Channel Management (100% Complete)
 **Completed:**
 - ✅ Guild, Channel, GuildMember entities
 - ✅ Database migrations with relationships
-
-**In Progress:**
-- 🔄 Guild DTOs & Service ← **CURRENT**
-- ⏳ Channel DTOs & Service
-- ⏳ Authorization policies (IsGuildOwner, IsGuildMember)
-- ⏳ Member management endpoints
+- ✅ Guild DTOs & Service (CRUD, member management)
+- ✅ Channel DTOs & Service (CRUD, type-aware positioning)
+- ✅ Authorization in service layer (IsGuildOwner, IsGuildMember)
+- ✅ Member management endpoints
+- ✅ Position system (scoped by channel type: Text/Voice)
+- ✅ Unique index on (GuildId, Type, Position)
 
 **Notes:**
-- Middleware updates only needed for special cases:
-  - New exception types → Update `GlobalExceptionMiddleware`
-  - Rate limit exemptions → Update `RateLimitingMiddleware` whitelist
-  - Current middleware setup is sufficient ✅
+- Position shifting is type-aware: Text channels (0,1,2...) and Voice channels (0,1,2...) are independent
+- Middleware updates only needed for special cases - current setup is sufficient ✅
+
+### ✅ Phase 3: SignalR & Real-Time Messaging (100% Complete)
+**Completed:**
+- ✅ Message entity with soft delete & attachments
+- ✅ MessageService: CRUD, pagination
+- ✅ REST endpoints: GET/POST/PUT/DELETE messages
+- ✅ ChatHub: Real-time text messaging (send, edit, delete, typing)
+- ✅ ChatHub: Voice channel presence (join, leave, mute/deafen state tracking)
+- ✅ PresenceHub: Global online/offline status
+- ✅ Redis backplane for horizontal scaling
+- ✅ JWT authentication for SignalR (query string token)
+- ✅ Comprehensive event documentation (SIGNALR_EVENTS.md)
+
+**Voice Channel Infrastructure:**
+- ✅ `JoinVoiceChannel` - Show user as active in voice channel
+- ✅ `LeaveVoiceChannel` - Remove from voice channel
+- ✅ `UpdateVoiceState` - Toggle mute/deafen status
+- ✅ Real-time events: `UserJoinedVoiceChannel`, `UserLeftVoiceChannel`, `UserVoiceStateChanged`
+- 🔜 WebRTC audio streaming will be added in Phase 8
+
+**Key Architecture:**
+- **PresenceHub**: Global online status (app-level, not channel-specific)
+- **ChatHub JoinChannel**: Text message subscription (internal, not visible to others)
+- **ChatHub JoinVoiceChannel**: Voice presence (visible to all, includes mute/deafen state)
+- Users can be in one voice channel while viewing any text channel
 
 ### 📋 Planned Phases
-- **Phase 3**: SignalR real-time messaging
-- **Phase 4-6**: React frontend
+- **Phase 4-6**: React frontend (auth, guilds, channels, messages, SignalR integration)
 - **Phase 7**: File upload & video support
-- **Phase 8**: WebRTC voice channels
+- **Phase 8**: WebRTC voice channels (STUN/TURN, actual audio streaming)
 - **Phase 9-11**: Permissions, testing, security, deployment
 
 ---

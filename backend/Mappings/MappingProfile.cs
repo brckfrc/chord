@@ -21,6 +21,9 @@ public class MappingProfile : Profile
         
         // GuildMember mappings
         CreateMap<GuildMember, GuildMemberDto>();
+        
+        // Message mappings
+        CreateMap<Message, MessageResponseDto>();
     }
 }
 
