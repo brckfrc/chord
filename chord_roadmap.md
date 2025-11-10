@@ -276,7 +276,7 @@
 ### Backend
 
 - [ ] MinIO Docker container (veya Azure Blob)
-- [ ] StorageService: Upload, Delete, Presigned URL
+- [ ] StorageService: Upload, Delete, Presigned UackRL
 - [ ] POST /api/upload endpoint (multipart, validation: boyut, tip, süre)
 - [ ] Message.Attachments JSON yapısı (url, type, size, name, duration)
 
