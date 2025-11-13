@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<GuildMember> GuildMembers { get; set; }
     public DbSet<Channel> Channels { get; set; }
     public DbSet<Message> Messages { get; set; }
+    public DbSet<MessageReaction> MessageReactions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,7 +25,7 @@ public class AppDbContext : DbContext
         {
             entity.HasIndex(e => e.Email).IsUnique();
             entity.HasIndex(e => e.Username).IsUnique();
-            
+
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
@@ -85,6 +86,29 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(m => m.ChannelId);
             entity.HasIndex(m => m.CreatedAt);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // MessageReaction configuration
+        modelBuilder.Entity<MessageReaction>(entity =>
+        {
+            entity.HasOne(mr => mr.Message)
+                .WithMany()
+                .HasForeignKey(mr => mr.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(mr => mr.User)
+                .WithMany()
+                .HasForeignKey(mr => mr.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Unique index: A user can only react once per emoji per message
+            entity.HasIndex(mr => new { mr.MessageId, mr.UserId, mr.Emoji })
+                .IsUnique();
+
+            entity.HasIndex(mr => mr.MessageId);
+            entity.HasIndex(mr => mr.CreatedAt);
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });

@@ -65,6 +65,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IGuildService, GuildService>();
 builder.Services.AddScoped<IChannelService, ChannelService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<IReactionService, ReactionService>();
 
 // Database - Build connection string from environment variables
 var sqlPassword = Environment.GetEnvironmentVariable("SQL_SA_PASSWORD") ?? throw new InvalidOperationException("SQL_SA_PASSWORD not found in environment");
