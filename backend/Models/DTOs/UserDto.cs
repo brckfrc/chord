@@ -1,3 +1,5 @@
+using ChordAPI.Models.Entities;
+
 namespace ChordAPI.Models.DTOs;
 
 public class UserDto
@@ -9,5 +11,7 @@ public class UserDto
     public string? AvatarUrl { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? LastSeenAt { get; set; }
+    public UserStatus Status { get; set; }
+    public string? CustomStatus { get; set; }
 }
 

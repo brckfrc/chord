@@ -28,6 +28,15 @@ public class User
     public DateTime UpdatedAt { get; set; }
     public DateTime? LastSeenAt { get; set; }
 
+    // User status
+    public UserStatus Status { get; set; } = UserStatus.Online;
+    
+    /// <summary>
+    /// Custom status message (e.g., "Playing games", "Working on project")
+    /// </summary>
+    [MaxLength(100)]
+    public string? CustomStatus { get; set; }
+
     // Refresh token management
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiresAt { get; set; }

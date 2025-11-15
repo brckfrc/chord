@@ -2,7 +2,9 @@ using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using ChordAPI.Hubs;
 
 namespace ChordAPI.Services;
 
@@ -11,17 +13,20 @@ public class AuthService : IAuthService
     private readonly AppDbContext _context;
     private readonly IJwtService _jwtService;
     private readonly IMapper _mapper;
+    private readonly IHubContext<PresenceHub> _presenceHub;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         AppDbContext context,
         IJwtService jwtService,
         IMapper mapper,
+        IHubContext<PresenceHub> presenceHub,
         ILogger<AuthService> logger)
     {
         _context = context;
         _jwtService = jwtService;
         _mapper = mapper;
+        _presenceHub = presenceHub;
         _logger = logger;
     }
 
@@ -132,6 +137,35 @@ public class AuthService : IAuthService
         // Update last seen
         user.LastSeenAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
+
+        return _mapper.Map<UserDto>(user);
+    }
+
+    public async Task<UserDto> UpdateStatusAsync(Guid userId, UpdateStatusDto dto)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        
+        if (user == null)
+        {
+            throw new KeyNotFoundException("User not found");
+        }
+
+        user.Status = dto.Status;
+        user.CustomStatus = dto.CustomStatus;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("User {UserId} updated status to {Status} with custom status: {CustomStatus}",
+            userId, dto.Status, dto.CustomStatus);
+
+        // Broadcast status change via SignalR
+        await _presenceHub.Clients.All.SendAsync("UserStatusChanged", new
+        {
+            userId = userId.ToString(),
+            status = (int)dto.Status,
+            customStatus = dto.CustomStatus
+        });
 
         return _mapper.Map<UserDto>(user);
     }
