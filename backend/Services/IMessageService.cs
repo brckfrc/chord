@@ -9,5 +9,8 @@ public interface IMessageService
     Task<MessageResponseDto> GetMessageByIdAsync(Guid messageId, Guid userId);
     Task<MessageResponseDto> UpdateMessageAsync(Guid messageId, Guid userId, UpdateMessageDto dto);
     Task DeleteMessageAsync(Guid messageId, Guid userId);
+    Task<MessageResponseDto> PinMessageAsync(Guid channelId, Guid messageId, Guid userId);
+    Task UnpinMessageAsync(Guid channelId, Guid messageId, Guid userId);
+    Task<List<MessageResponseDto>> GetPinnedMessagesAsync(Guid channelId, Guid userId);
 }
 

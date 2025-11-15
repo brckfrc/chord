@@ -25,9 +25,15 @@ public class Message
 
     public bool IsEdited { get; set; }
 
+    // Pin fields
+    public bool IsPinned { get; set; }
+    public DateTime? PinnedAt { get; set; }
+    public Guid? PinnedByUserId { get; set; }
+
     // Navigation properties
     public virtual Channel Channel { get; set; } = null!;
     public virtual User Author { get; set; } = null!;
+    public virtual User? PinnedByUser { get; set; }
 }
 
 

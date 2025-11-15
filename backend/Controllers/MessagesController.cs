@@ -140,5 +140,79 @@ public class MessagesController : ControllerBase
             return Forbid();
         }
     }
+
+    /// <summary>
+    /// Pin a message in a channel (guild owner only)
+    /// </summary>
+    [HttpPost("{messageId}/pin")]
+    public async Task<ActionResult<MessageResponseDto>> PinMessage(Guid channelId, Guid messageId)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var message = await _messageService.PinMessageAsync(channelId, messageId, userId);
+            return Ok(message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Unpin a message from a channel (guild owner only)
+    /// </summary>
+    [HttpDelete("{messageId}/pin")]
+    public async Task<IActionResult> UnpinMessage(Guid channelId, Guid messageId)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await _messageService.UnpinMessageAsync(channelId, messageId, userId);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get all pinned messages in a channel
+    /// </summary>
+    [HttpGet("pins")]
+    public async Task<ActionResult<List<MessageResponseDto>>> GetPinnedMessages(Guid channelId)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var pinnedMessages = await _messageService.GetPinnedMessagesAsync(channelId, userId);
+            return Ok(pinnedMessages);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
 }
 

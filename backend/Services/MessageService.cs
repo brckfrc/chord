@@ -193,5 +193,106 @@ public class MessageService : IMessageService
 
         _logger.LogInformation("Message {MessageId} deleted by user {UserId}", messageId, userId);
     }
+
+    public async Task<MessageResponseDto> PinMessageAsync(Guid channelId, Guid messageId, Guid userId)
+    {
+        var message = await _context.Messages
+            .Include(m => m.Channel)
+            .ThenInclude(c => c.Guild)
+            .Include(m => m.Author)
+            .FirstOrDefaultAsync(m => m.Id == messageId && m.ChannelId == channelId && m.DeletedAt == null);
+
+        if (message == null)
+        {
+            throw new KeyNotFoundException("Message not found");
+        }
+
+        // Check if user is guild owner (for now, only owner can pin)
+        if (message.Channel.Guild.OwnerId != userId)
+        {
+            throw new UnauthorizedAccessException("Only the guild owner can pin messages");
+        }
+
+        // Check if already pinned
+        if (message.IsPinned)
+        {
+            throw new InvalidOperationException("Message is already pinned");
+        }
+
+        message.IsPinned = true;
+        message.PinnedAt = DateTime.UtcNow;
+        message.PinnedByUserId = userId;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Message {MessageId} pinned by user {UserId} in channel {ChannelId}",
+            messageId, userId, channelId);
+
+        return _mapper.Map<MessageResponseDto>(message);
+    }
+
+    public async Task UnpinMessageAsync(Guid channelId, Guid messageId, Guid userId)
+    {
+        var message = await _context.Messages
+            .Include(m => m.Channel)
+            .ThenInclude(c => c.Guild)
+            .FirstOrDefaultAsync(m => m.Id == messageId && m.ChannelId == channelId && m.DeletedAt == null);
+
+        if (message == null)
+        {
+            throw new KeyNotFoundException("Message not found");
+        }
+
+        // Check if user is guild owner (for now, only owner can unpin)
+        if (message.Channel.Guild.OwnerId != userId)
+        {
+            throw new UnauthorizedAccessException("Only the guild owner can unpin messages");
+        }
+
+        // Check if not pinned
+        if (!message.IsPinned)
+        {
+            throw new InvalidOperationException("Message is not pinned");
+        }
+
+        message.IsPinned = false;
+        message.PinnedAt = null;
+        message.PinnedByUserId = null;
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Message {MessageId} unpinned by user {UserId} in channel {ChannelId}",
+            messageId, userId, channelId);
+    }
+
+    public async Task<List<MessageResponseDto>> GetPinnedMessagesAsync(Guid channelId, Guid userId)
+    {
+        // Check if channel exists
+        var channel = await _context.Channels
+            .Include(c => c.Guild)
+            .ThenInclude(g => g.Members)
+            .FirstOrDefaultAsync(c => c.Id == channelId);
+
+        if (channel == null)
+        {
+            throw new KeyNotFoundException("Channel not found");
+        }
+
+        // Check if user is a member of the guild
+        var isMember = channel.Guild.Members.Any(m => m.UserId == userId);
+        if (!isMember)
+        {
+            throw new UnauthorizedAccessException("You are not a member of this guild");
+        }
+
+        // Get all pinned messages in the channel (ordered by pinned date, newest first)
+        var pinnedMessages = await _context.Messages
+            .Include(m => m.Author)
+            .Where(m => m.ChannelId == channelId && m.IsPinned && m.DeletedAt == null)
+            .OrderByDescending(m => m.PinnedAt)
+            .ToListAsync();
+
+        return _mapper.Map<List<MessageResponseDto>>(pinnedMessages);
+    }
 }
 

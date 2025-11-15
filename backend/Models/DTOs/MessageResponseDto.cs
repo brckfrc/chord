@@ -14,6 +14,11 @@ public class MessageResponseDto
     public DateTime? UpdatedAt { get; set; }
     public bool IsEdited { get; set; }
     
+    // Pin fields
+    public bool IsPinned { get; set; }
+    public DateTime? PinnedAt { get; set; }
+    public Guid? PinnedByUserId { get; set; }
+    
     /// <summary>
     /// Author information (nested)
     /// </summary>

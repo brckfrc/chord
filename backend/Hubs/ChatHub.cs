@@ -322,5 +322,59 @@ public class ChatHub : Hub
 
         return Task.FromResult(new List<object>());
     }
+
+    // ==================== PIN METHODS ====================
+
+    /// <summary>
+    /// Pin a message in a channel
+    /// </summary>
+    public async Task PinMessage(string channelId, string messageId)
+    {
+        var userId = GetUserId();
+
+        try
+        {
+            var message = await _messageService.PinMessageAsync(Guid.Parse(channelId), Guid.Parse(messageId), userId);
+
+            // Broadcast to all users in the channel
+            await Clients.Group(channelId).SendAsync("MessagePinned", message);
+
+            _logger.LogInformation("User {UserId} pinned message {MessageId} in channel {ChannelId}",
+                userId, messageId, channelId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "User {UserId} failed to pin message {MessageId}", userId, messageId);
+            await Clients.Caller.SendAsync("Error", $"Failed to pin message: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Unpin a message from a channel
+    /// </summary>
+    public async Task UnpinMessage(string channelId, string messageId)
+    {
+        var userId = GetUserId();
+
+        try
+        {
+            await _messageService.UnpinMessageAsync(Guid.Parse(channelId), Guid.Parse(messageId), userId);
+
+            // Broadcast to all users in the channel
+            await Clients.Group(channelId).SendAsync("MessageUnpinned", new
+            {
+                messageId = Guid.Parse(messageId),
+                channelId
+            });
+
+            _logger.LogInformation("User {UserId} unpinned message {MessageId} in channel {ChannelId}",
+                userId, messageId, channelId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "User {UserId} failed to unpin message {MessageId}", userId, messageId);
+            await Clients.Caller.SendAsync("Error", $"Failed to unpin message: {ex.Message}");
+        }
+    }
 }
 

@@ -84,6 +84,11 @@ public class AppDbContext : DbContext
                 .HasForeignKey(m => m.AuthorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(m => m.PinnedByUser)
+                .WithMany()
+                .HasForeignKey(m => m.PinnedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             entity.HasIndex(m => m.ChannelId);
             entity.HasIndex(m => m.CreatedAt);
 
