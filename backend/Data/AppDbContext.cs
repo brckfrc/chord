@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<Channel> Channels { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<MessageReaction> MessageReactions { get; set; }
+    public DbSet<ChannelReadState> ChannelReadStates { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -116,6 +117,33 @@ public class AppDbContext : DbContext
             entity.HasIndex(mr => mr.CreatedAt);
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // ChannelReadState configuration (composite key)
+        modelBuilder.Entity<ChannelReadState>(entity =>
+        {
+            entity.HasKey(crs => new { crs.UserId, crs.ChannelId });
+
+            entity.HasOne(crs => crs.User)
+                .WithMany()
+                .HasForeignKey(crs => crs.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(crs => crs.Channel)
+                .WithMany()
+                .HasForeignKey(crs => crs.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(crs => crs.LastReadMessage)
+                .WithMany()
+                .HasForeignKey(crs => crs.LastReadMessageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(crs => crs.ChannelId);
+            entity.HasIndex(crs => crs.UserId);
+            entity.HasIndex(crs => crs.LastReadAt);
+
+            entity.Property(e => e.LastReadAt).HasDefaultValueSql("GETUTCDATE()");
         });
     }
 }

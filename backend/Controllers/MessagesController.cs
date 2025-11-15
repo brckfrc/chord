@@ -12,11 +12,16 @@ namespace ChordAPI.Controllers;
 public class MessagesController : ControllerBase
 {
     private readonly IMessageService _messageService;
+    private readonly IReadStateService _readStateService;
     private readonly ILogger<MessagesController> _logger;
 
-    public MessagesController(IMessageService messageService, ILogger<MessagesController> logger)
+    public MessagesController(
+        IMessageService messageService,
+        IReadStateService readStateService,
+        ILogger<MessagesController> logger)
     {
         _messageService = messageService;
+        _readStateService = readStateService;
         _logger = logger;
     }
 
@@ -204,6 +209,80 @@ public class MessagesController : ControllerBase
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var pinnedMessages = await _messageService.GetPinnedMessagesAsync(channelId, userId);
             return Ok(pinnedMessages);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    /// <summary>
+    /// Mark a channel as read (update last read position)
+    /// </summary>
+    [HttpPost("mark-read")]
+    public async Task<IActionResult> MarkChannelAsRead(
+        Guid channelId,
+        [FromQuery] Guid? messageId = null)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await _readStateService.MarkChannelAsReadAsync(channelId, userId, messageId);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    /// <summary>
+    /// Get unread message count for a channel
+    /// </summary>
+    [HttpGet("unread-count")]
+    public async Task<ActionResult<UnreadCountDto>> GetUnreadCount(Guid channelId)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var unreadCount = await _readStateService.GetUnreadCountAsync(channelId, userId);
+            return Ok(unreadCount);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    /// <summary>
+    /// Get the last read message ID for a channel (for "jump to unread" feature)
+    /// </summary>
+    [HttpGet("last-read")]
+    public async Task<ActionResult<object>> GetLastReadMessage(Guid channelId)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var unreadInfo = await _readStateService.GetUnreadCountAsync(channelId, userId);
+            
+            return Ok(new
+            {
+                channelId = channelId,
+                lastReadMessageId = unreadInfo.LastReadMessageId,
+                unreadCount = unreadInfo.UnreadCount
+            });
         }
         catch (KeyNotFoundException ex)
         {

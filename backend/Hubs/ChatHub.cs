@@ -11,12 +11,18 @@ public class ChatHub : Hub
 {
     private readonly IMessageService _messageService;
     private readonly IReactionService _reactionService;
+    private readonly IReadStateService _readStateService;
     private readonly ILogger<ChatHub> _logger;
 
-    public ChatHub(IMessageService messageService, IReactionService reactionService, ILogger<ChatHub> logger)
+    public ChatHub(
+        IMessageService messageService,
+        IReactionService reactionService,
+        IReadStateService readStateService,
+        ILogger<ChatHub> logger)
     {
         _messageService = messageService;
         _reactionService = reactionService;
+        _readStateService = readStateService;
         _logger = logger;
     }
 
@@ -90,6 +96,18 @@ public class ChatHub : Hub
         try
         {
             var message = await _messageService.CreateMessageAsync(Guid.Parse(channelId), userId, dto);
+
+            // Auto-mark channel as read for the sender (optional feature)
+            try
+            {
+                await _readStateService.MarkChannelAsReadAsync(Guid.Parse(channelId), userId, message.Id);
+            }
+            catch (Exception ex)
+            {
+                // Log but don't fail the message send if read state update fails
+                _logger.LogWarning(ex, "Failed to auto-update read state for user {UserId} in channel {ChannelId}",
+                    userId, channelId);
+            }
 
             // Broadcast to all users in the channel (including sender)
             await Clients.Group(channelId).SendAsync("ReceiveMessage", message);

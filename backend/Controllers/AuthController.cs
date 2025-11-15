@@ -11,11 +11,16 @@ namespace ChordAPI.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IReadStateService _readStateService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(
+        IAuthService authService,
+        IReadStateService readStateService,
+        ILogger<AuthController> logger)
     {
         _authService = authService;
+        _readStateService = readStateService;
         _logger = logger;
     }
 
@@ -138,6 +143,34 @@ public class AuthController : ControllerBase
         // (delete tokens from storage)
         // Optionally, you could invalidate the refresh token in the database here
         return Ok(new { message = "Logged out successfully" });
+    }
+
+    /// <summary>
+    /// Get unread message summary for all channels
+    /// </summary>
+    [HttpGet("me/unread-summary")]
+    [Authorize]
+    [ProducesResponseType(typeof(UnreadSummaryDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UnreadSummaryDto>> GetUnreadSummary()
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                ?? User.FindFirst("sub")?.Value;
+
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(new { message = "Invalid token" });
+            }
+
+            var summary = await _readStateService.GetUnreadSummaryAsync(userId);
+            return Ok(summary);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving unread summary");
+            return StatusCode(500, new { message = "An error occurred" });
+        }
     }
 }
 
