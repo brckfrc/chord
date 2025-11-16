@@ -78,7 +78,7 @@ export function Login() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <div className="space-y-2">
             <label htmlFor="emailOrUsername" className="text-sm font-medium">
               Email or Username
