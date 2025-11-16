@@ -128,10 +128,10 @@ export function FriendsSidebar() {
     return (
         <div className="w-60 bg-secondary flex flex-col h-full">
             {/* FRIENDS Button */}
-            <button
+            <div
                 onClick={handleFriendsClick}
                 className={cn(
-                    "h-12 px-4 flex items-center justify-between border-b border-border shadow-sm transition-colors flex-shrink-0",
+                    "h-12 px-4 flex items-center justify-between border-b border-border shadow-sm transition-colors flex-shrink-0 cursor-pointer",
                     isFriendsActive
                         ? "bg-accent text-foreground"
                         : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
@@ -153,7 +153,7 @@ export function FriendsSidebar() {
                 >
                     <Hash className="h-4 w-4" />
                 </Button>
-            </button>
+            </div>
 
             {/* Direct Messages Section */}
             <div className="flex-1 overflow-y-auto min-h-0">

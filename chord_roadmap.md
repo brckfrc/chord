@@ -349,17 +349,17 @@
 - ✅ Voice channel presence UI hazır
 - ✅ User actions (mute/deafen) UI hazır
 - ✅ User moderation UI hazır (UserVoiceModal)
-- ⏳ SignalR integration bekleniyor (FAZ 6'da eklenecek)
+- ✅ SignalR integration tamamlandı (FAZ 6'da eklendi)
 
-**SignalR Integration TODO'lar (FAZ 6'da eklenecek):**
+**SignalR Integration (FAZ 6'da tamamlandı):**
 
-- [ ] ChatHub.JoinVoiceChannel invoke (voice channel'a join)
-- [ ] ChatHub.LeaveVoiceChannel invoke (voice channel'dan leave)
-- [ ] ChatHub.UpdateVoiceState invoke (mute/deafen toggle)
-- [ ] ChatHub event listeners:
-  - [ ] UserJoinedVoiceChannel (add user to list)
-  - [ ] UserLeftVoiceChannel (remove user from list)
-  - [ ] UserVoiceStateChanged (update mute/deafen status)
+- [x] ChatHub.JoinVoiceChannel invoke (voice channel'a join) ✅
+- [x] ChatHub.LeaveVoiceChannel invoke (voice channel'dan leave) ✅
+- [x] ChatHub.UpdateVoiceState invoke (mute/deafen toggle) ✅
+- [x] ChatHub event listeners:
+  - [x] UserJoinedVoiceChannel (add user to list) ✅
+  - [x] UserLeftVoiceChannel (remove user from list) ✅
+  - [x] UserVoiceStateChanged (update user mute/deafen state) ✅
 - [ ] ChatHub moderation methods (FAZ 9'da permissions ile):
   - [ ] MuteUser (admin/owner only)
   - [ ] DeafenUser (admin/owner only)
@@ -373,7 +373,7 @@
 - ✅ **Single voice limit**: Only one voice channel active at a time
 - ✅ **Background presence**: Voice channel works in background, doesn't affect text channel viewing
 - ✅ **State management**: Redux tracks activeVoiceChannelId and voiceChannelUsers
-- 🔜 **SignalR integration**: FAZ 6'da real-time updates eklenecek
+- ✅ **SignalR integration**: FAZ 6'da real-time updates eklendi
 - 🔜 **WebRTC streaming**: FAZ 8'de actual audio streaming eklenecek
 
 ---
@@ -381,73 +381,97 @@
 ## 🏗️ FAZ 5.5: GUILD INVITES ⭐ YENİ
 
 **Süre**: ~1 gün  
-**DURUM**: ⏳ Başlanmadı  
+**DURUM**: ✅ %100 TAMAMLANDI  
 **Neden bu aşamada**: Frontend'de guild yönetimi UI'ı hazır olunca link paylaşımı test edilebilir
 
 ### Backend Görevler
 
-- [ ] GuildInvite entity (Id, Code, GuildId, CreatedByUserId, CreatedAt, ExpiresAt, MaxUses, Uses)
-- [ ] Unique index: Code (8 karakterlik random: "abc123XY")
-- [ ] API: POST /guilds/{id}/invites (create invite)
-- [ ] GET /invites/{code} (get invite info - public endpoint)
-- [ ] POST /invites/{code}/accept (join guild via invite)
-- [ ] GET /guilds/{id}/invites (list guild invites)
-- [ ] DELETE /invites/{id} (revoke invite)
-- [ ] Validation: Max uses, expiry check, already member check
-- [ ] Migration: CreateGuildInvitesTable
+- [x] GuildInvite entity (Id, Code, GuildId, CreatedByUserId, CreatedAt, ExpiresAt, MaxUses, Uses) ✅
+- [x] Unique index: Code (8 karakterlik random: "abc123XY") ✅
+- [x] API: POST /invites/guilds/{id} (create invite) ✅
+- [x] GET /invites/{code} (get invite info - public endpoint) ✅
+- [x] POST /invites/{code}/accept (join guild via invite) ✅
+- [x] GET /invites/guilds/{id} (list guild invites) ✅
+- [x] DELETE /invites/{id} (revoke invite) ✅
+- [x] Validation: Max uses, expiry check, already member check ✅
+- [x] Migration: CreateGuildInvitesTable ✅
+- [x] InviteService: CreateInviteAsync, GetInviteByCodeAsync, AcceptInviteAsync, GetGuildInvitesAsync, RevokeInviteAsync ✅
+- [x] DTOs: CreateInviteDto, InviteResponseDto, InviteInfoDto ✅
 
 ### Frontend Görevler
 
-- [ ] InviteModal component (create invite form: expiry, max uses)
-- [ ] InviteList component (guild settings'te aktif inviteler)
-- [ ] InviteAcceptPage (/invite/:code route)
-- [ ] Copy invite link butonu
-- [ ] Toast notifications (invite created, copied, accepted)
-- [ ] Invite preview card (guild name, icon, member count)
+- [x] InviteModal component (create invite form: expiry, max uses) ✅
+- [x] InviteAcceptPage (/invite/:code route) ✅
+- [x] Copy invite link butonu ✅
+- [x] Toast notifications (invite created, copied, accepted) ✅
+- [x] Invite preview card (guild name, icon, member count, created by username) ✅
+- [x] ChannelSidebar'da "Invite People" butonu ✅
+- [x] CreateGuildModal'a "Join Guild" tab'ı eklendi (invite code ile katılma) ✅
+- [x] Login/Register sonrası invite code korunuyor ve invite sayfasına yönlendiriliyor ✅
+- [x] Invite ekranında davet eden kişi bilgisi gösteriliyor ✅
 
 ### Deliverables
 
 ✅ Invite link oluşturma çalışıyor  
 ✅ Link ile guild'e katılma çalışıyor  
 ✅ Expiry ve max uses limitleri doğru çalışıyor  
-✅ Frontend'de davet yönetimi UI'ı tamamlandı
+✅ Frontend'de davet yönetimi UI'ı tamamlandı  
+✅ CreateGuildModal'dan invite code ile guild'e katılma özelliği eklendi  
+✅ Login/Register akışında invite code korunuyor  
+✅ Invite ekranında davet eden kişi bilgisi gösteriliyor
 
 ---
 
 ## 🏗️ FAZ 6: FRONTEND MESSAGING & SIGNALR
 
 **Süre**: ~1.5 hafta
+**DURUM**: ✅ %100 TAMAMLANDI
 
 ### Görevler
 
-- [ ] SignalR connection hook (useSignalR)
-- [ ] ChatHub event listeners (ReceiveMessage, MessageEdited, MessageDeleted, UserTyping)
-- [ ] PresenceHub event listeners (UserOnline, UserOffline)
-- [ ] **Voice Channel SignalR Integration:**
-  - [ ] ChatHub.JoinVoiceChannel invoke (on voice channel click)
-  - [ ] ChatHub.LeaveVoiceChannel invoke (on disconnect or channel switch)
-  - [ ] ChatHub.UpdateVoiceState invoke (on mute/deafen toggle)
-  - [ ] ChatHub event listeners:
-    - [ ] UserJoinedVoiceChannel (add user to voiceChannelUsers)
-    - [ ] UserLeftVoiceChannel (remove user from voiceChannelUsers)
-    - [ ] UserVoiceStateChanged (update user mute/deafen state)
-- [ ] MessageList component (infinite scroll, auto-scroll to bottom)
-- [ ] MessageItem component (avatar, content, edit/delete buttons, timestamp)
-- [ ] MessageComposer component (textarea, enter to send, typing trigger)
-- [ ] Messages Redux slice (messagesByChannel state yönetimi)
-- [ ] ChannelView page (header, message list, composer layout)
-- [ ] JoinChannel/LeaveChannel invoke (route değişiminde)
-- [ ] Typing indicator UI
-- [ ] MemberList component (online kullanıcılar - opsiyonel)
-- [ ] Pagination/load more logic
+- [x] SignalR connection hook (useSignalR + useSignalRConnectionManager) ✅
+- [x] ChatHub event listeners (ReceiveMessage, MessageEdited, MessageDeleted, UserTyping) ✅
+- [x] PresenceHub event listeners (UserOnline, UserOffline, UserStatusChanged, StatusUpdated) ✅
+- [x] **Voice Channel SignalR Integration:**
+  - [x] ChatHub.JoinVoiceChannel invoke (on voice channel click) ✅
+  - [x] ChatHub.LeaveVoiceChannel invoke (on disconnect or channel switch) ✅
+  - [x] ChatHub.UpdateVoiceState invoke (on mute/deafen toggle) ✅
+  - [x] ChatHub event listeners:
+    - [x] UserJoinedVoiceChannel (add user to voiceChannelUsers) ✅
+    - [x] UserLeftVoiceChannel (remove user from voiceChannelUsers) ✅
+    - [x] UserVoiceStateChanged (update user mute/deafen state) ✅
+- [x] MessageList component (infinite scroll, pagination, message grouping) ✅
+- [x] MessageItem component (Discord-like grouping, avatar, content, edit/delete buttons, timestamp formatting) ✅
+- [x] MessageComposer component (textarea, enter to send, typing trigger) ✅
+- [x] Messages Redux slice (messagesByChannel, typingUsers state yönetimi) ✅
+- [x] ChannelView page (header, message list, composer layout) ✅
+- [x] JoinChannel/LeaveChannel invoke (route değişiminde) ✅
+- [x] Typing indicator UI ✅
+- [x] MemberList component (guild members with online/offline status, role sorting) ✅
+- [x] Pagination/load more logic (cursor-based) ✅
+
+### Ek Özellikler (Bonus)
+
+- [x] **Status Preservation**: User status (Idle, DND, Invisible) preserved on browser close/reopen ✅
+- [x] **Message Grouping**: Discord-like message grouping (same user consecutive messages within 5 minutes) ✅
+- [x] **Message Timestamp Formatting**: Same day → time only, different day → date + time ✅
+- [x] **Status Update Modal**: Quick status change modal (upward-opening) ✅
+- [x] **User Settings Modal**: Categorized settings modal (My Account, Voice & Video, etc.) ✅
+- [x] **Rate Limiting Optimizations**: Redux caching for guild members/channels, SignalR connection manager ✅
+- [x] **Delete Message Modal**: Custom confirmation modal (replaces browser confirm) ✅
+- [x] **Invisible Status Handling**: Invisible users appear as Offline to others ✅
+- [x] **DND Status Grouping**: Do Not Disturb users grouped under Online category ✅
 
 ### Deliverables
 
-✅ Mesajlar listeleniyor  
+✅ Mesajlar listeleniyor (Discord-like grouping)  
 ✅ Gerçek zamanlı mesaj gönderme/alma çalışıyor  
-✅ Edit/delete çalışıyor  
+✅ Edit/delete çalışıyor (SignalR instant updates)  
 ✅ Typing indicator görünüyor  
-✅ Online kullanıcılar görünüyor
+✅ Online kullanıcılar görünüyor (MemberList)  
+✅ Voice channel SignalR integration tamamlandı  
+✅ Status preservation çalışıyor  
+✅ Message timestamp formatting çalışıyor
 
 ---
 
@@ -751,37 +775,36 @@
 3. **Faz 4** ✅ Frontend temel yapı + auth UI
 4. **Faz 5** ✅ Frontend Guild & Channel UI
 5. **Faz 5.3** ✅ Voice Channel UI Infrastructure
-6. **Faz 6** 🟡 **ŞİMDİ YAPILACAK** → Frontend Messaging & SignalR Integration
-7. **Faz 5.5, 6.5** → Guild invites, Mentions (frontend hazır olduktan sonra)
-8. **Faz 7-8** → File upload, voice channels (WebRTC)
-9. **Faz 9-9.5** → Permissions + DMs + Friends
-10. **Faz 10-11** → Testing, audit log, notifications, security
-11. **Faz 12** → Production deployment
+6. **Faz 6** ✅ Frontend Messaging & SignalR Integration
+7. **Faz 5.5** ✅ Guild Invites
+8. **Faz 6.5** 🟡 **ŞİMDİ YAPILACAK** → Mentions & Notifications
+9. **Faz 7-8** → File upload, voice channels (WebRTC)
+10. **Faz 9-9.5** → Permissions + DMs + Friends
+11. **Faz 10-11** → Testing, audit log, notifications, security
+12. **Faz 12** → Production deployment
 
 ---
 
-## 🚀 SONRAKİ ADIM: FAZ 6
+## 🚀 SONRAKİ ADIM: FAZ 6.5
 
 **Hemen yapılacaklar:**
 
-1. SignalR connection hook (useSignalR)
-2. ChatHub event listeners (ReceiveMessage, MessageEdited, MessageDeleted, UserTyping)
-3. PresenceHub event listeners (UserOnline, UserOffline)
-4. Voice Channel SignalR Integration:
-   - ChatHub.JoinVoiceChannel invoke
-   - ChatHub.LeaveVoiceChannel invoke
-   - ChatHub.UpdateVoiceState invoke
-   - Event listeners (UserJoinedVoiceChannel, UserLeftVoiceChannel, UserVoiceStateChanged)
-5. MessageList component (infinite scroll, auto-scroll to bottom)
-6. MessageItem component (avatar, content, edit/delete buttons, timestamp)
-7. MessageComposer component (textarea, enter to send, typing trigger)
-8. Messages Redux slice (messagesByChannel state yönetimi)
-9. ChannelView page (header, message list, composer layout)
-10. JoinChannel/LeaveChannel invoke (route değişiminde)
-11. Typing indicator UI
+### FAZ 6.5: Mentions & Notifications
+1. MessageMention entity ve migration
+2. Backend mention parsing logic (extract @username from message content)
+3. Backend API endpoints:
+   - GET /users/me/mentions?unread=true
+   - PATCH /mentions/{id}/mark-read
+4. ChatHub: UserMentioned event (SignalR)
+5. Frontend @mention autocomplete (MessageComposer'da @ yazınca guild members)
+6. MessageItem: Mention highlight (blue background)
+7. MentionsPanel component (unread mentions listesi)
+8. Badge on user avatar (unread mention count)
+9. Browser notification (Notification API)
+10. Click to jump to mentioned message
 
-**Tahmini süre**: ~1.5 hafta  
-**Test edilebilir**: Mesajlar gerçek zamanlı gönderilecek/alınacak, voice channel presence çalışacak
+**Tahmini süre**: ~1-2 gün  
+**Test edilebilir**: @mention bildirimleri gönderilecek, unread mentions listesi çalışacak
 
 ---
 

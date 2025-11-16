@@ -1,13 +1,17 @@
 import { useAppSelector } from "@/store/hooks"
+import { useMemo } from "react"
 
 interface TypingIndicatorProps {
   channelId: string
 }
 
 export function TypingIndicator({ channelId }: TypingIndicatorProps) {
-  const typingUsers = useAppSelector(
-    (state) => state.messages.typingUsers[channelId] || []
-  )
+  // Get typing users for this channel - memoize to prevent unnecessary rerenders
+  const typingUsersByChannel = useAppSelector((state) => state.messages.typingUsers)
+  
+  const typingUsers = useMemo(() => {
+    return typingUsersByChannel[channelId] || []
+  }, [typingUsersByChannel, channelId])
 
   if (typingUsers.length === 0) {
     return null

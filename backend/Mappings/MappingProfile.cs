@@ -29,6 +29,21 @@ public class MappingProfile : Profile
         CreateMap<MessageReaction, ReactionResponseDto>()
             .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.User.Username))
             .ForMember(dest => dest.DisplayName, opt => opt.MapFrom(src => src.User.DisplayName));
+
+        // GuildInvite mappings
+        CreateMap<GuildInvite, InviteResponseDto>()
+            .ForMember(dest => dest.GuildName, opt => opt.MapFrom(src => src.Guild.Name))
+            .ForMember(dest => dest.GuildIconUrl, opt => opt.MapFrom(src => src.Guild.IconUrl))
+            .ForMember(dest => dest.CreatedByUsername, opt => opt.MapFrom(src => src.CreatedByUser.Username));
+
+        CreateMap<GuildInvite, InviteInfoDto>()
+            .ForMember(dest => dest.GuildName, opt => opt.MapFrom(src => src.Guild.Name))
+            .ForMember(dest => dest.GuildIconUrl, opt => opt.MapFrom(src => src.Guild.IconUrl))
+            .ForMember(dest => dest.GuildDescription, opt => opt.MapFrom(src => src.Guild.Description))
+            .ForMember(dest => dest.CreatedByUsername, opt => opt.MapFrom(src => src.CreatedByUser.Username))
+            .ForMember(dest => dest.MemberCount, opt => opt.Ignore())
+            .ForMember(dest => dest.IsExpired, opt => opt.Ignore())
+            .ForMember(dest => dest.IsMaxUsesReached, opt => opt.Ignore());
     }
 }
 

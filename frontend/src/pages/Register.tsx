@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useNavigate, Link } from "react-router-dom"
+import { useNavigate, Link, useSearchParams } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -37,6 +37,8 @@ type RegisterFormData = z.infer<typeof registerSchema>
 
 export function Register() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const inviteCode = searchParams.get("invite")
   const dispatch = useAppDispatch()
   const { isLoading, error, isAuthenticated } = useAppSelector(
     (state) => state.auth
@@ -53,9 +55,14 @@ export function Register() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/me", { replace: true })
+      // If invite code exists, redirect to invite page, otherwise to /me
+      if (inviteCode) {
+        navigate(`/invite/${inviteCode}`, { replace: true })
+      } else {
+        navigate("/me", { replace: true })
+      }
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate, inviteCode])
 
   useEffect(() => {
     if (error) {
@@ -76,7 +83,7 @@ export function Register() {
         title: "Success",
         description: "Account created successfully",
       })
-      navigate("/me", { replace: true })
+      // Navigation is handled in useEffect
     }
   }
 
@@ -189,7 +196,7 @@ export function Register() {
         <div className="text-center text-sm">
           <span className="text-muted-foreground">Already have an account? </span>
           <Link
-            to="/login"
+            to={inviteCode ? `/login?invite=${inviteCode}` : "/login"}
             className="font-medium text-primary hover:underline"
           >
             Sign in

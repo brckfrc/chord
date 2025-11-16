@@ -63,6 +63,7 @@ builder.Services.AddAutoMapper(typeof(Program));
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IGuildService, GuildService>();
+builder.Services.AddScoped<IInviteService, InviteService>();
 builder.Services.AddScoped<IChannelService, ChannelService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IReactionService, ReactionService>();

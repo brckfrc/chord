@@ -13,8 +13,9 @@ import { useSignalR } from "@/hooks/useSignalR"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { CreateChannelModal } from "@/components/modals/CreateChannelModal"
+import { InviteModal } from "@/components/modals/InviteModal"
 import { ChannelType } from "@/lib/api/channels"
-import { Hash, Mic, Plus } from "lucide-react"
+import { Hash, Mic, Plus, UserPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { VoiceChannelUsers } from "./VoiceChannelUsers"
 
@@ -28,6 +29,7 @@ export function ChannelSidebar() {
     )
     const { user: currentUser } = useAppSelector((state) => state.auth)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
     const [defaultChannelType, setDefaultChannelType] = useState<ChannelType>(ChannelType.Text)
 
     // SignalR connection for ChatHub
@@ -137,10 +139,19 @@ export function ChannelSidebar() {
     return (
         <div className="w-60 bg-secondary flex flex-col h-full">
             {/* Guild Header */}
-            <div className="h-12 px-4 flex items-center border-b border-border shadow-sm flex-shrink-0">
+            <div className="h-12 px-4 flex items-center justify-between border-b border-border shadow-sm flex-shrink-0 group">
                 <h2 className="text-sm font-semibold text-foreground truncate">
                     {activeGuild?.name || "Guild"}
                 </h2>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                    onClick={() => setIsInviteModalOpen(true)}
+                    title="Invite People"
+                >
+                    <UserPlus className="h-4 w-4" />
+                </Button>
             </div>
 
             {/* Channels List */}
@@ -255,6 +266,14 @@ export function ChannelSidebar() {
                 guildId={activeGuildId}
                 defaultChannelType={defaultChannelType}
             />
+
+            {activeGuildId && (
+                <InviteModal
+                    open={isInviteModalOpen}
+                    onOpenChange={setIsInviteModalOpen}
+                    guildId={activeGuildId}
+                />
+            )}
         </div>
     )
 }

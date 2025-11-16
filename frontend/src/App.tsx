@@ -17,6 +17,7 @@ import { FriendsHome } from "@/pages/FriendsHome"
 import { DMView } from "@/pages/DMView"
 import { GuildView } from "@/pages/GuildView"
 import { ChannelView } from "@/pages/ChannelView"
+import { InviteAcceptPage } from "@/pages/InviteAcceptPage"
 
 function AppContent() {
   const location = useLocation()
@@ -120,6 +121,10 @@ function AppContent() {
                 </MainLayout>
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/invite/:code"
+            element={<InviteAcceptPage />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

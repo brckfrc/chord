@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useNavigate, Link } from "react-router-dom"
+import { useNavigate, Link, useSearchParams } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -19,6 +19,8 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 export function Login() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const inviteCode = searchParams.get("invite")
   const dispatch = useAppDispatch()
   const { isLoading, error, isAuthenticated } = useAppSelector(
     (state) => state.auth
@@ -35,9 +37,14 @@ export function Login() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/me", { replace: true })
+      // If invite code exists, redirect to invite page, otherwise to /me
+      if (inviteCode) {
+        navigate(`/invite/${inviteCode}`, { replace: true })
+      } else {
+        navigate("/me", { replace: true })
+      }
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate, inviteCode])
 
   useEffect(() => {
     if (error) {
@@ -57,7 +64,7 @@ export function Login() {
         title: "Success",
         description: "Logged in successfully",
       })
-      navigate("/me", { replace: true })
+      // Navigation is handled in useEffect
     }
   }
 
@@ -119,7 +126,7 @@ export function Login() {
         <div className="text-center text-sm">
           <span className="text-muted-foreground">Don't have an account? </span>
           <Link
-            to="/register"
+            to={inviteCode ? `/register?invite=${inviteCode}` : "/register"}
             className="font-medium text-primary hover:underline"
           >
             Sign up

@@ -8,6 +8,7 @@ class SignalRConnectionManager {
   private connections: Map<string, signalR.HubConnection> = new Map();
   private connectionStates: Map<string, "Disconnected" | "Connecting" | "Connected" | "Reconnecting"> = new Map();
   private subscribers: Map<string, Set<() => void>> = new Map();
+  private connectingPromises: Map<string, Promise<signalR.HubConnection>> = new Map();
 
   getConnection(hubUrl: string): signalR.HubConnection | null {
     return this.connections.get(hubUrl) || null;
@@ -27,9 +28,17 @@ class SignalRConnectionManager {
       return existingConnection;
     }
 
+    // If connection is already being created, wait for that promise instead of creating a new one
+    const existingPromise = this.connectingPromises.get(hubUrl);
+    if (existingPromise) {
+      return existingPromise;
+    }
+
     // If connection exists but is not connected, stop it first
     if (existingConnection) {
       await existingConnection.stop().catch(console.error);
+      this.connections.delete(hubUrl);
+      this.connectionStates.delete(hubUrl);
     }
 
     const token = getAccessToken();
@@ -37,6 +46,24 @@ class SignalRConnectionManager {
       throw new Error("No access token available");
     }
 
+    // Create connection promise
+    const connectionPromise = this._createConnectionInternal(hubUrl, getAccessToken);
+    this.connectingPromises.set(hubUrl, connectionPromise);
+
+    try {
+      const connection = await connectionPromise;
+      this.connectingPromises.delete(hubUrl);
+      return connection;
+    } catch (err) {
+      this.connectingPromises.delete(hubUrl);
+      throw err;
+    }
+  }
+
+  private async _createConnectionInternal(
+    hubUrl: string,
+    getAccessToken: () => string | null
+  ): Promise<signalR.HubConnection> {
     // Create new connection
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${API_BASE_URL}${hubUrl}`, {
@@ -57,33 +84,40 @@ class SignalRConnectionManager {
 
     // Connection state handlers
     connection.onclose((error) => {
-      this.connectionStates.set(hubUrl, "Disconnected");
-      this.notifySubscribers(hubUrl);
+      // Only update state if this is still the active connection
+      if (this.connections.get(hubUrl) === connection) {
+        this.connectionStates.set(hubUrl, "Disconnected");
+        this.notifySubscribers(hubUrl);
+      }
     });
 
     connection.onreconnecting((error) => {
-      this.connectionStates.set(hubUrl, "Reconnecting");
-      this.notifySubscribers(hubUrl);
+      if (this.connections.get(hubUrl) === connection) {
+        this.connectionStates.set(hubUrl, "Reconnecting");
+        this.notifySubscribers(hubUrl);
+      }
     });
 
     connection.onreconnected((connectionId) => {
-      this.connectionStates.set(hubUrl, "Connected");
-      this.notifySubscribers(hubUrl);
+      if (this.connections.get(hubUrl) === connection) {
+        this.connectionStates.set(hubUrl, "Connected");
+        this.notifySubscribers(hubUrl);
+      }
     });
 
     // Start connection
     try {
       await connection.start();
-      this.connectionStates.set(hubUrl, "Connected");
-      this.notifySubscribers(hubUrl);
-      if (onStateChange) {
-        onStateChange("Connected");
+      // Double-check that this is still the active connection
+      if (this.connections.get(hubUrl) === connection) {
+        this.connectionStates.set(hubUrl, "Connected");
+        this.notifySubscribers(hubUrl);
       }
     } catch (err) {
-      this.connectionStates.set(hubUrl, "Disconnected");
-      this.notifySubscribers(hubUrl);
-      if (onStateChange) {
-        onStateChange("Disconnected");
+      // Only update state if this is still the active connection
+      if (this.connections.get(hubUrl) === connection) {
+        this.connectionStates.set(hubUrl, "Disconnected");
+        this.notifySubscribers(hubUrl);
       }
       throw err;
     }
@@ -123,6 +157,7 @@ class SignalRConnectionManager {
       this.connections.delete(hubUrl);
       this.connectionStates.delete(hubUrl);
       this.subscribers.delete(hubUrl);
+      this.connectingPromises.delete(hubUrl);
     }
   }
 

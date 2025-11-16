@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Guild> Guilds { get; set; }
     public DbSet<GuildMember> GuildMembers { get; set; }
+    public DbSet<GuildInvite> GuildInvites { get; set; }
     public DbSet<Channel> Channels { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<MessageReaction> MessageReactions { get; set; }
@@ -144,6 +145,28 @@ public class AppDbContext : DbContext
             entity.HasIndex(crs => crs.LastReadAt);
 
             entity.Property(e => e.LastReadAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // GuildInvite configuration
+        modelBuilder.Entity<GuildInvite>(entity =>
+        {
+            entity.HasIndex(e => e.Code).IsUnique();
+
+            entity.HasOne(i => i.Guild)
+                .WithMany()
+                .HasForeignKey(i => i.GuildId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(i => i.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(i => i.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(i => i.GuildId);
+            entity.HasIndex(i => i.CreatedByUserId);
+            entity.HasIndex(i => i.CreatedAt);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
     }
 }

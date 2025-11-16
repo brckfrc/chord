@@ -41,35 +41,72 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
       return;
     }
 
+    let isMounted = true;
+    let unsubscribe: (() => void) | null = null;
+
     // Get or create connection
-    let connection = connectionManager.getConnection(hubUrl);
+    const existingConnection = connectionManager.getConnection(hubUrl);
+    const existingState = connectionManager.getConnectionState(hubUrl);
     
-    if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
-      // Create connection via manager
+    if (existingConnection && existingState === "Connected") {
+      // Connection already exists and is connected
+      if (isMounted) {
+        connectionStateRef.current = "Connected";
+        setConnectionState("Connected");
+        setError(null);
+      }
+    } else if (existingState === "Connecting") {
+      // Connection is already being created, wait for it
       connectionManager
         .createConnection(hubUrl, getAccessToken)
         .then((conn) => {
-          connection = conn;
-          connectionStateRef.current = "Connected";
-          setConnectionState("Connected");
-          setError(null);
-          optionsRef.current.onConnected?.();
+          if (isMounted) {
+            connectionStateRef.current = "Connected";
+            setConnectionState("Connected");
+            setError(null);
+            optionsRef.current.onConnected?.();
+          }
         })
         .catch((err) => {
-          connectionStateRef.current = "Disconnected";
-          setConnectionState("Disconnected");
-          setError(err.message || "Failed to connect");
-          console.error("SignalR connection error:", err);
+          if (isMounted) {
+            connectionStateRef.current = "Disconnected";
+            setConnectionState("Disconnected");
+            setError(err.message || "Failed to connect");
+            // Only log non-abort errors (abort errors are expected during React Strict Mode)
+            if (!err.message?.includes("stopped during negotiation") && !err.message?.includes("AbortError")) {
+              console.error("SignalR connection error:", err);
+            }
+          }
         });
     } else {
-      // Connection already exists and is connected
-      connectionStateRef.current = "Connected";
-      setConnectionState("Connected");
-      setError(null);
+      // Create new connection
+      connectionManager
+        .createConnection(hubUrl, getAccessToken)
+        .then((conn) => {
+          if (isMounted) {
+            connectionStateRef.current = "Connected";
+            setConnectionState("Connected");
+            setError(null);
+            optionsRef.current.onConnected?.();
+          }
+        })
+        .catch((err) => {
+          if (isMounted) {
+            connectionStateRef.current = "Disconnected";
+            setConnectionState("Disconnected");
+            setError(err.message || "Failed to connect");
+            // Only log non-abort errors (abort errors are expected during React Strict Mode)
+            if (!err.message?.includes("stopped during negotiation") && !err.message?.includes("AbortError")) {
+              console.error("SignalR connection error:", err);
+            }
+          }
+        });
     }
 
     // Subscribe to connection state changes
-    const unsubscribe = connectionManager.subscribe(hubUrl, () => {
+    unsubscribe = connectionManager.subscribe(hubUrl, () => {
+      if (!isMounted) return;
+      
       const state = connectionManager.getConnectionState(hubUrl);
       const prevState = connectionStateRef.current;
       connectionStateRef.current = state;
@@ -89,10 +126,12 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
       }
     });
 
-    // Cleanup - don't stop connection on unmount, let manager handle it
-    // Connection will be stopped when no components are using it
+    // Cleanup
     return () => {
-      unsubscribe();
+      isMounted = false;
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [isAuthenticated, user, hubUrl, getAccessToken]);
 
