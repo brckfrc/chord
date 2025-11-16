@@ -163,13 +163,14 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseSerilogRequestLogging();
 
+// CORS must be before rate limiting and authentication
+app.UseCors("AllowFrontend");
+
 // Global exception handler
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Rate limiting
 app.UseMiddleware<RateLimitingMiddleware>();
-
-app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

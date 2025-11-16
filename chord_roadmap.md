@@ -193,44 +193,51 @@
 ## 🏗️ FAZ 3.5: CORE UX FEATURES ⭐ YENİ
 
 **Süre**: ~2-3 gün  
-**DURUM**: ⏳ Başlanmadı  
+**DURUM**: ✅ %100 TAMAMLANDI  
 **Neden şimdi**: Kolay implement + Frontend öncesi data model hazır olmalı + Discord temel özellikleri
 
 ### Görevler
 
 #### 1. 😊 Message Reactions
-- [ ] MessageReaction entity (MessageId, UserId, Emoji, CreatedAt)
-- [ ] Unique index: (MessageId, UserId, Emoji)
-- [ ] API: POST/DELETE /messages/{id}/reactions
-- [ ] GET /messages/{id}/reactions (grouped by emoji)
-- [ ] ChatHub events: ReactionAdded, ReactionRemoved
-- [ ] AutoMapper: ReactionResponseDto
-- [ ] Migration: CreateMessageReactionsTable
+
+- [x] MessageReaction entity (MessageId, UserId, Emoji, CreatedAt) ✅
+- [x] Unique index: (MessageId, UserId, Emoji) ✅
+- [x] API: POST/DELETE /messages/{id}/reactions ✅
+- [x] GET /messages/{id}/reactions (grouped by emoji) ✅
+- [x] ChatHub events: ReactionAdded, ReactionRemoved ✅
+- [x] AutoMapper: ReactionResponseDto ✅
+- [x] Migration: CreateMessageReactionsTable ✅
 
 #### 2. 📌 Pinned Messages
-- [ ] Message entity'ye 3 alan ekle: IsPinned, PinnedAt, PinnedByUserId
-- [ ] API: POST/DELETE /channels/{channelId}/messages/{messageId}/pin
-- [ ] GET /channels/{channelId}/pins (list pinned messages)
-- [ ] ChatHub events: MessagePinned, MessageUnpinned
-- [ ] Authorization: Sadece guild owner/admin pin yapabilir (şimdilik owner)
-- [ ] Migration: AddPinFieldsToMessages
+
+- [x] Message entity'ye 3 alan ekle: IsPinned, PinnedAt, PinnedByUserId ✅
+- [x] API: POST/DELETE /channels/{channelId}/messages/{messageId}/pin ✅
+- [x] GET /channels/{channelId}/pins (list pinned messages) ✅
+- [x] ChatHub events: MessagePinned, MessageUnpinned ✅
+- [x] Authorization: Sadece guild owner/admin pin yapabilir (şimdilik owner) ✅
+- [x] Migration: AddPinFieldsToMessages ✅
 
 #### 3. 📍 Unread Messages
-- [ ] ChannelReadState entity (UserId, ChannelId, LastReadMessageId, LastReadAt)
-- [ ] Composite key: (UserId, ChannelId)
-- [ ] API: POST /channels/{channelId}/mark-read
-- [ ] GET /channels/{channelId}/unread-count
-- [ ] GET /users/me/unread-summary (tüm unread'ler)
-- [ ] ChatHub: Auto-update read state on ReceiveMessage (optional)
-- [ ] Migration: CreateChannelReadStatesTable
+
+- [x] ChannelReadState entity (UserId, ChannelId, LastReadMessageId, LastReadAt) ✅
+- [x] Composite key: (UserId, ChannelId) ✅
+- [x] API: POST /channels/{channelId}/mark-read ✅
+- [x] GET /channels/{channelId}/unread-count ✅
+- [x] GET /users/me/unread-summary (tüm unread'ler) ✅
+- [x] ChatHub: Auto-update read state on ReceiveMessage (optional) ✅
+- [x] Migration: CreateChannelReadStatesTable ✅
+- [x] LastReadMessageId DTO'lara eklendi (jump to unread özelliği) ✅
+- [x] 99+ limit eklendi (performance) ✅
 
 #### 4. 👤 User Status & Custom Status
-- [ ] UserStatus enum (Online, Idle, DoNotDisturb, Invisible)
-- [ ] User entity'ye 2 alan: Status, CustomStatus
-- [ ] API: PATCH /users/me/status
-- [ ] PresenceHub: UpdateStatus method
-- [ ] Server → Client: UserStatusChanged event
-- [ ] Migration: AddStatusFieldsToUsers
+
+- [x] UserStatus enum (Online, Idle, DoNotDisturb, Invisible, Offline) ✅
+- [x] User entity'ye 2 alan: Status, CustomStatus ✅
+- [x] API: PATCH /users/me/status ✅
+- [x] PresenceHub: UpdateStatus method ✅
+- [x] Server → Client: UserStatusChanged event ✅
+- [x] Migration: AddStatusFieldsToUsers ✅
+- [x] Offline durumu eklendi (disconnect olduğunda otomatik) ✅
 
 ### Deliverables
 
@@ -251,20 +258,21 @@
 ## 🏗️ FAZ 4: FRONTEND FOUNDATION & AUTH UI
 
 **Süre**: ~1 hafta
+**DURUM**: ✅ %100 TAMAMLANDI
 
 ### Görevler
 
-- [ ] Vite + React + TypeScript kurulumu
-- [ ] Paketler: Redux Toolkit, React Router, Axios, SignalR Client, Tailwind, React Hook Form, Zod
-- [ ] Redux store setup (authSlice, guildsSlice, channelsSlice, messagesSlice, presenceSlice)
-- [ ] Axios instance: Base URL, JWT interceptor, 401 refresh token handler
-- [ ] Auth API layer: register, login, refresh, getCurrentUser
-- [ ] Login/Register sayfaları (form validation)
-- [ ] ProtectedRoute component
-- [ ] Token localStorage yönetimi
-- [ ] Router setup (/, /login, /register, /channels/:guildId/:channelId)
-- [ ] Tailwind konfigürasyonu
-- [ ] Base UI components: Button, Input, Spinner, Toast
+- [x] Vite + React + TypeScript kurulumu ✅
+- [x] Paketler: Redux Toolkit, React Router, Axios, SignalR Client, Tailwind, React Hook Form, Zod ✅
+- [x] Redux store setup (authSlice, guildsSlice, channelsSlice, messagesSlice, presenceSlice) ✅
+- [x] Axios instance: Base URL, JWT interceptor, 401 refresh token handler ✅
+- [x] Auth API layer: register, login, refresh, getCurrentUser ✅
+- [x] Login/Register sayfaları (form validation) ✅
+- [x] ProtectedRoute component ✅
+- [x] Token localStorage yönetimi ✅
+- [x] Router setup (/, /login, /register, /channels/:guildId/:channelId) ✅ (ChannelView placeholder component ile)
+- [x] Tailwind konfigürasyonu ✅
+- [x] Base UI components: Button, Input, Spinner, Toast ✅
 
 ### Deliverables
 
@@ -647,48 +655,48 @@
 ## 🎯 YENİ ÖNCELİK SIRASI
 
 1. **Faz 1-3** ✅ Core backend (auth, messaging, real-time)
-2. **Faz 3.5** 🟡 **ŞİMDİ YAPILACAK** → Reactions, Pins, Unread, Status (kolay, kritik UX)
-3. **Faz 4-6** → Frontend temel yapı + messaging UI
-4. **Faz 5.5, 6.5** → Guild invites, Mentions (frontend hazır olduktan sonra)
-5. **Faz 7-8** → File upload, voice channels
-6. **Faz 9-9.5** → Permissions + DMs + Friends
-7. **Faz 10-11** → Testing, audit log, notifications, security
-8. **Faz 12** → Production deployment
+2. **Faz 3.5** ✅ Core UX Features (Reactions, Pins, Unread, Status)
+3. **Faz 4** ✅ Frontend temel yapı + auth UI
+4. **Faz 5** 🟡 **ŞİMDİ YAPILACAK** → Frontend Guild & Channel UI
+5. **Faz 5.5, 6.5** → Guild invites, Mentions (frontend hazır olduktan sonra)
+6. **Faz 7-8** → File upload, voice channels
+7. **Faz 9-9.5** → Permissions + DMs + Friends
+8. **Faz 10-11** → Testing, audit log, notifications, security
+9. **Faz 12** → Production deployment
 
 ---
 
-## 🚀 SONRAKİ ADIM: FAZ 3.5
+## 🚀 SONRAKİ ADIM: FAZ 5
 
 **Hemen yapılacaklar:**
 
-1. ✅ Migration: CreateMessageReactionsTable
-2. ✅ MessageReaction entity + repository
-3. ✅ API: POST/DELETE /messages/{id}/reactions
-4. ✅ ChatHub: ReactionAdded/Removed events
-5. ✅ Message.IsPinned fields + migration
-6. ✅ Pin/unpin endpoints
-7. ✅ ChannelReadState entity + endpoints
-8. ✅ User.Status + CustomStatus fields
-9. ✅ PresenceHub: UpdateStatus method
+1. MainLayout (3-column: GuildSidebar | ChannelSidebar | Content)
+2. GuildSidebar: Guild ikonları listesi, create guild butonu
+3. ChannelSidebar: Kanal listesi, create channel butonu
+4. Redux thunks: fetchGuilds, createGuild, fetchChannels, createChannel
+5. Modal components: CreateGuildModal, CreateChannelModal
+6. Guild/Channel seçme logic (route navigation)
+7. Active state styling
+8. API integration (REST)
 
-**Tahmini süre**: 2-3 gün (her özellik ~4 saat)  
-**Test edilebilir**: Her özellik Swagger'dan test edilebilir
+**Tahmini süre**: ~1 hafta  
+**Test edilebilir**: Guild listesi görünecek, kanal listesi görünecek, guild/kanal oluşturma çalışacak
 
 ---
 
 ## 📊 ÖZELLIK ÖZETİ
 
-| Özellik | Faz | Zorluk | Frontend Bağımlılığı | Öncelik |
-|---------|-----|--------|----------------------|---------|
-| Reactions | 3.5 | Kolay | Hayır | ⭐⭐⭐⭐⭐ |
-| Pinned Messages | 3.5 | Çok Kolay | Hayır | ⭐⭐⭐⭐ |
-| Unread Messages | 3.5 | Kolay | Hayır | ⭐⭐⭐⭐⭐ |
-| User Status | 3.5 | Çok Kolay | Hayır | ⭐⭐⭐ |
-| Guild Invites | 5.5 | Orta | Evet (Guild UI) | ⭐⭐⭐⭐ |
-| Mentions | 6.5 | Orta | Evet (Message UI) | ⭐⭐⭐⭐ |
-| DMs | 9.5 | Orta | Evet (Permissions) | ⭐⭐⭐⭐ |
-| Friends | 9.5 | Orta | Evet (Permissions) | ⭐⭐⭐ |
-| Audit Log | 10 | Kolay | Hayır | ⭐⭐⭐ |
-| Notification Settings | 11 | Orta | Evet (Full UI) | ⭐⭐⭐ |
+| Özellik               | Faz | Zorluk    | Frontend Bağımlılığı | Öncelik    |
+| --------------------- | --- | --------- | -------------------- | ---------- |
+| Reactions             | 3.5 | Kolay     | Hayır                | ⭐⭐⭐⭐⭐ |
+| Pinned Messages       | 3.5 | Çok Kolay | Hayır                | ⭐⭐⭐⭐   |
+| Unread Messages       | 3.5 | Kolay     | Hayır                | ⭐⭐⭐⭐⭐ |
+| User Status           | 3.5 | Çok Kolay | Hayır                | ⭐⭐⭐     |
+| Guild Invites         | 5.5 | Orta      | Evet (Guild UI)      | ⭐⭐⭐⭐   |
+| Mentions              | 6.5 | Orta      | Evet (Message UI)    | ⭐⭐⭐⭐   |
+| DMs                   | 9.5 | Orta      | Evet (Permissions)   | ⭐⭐⭐⭐   |
+| Friends               | 9.5 | Orta      | Evet (Permissions)   | ⭐⭐⭐     |
+| Audit Log             | 10  | Kolay     | Hayır                | ⭐⭐⭐     |
+| Notification Settings | 11  | Orta      | Evet (Full UI)       | ⭐⭐⭐     |
 
 ---
