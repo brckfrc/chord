@@ -72,6 +72,11 @@ export function StatusUpdateModal({ open, onOpenChange, anchorRef }: StatusUpdat
   }, [open, onOpenChange, anchorRef])
 
   const handleStatusChange = async (status: number) => {
+    // Prevent multiple simultaneous requests
+    if (isLoading) {
+      return
+    }
+
     if (status === user?.status) {
       onOpenChange(false)
       return
@@ -88,11 +93,22 @@ export function StatusUpdateModal({ open, onOpenChange, anchorRef }: StatusUpdat
         })
         onOpenChange(false)
       } else {
-        toast({
-          title: "Error",
-          description: result.payload as string || "Failed to update status",
-          variant: "destructive",
-        })
+        const errorMessage = result.payload as string || "Failed to update status"
+        
+        // Check if it's a rate limit error
+        if (errorMessage.includes("429") || errorMessage.includes("Too many requests") || errorMessage.includes("rate limit")) {
+          toast({
+            title: "Rate Limit Exceeded",
+            description: "Please wait a moment before trying again.",
+            variant: "destructive",
+          })
+        } else {
+          toast({
+            title: "Error",
+            description: errorMessage,
+            variant: "destructive",
+          })
+        }
       }
     } catch (error) {
       toast({
@@ -141,13 +157,13 @@ export function StatusUpdateModal({ open, onOpenChange, anchorRef }: StatusUpdat
             <button
               key={option.value}
               onClick={() => handleStatusChange(option.value)}
-              disabled={isLoading}
+              disabled={isLoading || selectedStatus === option.value}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors text-left",
                 selectedStatus === option.value
                   ? "bg-primary/20 text-primary-foreground"
                   : "text-foreground hover:bg-muted",
-                isLoading && "opacity-50 cursor-not-allowed"
+                (isLoading || selectedStatus === option.value) && "opacity-50 cursor-not-allowed"
               )}
             >
               <div className={cn("w-3 h-3 rounded-full flex-shrink-0", option.color)} />

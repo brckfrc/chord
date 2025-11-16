@@ -7,7 +7,9 @@ import { FriendsLayout } from "@/components/layouts/FriendsLayout"
 import { UserProfileBar } from "@/components/user/UserProfileBar"
 import { VoiceBar } from "@/components/user/VoiceBar"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
-import { getCurrentUser } from "@/store/slices/authSlice"
+import { getCurrentUser, updateStatusFromSignalR } from "@/store/slices/authSlice"
+import { connectionManager } from "@/hooks/useSignalRConnectionManager"
+import { useSignalR } from "@/hooks/useSignalR"
 import { Home } from "@/pages/Home"
 import { Login } from "@/pages/Login"
 import { Register } from "@/pages/Register"
@@ -23,6 +25,15 @@ function AppContent() {
   const { activeVoiceChannelId } = useAppSelector((state) => state.channels)
   const hasInitialized = useRef(false)
 
+  // PresenceHub connection for status updates
+  const { on: presenceOn, isConnected: isPresenceConnected } = useSignalR("/hubs/presence")
+  const presenceOnRef = useRef<ReturnType<typeof useSignalR>["on"] | null>(null)
+
+  // Store presenceOn in ref to avoid dependency issues
+  useEffect(() => {
+    presenceOnRef.current = presenceOn
+  }, [presenceOn])
+
   // Load user info on app start if token exists (only once)
   useEffect(() => {
     if (hasInitialized.current) return
@@ -33,6 +44,29 @@ function AppContent() {
       dispatch(getCurrentUser())
     }
   }, [dispatch, user])
+
+  // Listen for StatusUpdated event from PresenceHub (when our own status changes)
+  useEffect(() => {
+    if (!isPresenceConnected || !presenceOnRef.current || !user) return
+
+    const handleStatusUpdated = (data: { status: number; customStatus?: string }) => {
+      // Update current user's status in Redux
+      dispatch(updateStatusFromSignalR({
+        status: data.status,
+        customStatus: data.customStatus,
+      }))
+    }
+
+    const cleanup = presenceOnRef.current("StatusUpdated", handleStatusUpdated)
+    return cleanup
+  }, [isPresenceConnected, user, dispatch])
+
+  // Stop all SignalR connections on logout
+  useEffect(() => {
+    if (!isAuthenticated) {
+      connectionManager.stopAllConnections().catch(console.error)
+    }
+  }, [isAuthenticated])
 
   // Show UserProfileBar on protected routes
   const showUserProfileBar =

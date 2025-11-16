@@ -29,7 +29,7 @@ const getStatusColor = (status: number) => {
   }
 }
 
-const getStatusText = (status: number) => {
+const getStatusText = (status: number, isCurrentUser: boolean = false) => {
   switch (status) {
     case UserStatus.Online:
       return "Online"
@@ -38,7 +38,8 @@ const getStatusText = (status: number) => {
     case UserStatus.DoNotDisturb:
       return "Do Not Disturb"
     case UserStatus.Invisible:
-      return "Invisible"
+      // Only show "Invisible" for current user, others see "Offline"
+      return isCurrentUser ? "Invisible" : "Offline"
     case UserStatus.Offline:
       return "Offline"
     default:
@@ -122,6 +123,11 @@ export function UserVoiceModal({
   if (!user) return null
 
   const isCurrentUser = user.userId === currentUser?.id
+  
+  // For display purposes: if status is Invisible and not current user, show as Offline
+  const displayStatus = user.status === UserStatus.Invisible && !isCurrentUser 
+    ? UserStatus.Offline 
+    : user.status
 
   // TODO: SignalR Integration
   // When SignalR ChatHub is implemented, add these actions:
@@ -196,14 +202,14 @@ export function UserVoiceModal({
                 <div
                   className={cn(
                     "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#2f3136]",
-                    getStatusColor(user.status)
+                    getStatusColor(displayStatus)
                   )}
                 />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate">{user.displayName}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {user.customStatus || getStatusText(user.status)}
+                  {user.customStatus || getStatusText(user.status, isCurrentUser)}
                 </p>
               </div>
             </div>

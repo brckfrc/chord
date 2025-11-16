@@ -1,5 +1,7 @@
+import { useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { setActiveVoiceChannel, removeVoiceChannelUser } from "@/store/slices/channelsSlice"
+import { useSignalR } from "@/hooks/useSignalR"
 import { Button } from "@/components/ui/button"
 import { PhoneOff, Signal, Wifi, WifiOff } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -8,6 +10,9 @@ export function VoiceBar() {
   const dispatch = useAppDispatch()
   const { activeVoiceChannelId, channels } = useAppSelector((state) => state.channels)
   const { user: currentUser } = useAppSelector((state) => state.auth)
+
+  // SignalR connection for ChatHub
+  const { invoke: chatInvoke, isConnected: isChatConnected } = useSignalR("/hubs/chat")
 
   // Don't show if not in a voice channel
   if (!activeVoiceChannelId) {
@@ -23,11 +28,19 @@ export function VoiceBar() {
     return null
   }
 
-  const handleDisconnect = () => {
-    // Leave voice channel
-    dispatch(setActiveVoiceChannel(null))
-    // Remove current user from voice channel users list
-    if (currentUser) {
+  const handleDisconnect = async () => {
+    if (!currentUser) return
+
+    try {
+      // Call SignalR LeaveVoiceChannel
+      if (isChatConnected) {
+        await chatInvoke("LeaveVoiceChannel", activeVoiceChannelId)
+      }
+    } catch (error) {
+      console.error("Failed to leave voice channel via SignalR:", error)
+    } finally {
+      // Update Redux state
+      dispatch(setActiveVoiceChannel(null))
       dispatch(
         removeVoiceChannelUser({
           channelId: activeVoiceChannelId,
@@ -35,7 +48,6 @@ export function VoiceBar() {
         })
       )
     }
-    // TODO: Call SignalR LeaveVoiceChannel when implemented
   }
 
   // Connection status (mock for now, will be real when SignalR is implemented)

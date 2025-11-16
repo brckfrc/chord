@@ -1,7 +1,8 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { addVoiceChannelUser } from "@/store/slices/channelsSlice"
+import { addVoiceChannelUser, removeVoiceChannelUser } from "@/store/slices/channelsSlice"
 import type { VoiceChannelUser } from "@/store/slices/channelsSlice"
+import { useSignalR } from "@/hooks/useSignalR"
 import { Button } from "@/components/ui/button"
 import { Mic, MicOff, Headphones, HeadphoneOff } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -24,8 +25,14 @@ interface VoiceUserItemProps {
 
 function VoiceUserItem({ user, channelId, isCurrentUser }: VoiceUserItemProps) {
   const dispatch = useAppDispatch()
+  const { invoke: chatInvoke, isConnected: isChatConnected } = useSignalR("/hubs/chat")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const userItemRef = useRef<HTMLDivElement>(null)
+
+  // For display purposes: if status is Invisible and not current user, show as Offline
+  const displayStatus = user.status === UserStatus.Invisible && !isCurrentUser 
+    ? UserStatus.Offline 
+    : user.status
 
   const getStatusColor = (status: number) => {
     switch (status) {
@@ -42,39 +49,79 @@ function VoiceUserItem({ user, channelId, isCurrentUser }: VoiceUserItemProps) {
     }
   }
 
-  const handleToggleMute = () => {
+  const handleToggleMute = async () => {
     if (!isCurrentUser) return
 
-    // Update mute state
+    const newMuted = !user.isMuted
+
+    // Optimistic update
     dispatch(
       addVoiceChannelUser({
         channelId,
         user: {
           ...user,
-          isMuted: !user.isMuted,
+          isMuted: newMuted,
         },
       })
     )
-    // TODO: Call SignalR UpdateVoiceState when implemented
-    // SignalR will broadcast UpdateVoiceState event to all users
+
+    // Call SignalR UpdateVoiceState
+    if (isChatConnected) {
+      try {
+        await chatInvoke("UpdateVoiceState", channelId, newMuted, user.isDeafened)
+      } catch (error) {
+        console.error("Failed to update voice state via SignalR:", error)
+        // Revert optimistic update on error
+        dispatch(
+          addVoiceChannelUser({
+            channelId,
+            user: {
+              ...user,
+              isMuted: user.isMuted,
+            },
+          })
+        )
+      }
+    }
   }
 
-  const handleToggleDeafen = () => {
+  const handleToggleDeafen = async () => {
     if (!isCurrentUser) return
 
-    // Update deafen state (deafen also mutes)
+    const newDeafened = !user.isDeafened
+    const newMuted = newDeafened ? true : user.isMuted // Deafen also mutes
+
+    // Optimistic update
     dispatch(
       addVoiceChannelUser({
         channelId,
         user: {
           ...user,
-          isDeafened: !user.isDeafened,
-          isMuted: !user.isDeafened ? true : user.isMuted, // Deafen also mutes
+          isDeafened: newDeafened,
+          isMuted: newMuted,
         },
       })
     )
-    // TODO: Call SignalR UpdateVoiceState when implemented
-    // SignalR will broadcast UpdateVoiceState event to all users
+
+    // Call SignalR UpdateVoiceState
+    if (isChatConnected) {
+      try {
+        await chatInvoke("UpdateVoiceState", channelId, newMuted, newDeafened)
+      } catch (error) {
+        console.error("Failed to update voice state via SignalR:", error)
+        // Revert optimistic update on error
+        dispatch(
+          addVoiceChannelUser({
+            channelId,
+            user: {
+              ...user,
+              isDeafened: user.isDeafened,
+              isMuted: user.isMuted,
+            },
+          })
+        )
+      }
+    }
   }
 
   const handleUserClick = (e: React.MouseEvent) => {
@@ -104,7 +151,7 @@ function VoiceUserItem({ user, channelId, isCurrentUser }: VoiceUserItemProps) {
         <div
           className={cn(
             "absolute bottom-0 right-0 w-2 h-2 rounded-full border-2 border-secondary",
-            getStatusColor(user.status)
+            getStatusColor(displayStatus)
           )}
         />
       </div>
@@ -182,33 +229,92 @@ interface VoiceChannelUsersProps {
 }
 
 export function VoiceChannelUsers({ channelId }: VoiceChannelUsersProps) {
+  const dispatch = useAppDispatch()
   const { voiceChannelUsers } = useAppSelector((state) => state.channels)
   const { user: currentUser } = useAppSelector((state) => state.auth)
 
+  // SignalR connection for ChatHub
+  const { on: chatOn, isConnected: isChatConnected } = useSignalR("/hubs/chat")
+
   const users = voiceChannelUsers[channelId] || []
 
-  // TODO: SignalR Integration
-  // When SignalR ChatHub is implemented, listen to these events:
-  // 1. UserJoinedVoiceChannel - Add user to list
-  //    - Dispatch addVoiceChannelUser action
-  //    - Event payload: { userId, username, displayName, channelId, isMuted, isDeafened }
-  // 2. UserLeftVoiceChannel - Remove user from list
-  //    - Dispatch removeVoiceChannelUser action
-  //    - Event payload: { userId, channelId }
-  // 3. UpdateVoiceState - Update user's mute/deafen status
-  //    - Dispatch addVoiceChannelUser action with updated state
-  //    - Event payload: { userId, channelId, isMuted, isDeafened }
-  //
-  // Example SignalR event handlers:
-  // chatHub.on("UserJoinedVoiceChannel", (data) => {
-  //   dispatch(addVoiceChannelUser({ channelId: data.channelId, user: { ...data } }))
-  // })
-  // chatHub.on("UserLeftVoiceChannel", (data) => {
-  //   dispatch(removeVoiceChannelUser({ channelId: data.channelId, userId: data.userId }))
-  // })
-  // chatHub.on("UpdateVoiceState", (data) => {
-  //   dispatch(addVoiceChannelUser({ channelId: data.channelId, user: { ...existingUser, ...data } }))
-  // })
+  // SignalR event listeners for voice channel events
+  useEffect(() => {
+    if (!isChatConnected) {
+      return
+    }
+
+    // UserJoinedVoiceChannel event
+    const handleUserJoined = (data: {
+      userId: string
+      username: string
+      displayName: string
+      channelId: string
+      isMuted: boolean
+      isDeafened: boolean
+      status: number
+    }) => {
+      if (data.channelId === channelId) {
+        dispatch(
+          addVoiceChannelUser({
+            channelId: data.channelId,
+            user: {
+              userId: data.userId,
+              username: data.username,
+              displayName: data.displayName,
+              isMuted: data.isMuted,
+              isDeafened: data.isDeafened,
+              status: data.status,
+            },
+          })
+        )
+      }
+    }
+
+    // UserLeftVoiceChannel event
+    const handleUserLeft = (data: { userId: string; channelId: string }) => {
+      if (data.channelId === channelId) {
+        dispatch(removeVoiceChannelUser({ channelId: data.channelId, userId: data.userId }))
+      }
+    }
+
+    // UserVoiceStateChanged event
+    const handleVoiceStateChanged = (data: {
+      userId: string
+      channelId: string
+      isMuted: boolean
+      isDeafened: boolean
+    }) => {
+      if (data.channelId === channelId) {
+        // Find existing user and update
+        const existingUser = users.find((u) => u.userId === data.userId)
+        if (existingUser) {
+          dispatch(
+            addVoiceChannelUser({
+              channelId: data.channelId,
+              user: {
+                ...existingUser,
+                isMuted: data.isMuted,
+                isDeafened: data.isDeafened,
+              },
+            })
+          )
+        }
+      }
+    }
+
+    // Register event listeners
+    const cleanupUserJoined = chatOn("UserJoinedVoiceChannel", handleUserJoined)
+    const cleanupUserLeft = chatOn("UserLeftVoiceChannel", handleUserLeft)
+    const cleanupVoiceStateChanged = chatOn("UserVoiceStateChanged", handleVoiceStateChanged)
+
+    // Cleanup
+    return () => {
+      cleanupUserJoined()
+      cleanupUserLeft()
+      cleanupVoiceStateChanged()
+    }
+  }, [channelId, isChatConnected, chatOn, dispatch, users])
 
   if (users.length === 0) {
     return null

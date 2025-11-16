@@ -136,6 +136,16 @@ public class AuthService : IAuthService
 
         // Update last seen
         user.LastSeenAt = DateTime.UtcNow;
+        
+        // If status is Offline, set to Online (user is accessing the app)
+        // Otherwise, keep the current status (Online, Idle, DoNotDisturb, or Invisible)
+        // This preserves user's previous status choice (Idle, DND, etc.) when reconnecting
+        if (user.Status == UserStatus.Offline)
+        {
+            user.Status = UserStatus.Online;
+        }
+        // If status is already Online, Idle, DoNotDisturb, or Invisible, keep it as is
+        
         await _context.SaveChangesAsync();
 
         return _mapper.Map<UserDto>(user);

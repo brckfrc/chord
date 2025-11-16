@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import {
   authApi,
   type UserDto,
@@ -107,6 +107,15 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    // Update user status from SignalR StatusUpdated event
+    updateStatusFromSignalR: (state, action: PayloadAction<{ status: number; customStatus?: string }>) => {
+      if (state.user) {
+        state.user.status = action.payload.status;
+        if (action.payload.customStatus !== undefined) {
+          state.user.customStatus = action.payload.customStatus;
+        }
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -204,5 +213,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, updateStatusFromSignalR } = authSlice.actions;
 export default authSlice.reducer;

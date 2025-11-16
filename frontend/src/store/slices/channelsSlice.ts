@@ -19,6 +19,7 @@ export interface VoiceChannelUser {
 
 interface ChannelsState {
   channels: ChannelDto[]
+  channelsByGuild: Record<string, ChannelDto[]> // Cache channels by guild ID
   selectedChannelId: string | null
   activeVoiceChannelId: string | null // Voice channel user is currently in
   voiceChannelUsers: Record<string, VoiceChannelUser[]> // channelId -> users in that voice channel
@@ -28,6 +29,7 @@ interface ChannelsState {
 
 const initialState: ChannelsState = {
   channels: [],
+  channelsByGuild: {},
   selectedChannelId: null,
   activeVoiceChannelId: null,
   voiceChannelUsers: {}, // channelId -> users array
@@ -39,7 +41,8 @@ export const fetchChannels = createAsyncThunk(
   "channels/fetchChannels",
   async (guildId: string, { rejectWithValue }) => {
     try {
-      return await channelsApi.getGuildChannels(guildId)
+      const channels = await channelsApi.getGuildChannels(guildId)
+      return { guildId, channels }
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch channels"
@@ -116,6 +119,12 @@ const channelsSlice = createSlice({
       state.activeVoiceChannelId = null
       state.voiceChannelUsers = {}
     },
+    // Set channels for a specific guild (used when switching guilds)
+    setGuildChannels: (state, action: PayloadAction<{ guildId: string; channels: ChannelDto[] }>) => {
+      const { guildId, channels } = action.payload
+      state.channelsByGuild[guildId] = channels
+      state.channels = channels
+    },
     clearError: (state) => {
       state.error = null
     },
@@ -129,7 +138,10 @@ const channelsSlice = createSlice({
       })
       .addCase(fetchChannels.fulfilled, (state, action) => {
         state.isLoading = false
-        state.channels = action.payload
+        const { guildId, channels } = action.payload
+        state.channelsByGuild[guildId] = channels
+        // Update current channels if this is the active guild
+        state.channels = channels
       })
       .addCase(fetchChannels.rejected, (state, action) => {
         state.isLoading = false
@@ -142,9 +154,16 @@ const channelsSlice = createSlice({
       })
       .addCase(createChannel.fulfilled, (state, action) => {
         state.isLoading = false
-        state.channels.push(action.payload)
+        const newChannel = action.payload
+        state.channels.push(newChannel)
         // Sort by position
         state.channels.sort((a, b) => a.position - b.position)
+        // Update cache for the guild
+        const guildId = newChannel.guildId
+        if (state.channelsByGuild[guildId]) {
+          state.channelsByGuild[guildId] = [...state.channelsByGuild[guildId], newChannel]
+          state.channelsByGuild[guildId].sort((a, b) => a.position - b.position)
+        }
       })
       .addCase(createChannel.rejected, (state, action) => {
         state.isLoading = false
@@ -160,6 +179,7 @@ export const {
   addVoiceChannelUser,
   removeVoiceChannelUser,
   clearChannels,
+  setGuildChannels,
   clearError,
 } = channelsSlice.actions
 export default channelsSlice.reducer

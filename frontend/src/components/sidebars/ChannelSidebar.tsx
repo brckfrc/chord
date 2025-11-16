@@ -7,7 +7,9 @@ import {
     setActiveVoiceChannel,
     addVoiceChannelUser,
     removeVoiceChannelUser,
+    setGuildChannels,
 } from "@/store/slices/channelsSlice"
+import { useSignalR } from "@/hooks/useSignalR"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { CreateChannelModal } from "@/components/modals/CreateChannelModal"
@@ -21,19 +23,30 @@ export function ChannelSidebar() {
     const navigate = useNavigate()
     const { guildId, channelId } = useParams<{ guildId?: string; channelId?: string }>()
     const { guilds, selectedGuildId } = useAppSelector((state) => state.guilds)
-    const { channels, isLoading, activeVoiceChannelId } = useAppSelector((state) => state.channels)
+    const { channels, channelsByGuild, isLoading, activeVoiceChannelId } = useAppSelector(
+        (state) => state.channels
+    )
     const { user: currentUser } = useAppSelector((state) => state.auth)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [defaultChannelType, setDefaultChannelType] = useState<ChannelType>(ChannelType.Text)
+
+    // SignalR connection for ChatHub
+    const { invoke: chatInvoke, isConnected: isChatConnected } = useSignalR("/hubs/chat")
 
     const activeGuildId = guildId || selectedGuildId
     const activeGuild = guilds.find((g) => g.id === activeGuildId)
 
     useEffect(() => {
         if (activeGuildId) {
-            dispatch(fetchChannels(activeGuildId))
+            // If channels are cached, use them directly
+            if (channelsByGuild[activeGuildId]) {
+                dispatch(setGuildChannels({ guildId: activeGuildId, channels: channelsByGuild[activeGuildId] }))
+            } else {
+                // Only fetch if not already cached
+                dispatch(fetchChannels(activeGuildId))
+            }
         }
-    }, [dispatch, activeGuildId])
+    }, [dispatch, activeGuildId, channelsByGuild])
 
     const handleChannelClick = (channel: { id: string; type: ChannelType }) => {
         if (activeGuildId) {
@@ -54,13 +67,18 @@ export function ChannelSidebar() {
 
                     // Leave previous voice channel if exists
                     if (previousChannelId && currentUser) {
+                        // Call SignalR LeaveVoiceChannel for previous channel
+                        if (isChatConnected) {
+                            chatInvoke("LeaveVoiceChannel", previousChannelId).catch((error) => {
+                                console.error("Failed to leave voice channel via SignalR:", error)
+                            })
+                        }
                         dispatch(
                             removeVoiceChannelUser({
                                 channelId: previousChannelId,
                                 userId: currentUser.id,
                             })
                         )
-                        // TODO: Call SignalR LeaveVoiceChannel for previous channel when implemented
                     }
 
                     // Join new voice channel
@@ -82,9 +100,12 @@ export function ChannelSidebar() {
                             })
                         )
                     }
-                    // TODO: Call SignalR JoinVoiceChannel when implemented
-                    // SignalR will broadcast UserJoinedVoiceChannel event to all users
-                    // The event will update the user list for all clients viewing this channel
+                    // Call SignalR JoinVoiceChannel
+                    if (isChatConnected) {
+                        chatInvoke("JoinVoiceChannel", channel.id).catch((error) => {
+                            console.error("Failed to join voice channel via SignalR:", error)
+                        })
+                    }
                 }
             }
         }
@@ -186,11 +207,16 @@ export function ChannelSidebar() {
                                         className={cn(
                                             "w-full px-2 py-1.5 rounded flex items-center gap-2 text-sm transition-colors cursor-pointer",
                                             activeVoiceChannelId === channel.id
-                                                ? "bg-[#1e1f22] text-foreground"
-                                                : "hover:!bg-[#3f4147]"
+                                                ? "text-primary"
+                                                : "hover:!bg-[#3f4147] text-muted-foreground"
                                         )}
                                     >
-                                        <Mic className="h-4 w-4 text-muted-foreground" />
+                                        <Mic className={cn(
+                                            "h-4 w-4",
+                                            activeVoiceChannelId === channel.id
+                                                ? "text-primary"
+                                                : "text-muted-foreground"
+                                        )} />
                                         <span className="flex-1 text-left truncate">{channel.name}</span>
                                     </button>
                                     {/* Show users in voice channel */}

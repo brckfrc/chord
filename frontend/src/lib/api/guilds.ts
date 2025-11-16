@@ -29,6 +29,21 @@ export interface GuildDto {
   channelCount: number
 }
 
+export interface GuildMemberDto {
+  guildId: string
+  userId: string
+  joinedAt: string
+  nickname?: string
+  role: string // Owner, Admin, Member
+  user?: {
+    id: string
+    username: string
+    displayName: string
+    status?: number // UserStatus enum
+    customStatus?: string
+  }
+}
+
 export const guildsApi = {
   getGuilds: async (): Promise<GuildDto[]> => {
     const response = await api.get<GuildDto[]>("/guilds")
@@ -52,6 +67,11 @@ export const guildsApi = {
 
   deleteGuild: async (id: string): Promise<void> => {
     await api.delete(`/guilds/${id}`)
+  },
+
+  getGuildMembers: async (guildId: string): Promise<GuildMemberDto[]> => {
+    const response = await api.get<GuildMemberDto[]>(`/guilds/${guildId}/members`)
+    return response.data
   },
 }
 
