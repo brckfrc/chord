@@ -60,10 +60,10 @@ api.interceptors.response.use(
 
         return api(originalRequest)
       } catch (refreshError) {
-        // Refresh token başarısız, logout
+        // Refresh token failed, logout
         localStorage.removeItem("accessToken")
         localStorage.removeItem("refreshToken")
-        window.location.href = "/login"
+        window.location.href = "/"
         return Promise.reject(refreshError)
       }
     }

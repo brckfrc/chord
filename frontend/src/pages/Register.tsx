@@ -53,7 +53,7 @@ export function Register() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/", { replace: true })
+      navigate("/me", { replace: true })
     }
   }, [isAuthenticated, navigate])
 
@@ -76,7 +76,7 @@ export function Register() {
         title: "Success",
         description: "Account created successfully",
       })
-      navigate("/", { replace: true })
+      navigate("/me", { replace: true })
     }
   }
 

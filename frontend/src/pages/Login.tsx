@@ -35,7 +35,7 @@ export function Login() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/", { replace: true })
+      navigate("/me", { replace: true })
     }
   }, [isAuthenticated, navigate])
 
@@ -57,7 +57,7 @@ export function Login() {
         title: "Success",
         description: "Logged in successfully",
       })
-      navigate("/", { replace: true })
+      navigate("/me", { replace: true })
     }
   }
 

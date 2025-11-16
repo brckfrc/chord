@@ -4,12 +4,14 @@ import {
   type UserDto,
   type RegisterDto,
   type LoginDto,
+  type UpdateStatusDto,
 } from "@/lib/api/auth";
 
 interface AuthState {
   user: UserDto | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isUpdatingStatus: boolean;
   error: string | null;
 }
 
@@ -17,6 +19,7 @@ const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
   isLoading: false,
+  isUpdatingStatus: false,
   error: null,
 };
 
@@ -83,6 +86,20 @@ export const logout = createAsyncThunk("auth/logout", async () => {
   }
 });
 
+export const updateStatus = createAsyncThunk(
+  "auth/updateStatus",
+  async (data: UpdateStatusDto, { rejectWithValue }) => {
+    try {
+      const user = await authApi.updateStatus(data);
+      return user;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update status"
+      );
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -132,20 +149,57 @@ const authSlice = createSlice({
       })
       .addCase(getCurrentUser.rejected, (state, action) => {
         state.isLoading = false;
-        // Only clear auth state if it's a 401 (unauthorized) error
-        // CORS or network errors shouldn't clear auth state
+        // Clear state if token is invalid or unauthorized error occurs
         const error = action.payload as string;
-        if (error?.includes("401") || error?.includes("unauthorized")) {
+        if (
+          error?.includes("401") ||
+          error?.includes("unauthorized") ||
+          error?.includes("Invalid token")
+        ) {
           state.isAuthenticated = false;
           state.user = null;
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
+        }
+        // Clear state for other errors (token might be invalid)
+        // But preserve state for network/CORS errors
+        if (
+          error &&
+          !error.includes("network") &&
+          !error.includes("CORS") &&
+          !error.includes("Failed to fetch")
+        ) {
+          // Token appears to be invalid, clear state
+          const token = localStorage.getItem("accessToken");
+          if (!token) {
+            state.isAuthenticated = false;
+            state.user = null;
+          }
         }
       })
       // Logout
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
         state.isAuthenticated = false;
+      })
+      // Update Status
+      .addCase(updateStatus.pending, (state) => {
+        state.isUpdatingStatus = true;
+        state.error = null;
+      })
+      .addCase(updateStatus.fulfilled, (state, action) => {
+        state.isUpdatingStatus = false;
+        // Only update status and customStatus to avoid unnecessary re-renders
+        if (state.user) {
+          state.user.status = action.payload.status;
+          state.user.customStatus = action.payload.customStatus;
+        } else {
+          state.user = action.payload;
+        }
+      })
+      .addCase(updateStatus.rejected, (state, action) => {
+        state.isUpdatingStatus = false;
+        state.error = action.payload as string;
       });
   },
 });

@@ -4,6 +4,8 @@ import guildsReducer from "./slices/guildsSlice"
 import channelsReducer from "./slices/channelsSlice"
 import messagesReducer from "./slices/messagesSlice"
 import presenceReducer from "./slices/presenceSlice"
+import friendsReducer from "./slices/friendsSlice"
+import dmsReducer from "./slices/dmsSlice"
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +14,8 @@ export const store = configureStore({
     channels: channelsReducer,
     messages: messagesReducer,
     presence: presenceReducer,
+    friends: friendsReducer,
+    dms: dmsReducer,
   },
 })
 

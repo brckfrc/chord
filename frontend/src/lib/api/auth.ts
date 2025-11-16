@@ -28,6 +28,11 @@ export interface UserDto {
   createdAt: string
 }
 
+export interface UpdateStatusDto {
+  status: number
+  customStatus?: string
+}
+
 export const authApi = {
   register: async (data: RegisterDto): Promise<TokenResponse> => {
     const response = await api.post<TokenResponse>("/auth/register", data)
@@ -53,6 +58,11 @@ export const authApi = {
 
   logout: async (): Promise<void> => {
     await api.post("/auth/logout")
+  },
+
+  updateStatus: async (data: UpdateStatusDto): Promise<UserDto> => {
+    const response = await api.patch<UserDto>("/auth/me/status", data)
+    return response.data
   },
 }
 

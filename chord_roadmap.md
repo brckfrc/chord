@@ -285,17 +285,22 @@
 ## 🏗️ FAZ 5: FRONTEND GUILD & CHANNEL UI
 
 **Süre**: ~1 hafta
+**DURUM**: ✅ %100 TAMAMLANDI
 
 ### Görevler
 
-- [ ] MainLayout (3-column: GuildSidebar | ChannelSidebar | Content)
-- [ ] GuildSidebar: Guild ikonları listesi, create guild butonu
-- [ ] ChannelSidebar: Kanal listesi, create channel butonu
-- [ ] Redux thunks: fetchGuilds, createGuild, fetchChannels, createChannel
-- [ ] Modal components: CreateGuildModal, CreateChannelModal
-- [ ] Guild/Channel seçme logic (route navigation)
-- [ ] Active state styling
-- [ ] API integration (REST)
+- [x] MainLayout (3-column: GuildSidebar | ChannelSidebar | Content) ✅
+- [x] GuildSidebar: Guild ikonları listesi, create guild butonu ✅
+- [x] ChannelSidebar: Kanal listesi, create channel butonu ✅
+- [x] Redux thunks: fetchGuilds, createGuild, fetchChannels, createChannel ✅
+- [x] Modal components: CreateGuildModal, CreateChannelModal ✅
+- [x] Guild/Channel seçme logic (route navigation) ✅
+- [x] Active state styling ✅
+- [x] API integration (REST) ✅
+- [x] Text/Voice channel separation (separate create modals) ✅
+- [x] Guild tooltip on hover (guild info display) ✅
+- [x] Hover effects (guild buttons, channel items, friend items) ✅
+- [x] ESC key support for all modals ✅
 
 ### Deliverables
 
@@ -303,6 +308,73 @@
 ✅ Kanal listesi görünüyor  
 ✅ Guild/kanal oluşturma çalışıyor  
 ✅ Navigasyon doğru çalışıyor
+✅ Text ve voice channel'lar ayrı yönetiliyor
+✅ Hover effects ve tooltips çalışıyor
+
+---
+
+## 🏗️ FAZ 5.3: VOICE CHANNEL UI INFRASTRUCTURE ⭐ YENİ
+
+**Süre**: ~2-3 gün  
+**DURUM**: ✅ %100 TAMAMLANDI (UI Altyapısı)  
+**Neden bu aşamada**: Voice channel presence backend hazır (FAZ 3), UI altyapısı frontend'de hazır olmalı
+
+### Frontend Görevler
+
+- [x] UserProfileBar component (global bottom bar, status display, mute/deafen controls) ✅
+- [x] VoiceBar component (voice channel connection status, disconnect button) ✅
+- [x] VoiceChannelUsers component (display users in voice channel) ✅
+- [x] UserVoiceModal component (user-specific voice actions: mute, deafen, move, kick, ban) ✅
+- [x] Redux state: activeVoiceChannelId, voiceChannelUsers (channelId → users mapping) ✅
+- [x] Voice channel join/leave logic (no navigation, background presence) ✅
+- [x] Text + Voice simultaneous support (can view text channel while in voice) ✅
+- [x] Single voice channel limit (only one active at a time, auto-leave previous) ✅
+- [x] Voice channel user list (shows muted/deafened status) ✅
+- [x] Mute/deafen state sync (UserProfileBar ↔ VoiceChannelUsers) ✅
+- [x] Voice channel click behavior (join only, leave via VoiceBar disconnect button) ✅
+
+### Deliverables
+
+✅ Voice channel UI altyapısı tamamlandı  
+✅ Voice channel'a join/leave çalışıyor (UI)  
+✅ Voice channel kullanıcı listesi görünüyor  
+✅ Mute/deafen controls çalışıyor (local state)  
+✅ Text + Voice aynı anda destekleniyor  
+✅ VoiceBar connection status gösterimi hazır
+
+### 📝 Notlar
+
+**UI Altyapısı Tamamlandı:**
+
+- ✅ Voice channel presence UI hazır
+- ✅ User actions (mute/deafen) UI hazır
+- ✅ User moderation UI hazır (UserVoiceModal)
+- ⏳ SignalR integration bekleniyor (FAZ 6'da eklenecek)
+
+**SignalR Integration TODO'lar (FAZ 6'da eklenecek):**
+
+- [ ] ChatHub.JoinVoiceChannel invoke (voice channel'a join)
+- [ ] ChatHub.LeaveVoiceChannel invoke (voice channel'dan leave)
+- [ ] ChatHub.UpdateVoiceState invoke (mute/deafen toggle)
+- [ ] ChatHub event listeners:
+  - [ ] UserJoinedVoiceChannel (add user to list)
+  - [ ] UserLeftVoiceChannel (remove user from list)
+  - [ ] UserVoiceStateChanged (update mute/deafen status)
+- [ ] ChatHub moderation methods (FAZ 9'da permissions ile):
+  - [ ] MuteUser (admin/owner only)
+  - [ ] DeafenUser (admin/owner only)
+  - [ ] MoveUser (admin/owner only)
+  - [ ] KickUser (admin/owner only)
+  - [ ] BanUser (admin/owner only)
+
+**Voice Channel Architecture:**
+
+- ✅ **Text vs Voice separation**: Text channel navigation independent from voice presence
+- ✅ **Single voice limit**: Only one voice channel active at a time
+- ✅ **Background presence**: Voice channel works in background, doesn't affect text channel viewing
+- ✅ **State management**: Redux tracks activeVoiceChannelId and voiceChannelUsers
+- 🔜 **SignalR integration**: FAZ 6'da real-time updates eklenecek
+- 🔜 **WebRTC streaming**: FAZ 8'de actual audio streaming eklenecek
 
 ---
 
@@ -351,6 +423,14 @@
 - [ ] SignalR connection hook (useSignalR)
 - [ ] ChatHub event listeners (ReceiveMessage, MessageEdited, MessageDeleted, UserTyping)
 - [ ] PresenceHub event listeners (UserOnline, UserOffline)
+- [ ] **Voice Channel SignalR Integration:**
+  - [ ] ChatHub.JoinVoiceChannel invoke (on voice channel click)
+  - [ ] ChatHub.LeaveVoiceChannel invoke (on disconnect or channel switch)
+  - [ ] ChatHub.UpdateVoiceState invoke (on mute/deafen toggle)
+  - [ ] ChatHub event listeners:
+    - [ ] UserJoinedVoiceChannel (add user to voiceChannelUsers)
+    - [ ] UserLeftVoiceChannel (remove user from voiceChannelUsers)
+    - [ ] UserVoiceStateChanged (update user mute/deafen state)
 - [ ] MessageList component (infinite scroll, auto-scroll to bottom)
 - [ ] MessageItem component (avatar, content, edit/delete buttons, timestamp)
 - [ ] MessageComposer component (textarea, enter to send, typing trigger)
@@ -518,13 +598,25 @@
 
 ### Frontend Görevler
 
-- [ ] FriendsTab component (sidebar'da guild listesinin altında)
-- [ ] FriendsList component (online/offline/pending)
-- [ ] AddFriendModal (username ile ekleme)
-- [ ] DMChannelList (DM listesi, son mesaj önizlemesi)
-- [ ] DMChannel route (/dm/:channelId)
-- [ ] Accept/decline friend request butonları
-- [ ] Online status indicator (friend list)
+- [x] FriendsLayout component (GuildSidebar + FriendsSidebar + Content) ✅
+- [x] FriendsSidebar component (Online/All/Pending tabs, friend list) ✅
+- [x] FriendsHome component (welcome screen + online friends grid) ✅
+- [x] AddFriendModal (username ile ekleme) ✅
+- [x] Online status indicator (friend list) ✅
+- [x] Redux slice ve API client (mock data ile, backend hazır olunca değiştirilecek) ✅
+- [x] DM item hover effects ✅
+- [ ] DMChannelList (DM listesi, son mesaj önizlemesi) - Backend hazır olunca
+- [ ] DMChannel route (/dm/:channelId) - Backend hazır olunca
+- [ ] Accept/decline friend request butonları - Backend hazır olunca (UI hazır)
+
+### 📝 Backend Integration TODO'lar
+
+**Friends API (Backend hazır olunca):**
+
+- [ ] Replace mock data with real API calls in `frontend/src/lib/api/friends.ts`
+- [ ] Replace mock data with real API calls in `frontend/src/lib/api/dms.ts`
+- [ ] Implement friend request accept/decline handlers
+- [ ] Implement DM navigation handlers
 
 ### Deliverables
 
@@ -657,46 +749,56 @@
 1. **Faz 1-3** ✅ Core backend (auth, messaging, real-time)
 2. **Faz 3.5** ✅ Core UX Features (Reactions, Pins, Unread, Status)
 3. **Faz 4** ✅ Frontend temel yapı + auth UI
-4. **Faz 5** 🟡 **ŞİMDİ YAPILACAK** → Frontend Guild & Channel UI
-5. **Faz 5.5, 6.5** → Guild invites, Mentions (frontend hazır olduktan sonra)
-6. **Faz 7-8** → File upload, voice channels
-7. **Faz 9-9.5** → Permissions + DMs + Friends
-8. **Faz 10-11** → Testing, audit log, notifications, security
-9. **Faz 12** → Production deployment
+4. **Faz 5** ✅ Frontend Guild & Channel UI
+5. **Faz 5.3** ✅ Voice Channel UI Infrastructure
+6. **Faz 6** 🟡 **ŞİMDİ YAPILACAK** → Frontend Messaging & SignalR Integration
+7. **Faz 5.5, 6.5** → Guild invites, Mentions (frontend hazır olduktan sonra)
+8. **Faz 7-8** → File upload, voice channels (WebRTC)
+9. **Faz 9-9.5** → Permissions + DMs + Friends
+10. **Faz 10-11** → Testing, audit log, notifications, security
+11. **Faz 12** → Production deployment
 
 ---
 
-## 🚀 SONRAKİ ADIM: FAZ 5
+## 🚀 SONRAKİ ADIM: FAZ 6
 
 **Hemen yapılacaklar:**
 
-1. MainLayout (3-column: GuildSidebar | ChannelSidebar | Content)
-2. GuildSidebar: Guild ikonları listesi, create guild butonu
-3. ChannelSidebar: Kanal listesi, create channel butonu
-4. Redux thunks: fetchGuilds, createGuild, fetchChannels, createChannel
-5. Modal components: CreateGuildModal, CreateChannelModal
-6. Guild/Channel seçme logic (route navigation)
-7. Active state styling
-8. API integration (REST)
+1. SignalR connection hook (useSignalR)
+2. ChatHub event listeners (ReceiveMessage, MessageEdited, MessageDeleted, UserTyping)
+3. PresenceHub event listeners (UserOnline, UserOffline)
+4. Voice Channel SignalR Integration:
+   - ChatHub.JoinVoiceChannel invoke
+   - ChatHub.LeaveVoiceChannel invoke
+   - ChatHub.UpdateVoiceState invoke
+   - Event listeners (UserJoinedVoiceChannel, UserLeftVoiceChannel, UserVoiceStateChanged)
+5. MessageList component (infinite scroll, auto-scroll to bottom)
+6. MessageItem component (avatar, content, edit/delete buttons, timestamp)
+7. MessageComposer component (textarea, enter to send, typing trigger)
+8. Messages Redux slice (messagesByChannel state yönetimi)
+9. ChannelView page (header, message list, composer layout)
+10. JoinChannel/LeaveChannel invoke (route değişiminde)
+11. Typing indicator UI
 
-**Tahmini süre**: ~1 hafta  
-**Test edilebilir**: Guild listesi görünecek, kanal listesi görünecek, guild/kanal oluşturma çalışacak
+**Tahmini süre**: ~1.5 hafta  
+**Test edilebilir**: Mesajlar gerçek zamanlı gönderilecek/alınacak, voice channel presence çalışacak
 
 ---
 
 ## 📊 ÖZELLIK ÖZETİ
 
-| Özellik               | Faz | Zorluk    | Frontend Bağımlılığı | Öncelik    |
-| --------------------- | --- | --------- | -------------------- | ---------- |
-| Reactions             | 3.5 | Kolay     | Hayır                | ⭐⭐⭐⭐⭐ |
-| Pinned Messages       | 3.5 | Çok Kolay | Hayır                | ⭐⭐⭐⭐   |
-| Unread Messages       | 3.5 | Kolay     | Hayır                | ⭐⭐⭐⭐⭐ |
-| User Status           | 3.5 | Çok Kolay | Hayır                | ⭐⭐⭐     |
-| Guild Invites         | 5.5 | Orta      | Evet (Guild UI)      | ⭐⭐⭐⭐   |
-| Mentions              | 6.5 | Orta      | Evet (Message UI)    | ⭐⭐⭐⭐   |
-| DMs                   | 9.5 | Orta      | Evet (Permissions)   | ⭐⭐⭐⭐   |
-| Friends               | 9.5 | Orta      | Evet (Permissions)   | ⭐⭐⭐     |
-| Audit Log             | 10  | Kolay     | Hayır                | ⭐⭐⭐     |
-| Notification Settings | 11  | Orta      | Evet (Full UI)       | ⭐⭐⭐     |
+| Özellik                    | Faz | Zorluk    | Frontend Bağımlılığı | Öncelik    |
+| -------------------------- | --- | --------- | -------------------- | ---------- |
+| Reactions                  | 3.5 | Kolay     | Hayır                | ⭐⭐⭐⭐⭐ |
+| Pinned Messages            | 3.5 | Çok Kolay | Hayır                | ⭐⭐⭐⭐   |
+| Unread Messages            | 3.5 | Kolay     | Hayır                | ⭐⭐⭐⭐⭐ |
+| User Status                | 3.5 | Çok Kolay | Hayır                | ⭐⭐⭐     |
+| Voice Channel UI (UI Only) | 5.3 | Orta      | Evet (Guild UI)      | ⭐⭐⭐⭐⭐ |
+| Guild Invites              | 5.5 | Orta      | Evet (Guild UI)      | ⭐⭐⭐⭐   |
+| Mentions                   | 6.5 | Orta      | Evet (Message UI)    | ⭐⭐⭐⭐   |
+| DMs                        | 9.5 | Orta      | Evet (Permissions)   | ⭐⭐⭐⭐   |
+| Friends                    | 9.5 | Orta      | Evet (Permissions)   | ⭐⭐⭐     |
+| Audit Log                  | 10  | Kolay     | Hayır                | ⭐⭐⭐     |
+| Notification Settings      | 11  | Orta      | Evet (Full UI)       | ⭐⭐⭐     |
 
 ---
