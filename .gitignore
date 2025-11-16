@@ -28,13 +28,45 @@ Thumbs.db
 
 # Logs
 logs/
+Logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
 # Temporary files
 *.tmp
 *.temp
 .cache/
+
+# Frontend (React/Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.vite-cache/
+frontend/*.local
+
+# Backend (.NET)
+backend/bin/
+backend/obj/
+backend/*/bin/
+backend/*/obj/
+backend/*.user
+backend/*.suo
+backend/*.userosscache
+backend/*.sln.docstates
+backend/.vs/
+backend/.vscode/
+
+# Test Results
+backend/**/TestResults/
+backend/**/[Tt]est[Rr]esult*/
+backend/**/coverage/
+backend/**/coverage.*.json
+backend/**/coverage.xml
+
+# Docker
+*.dockerignore
+docker-compose.override.yml
 
