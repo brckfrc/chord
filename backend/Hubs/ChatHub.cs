@@ -184,6 +184,19 @@ public class ChatHub : Hub
         _logger.LogDebug("User {UserId} is typing in channel {ChannelId}", userId, channelId);
     }
 
+    /// <summary>
+    /// Stop typing indicator for a channel
+    /// </summary>
+    public async Task StopTyping(string channelId)
+    {
+        var userId = GetUserId();
+
+        // Broadcast to others in the channel (not to self)
+        await Clients.OthersInGroup(channelId).SendAsync("UserStoppedTyping", new { userId, channelId });
+
+        _logger.LogDebug("User {UserId} stopped typing in channel {ChannelId}", userId, channelId);
+    }
+
     // ==================== REACTION METHODS ====================
 
     /// <summary>

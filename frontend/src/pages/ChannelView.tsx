@@ -18,14 +18,14 @@ import { Hash, Mic } from "lucide-react"
 import { ChannelType } from "@/lib/api/channels"
 
 export function ChannelView() {
-  const { guildId, channelId } = useParams<{
+  const { channelId } = useParams<{
     guildId: string
     channelId: string
   }>()
   const dispatch = useAppDispatch()
   const { channels } = useAppSelector((state) => state.channels)
   const { user } = useAppSelector((state) => state.auth)
-  const previousChannelIdRef = useRef<string | undefined>()
+  const previousChannelIdRef = useRef<string | undefined>(undefined)
   const chatInvokeRef = useRef<typeof chatInvoke | null>(null)
 
   // Get current channel info
@@ -33,7 +33,7 @@ export function ChannelView() {
   const isTextChannel = currentChannel?.type === ChannelType.Text
 
   // SignalR connection for ChatHub
-  const { invoke: chatInvoke, on: chatOn, off: chatOff, isConnected: isChatConnected } = useSignalR(
+  const { invoke: chatInvoke, on: chatOn, isConnected: isChatConnected } = useSignalR(
     "/hubs/chat",
     {
       onConnected: () => {
@@ -124,10 +124,21 @@ export function ChannelView() {
           return
         }
         dispatch(addTypingUser({ channelId, userId: data.userId, username: data.username }))
-        // Remove typing indicator after 3 seconds
+        // Remove typing indicator after 3 seconds (fallback if StopTyping is not called)
         setTimeout(() => {
           dispatch(removeTypingUser({ channelId, userId: data.userId }))
         }, 3000)
+      }
+    }
+
+    // UserStoppedTyping event
+    const handleUserStoppedTyping = (data: { userId: string; channelId: string }) => {
+      if (data.channelId === channelId) {
+        // Don't process for current user
+        if (user?.id === data.userId) {
+          return
+        }
+        dispatch(removeTypingUser({ channelId, userId: data.userId }))
       }
     }
 
@@ -141,6 +152,7 @@ export function ChannelView() {
     const cleanupMessageEdited = chatOn("MessageEdited", handleMessageEdited)
     const cleanupMessageDeleted = chatOn("MessageDeleted", handleMessageDeleted)
     const cleanupUserTyping = chatOn("UserTyping", handleUserTyping)
+    const cleanupUserStoppedTyping = chatOn("UserStoppedTyping", handleUserStoppedTyping)
     const cleanupError = chatOn("Error", handleError)
 
     // Cleanup
@@ -149,6 +161,7 @@ export function ChannelView() {
       cleanupMessageEdited()
       cleanupMessageDeleted()
       cleanupUserTyping()
+      cleanupUserStoppedTyping()
       cleanupError()
     }
   }, [channelId, isChatConnected, chatOn, dispatch])

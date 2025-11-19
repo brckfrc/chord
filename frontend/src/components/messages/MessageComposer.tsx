@@ -30,13 +30,26 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
 
     // Typing indicator
     useEffect(() => {
-        if (!isChatConnected || !content.trim()) {
+        if (!isChatConnected) {
             return
         }
 
         // Clear existing timeout
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current)
+        }
+
+        // If content is empty, send StopTyping
+        if (!content.trim()) {
+            const stopTyping = async () => {
+                try {
+                    await chatInvoke("StopTyping", channelId)
+                } catch (error) {
+                    console.error("Failed to send stop typing indicator:", error)
+                }
+            }
+            stopTyping()
+            return
         }
 
         // Send typing event (throttled - max once per second)
@@ -79,6 +92,13 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
                 content: content.trim(),
                 attachments: null,
             })
+
+            // Stop typing indicator after sending message
+            try {
+                await chatInvoke("StopTyping", channelId)
+            } catch (error) {
+                console.error("Failed to send stop typing indicator:", error)
+            }
 
             // Clear input
             setContent("")
