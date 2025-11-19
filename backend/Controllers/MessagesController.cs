@@ -1,7 +1,9 @@
 using ChordAPI.Models.DTOs;
 using ChordAPI.Services;
+using ChordAPI.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 
 namespace ChordAPI.Controllers;
@@ -13,15 +15,18 @@ public class MessagesController : ControllerBase
 {
     private readonly IMessageService _messageService;
     private readonly IReadStateService _readStateService;
+    private readonly IHubContext<ChatHub> _hubContext;
     private readonly ILogger<MessagesController> _logger;
 
     public MessagesController(
         IMessageService messageService,
         IReadStateService readStateService,
+        IHubContext<ChatHub> hubContext,
         ILogger<MessagesController> logger)
     {
         _messageService = messageService;
         _readStateService = readStateService;
+        _hubContext = hubContext;
         _logger = logger;
     }
 
@@ -84,6 +89,25 @@ public class MessagesController : ControllerBase
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var message = await _messageService.CreateMessageAsync(channelId, userId, dto);
+
+            // Auto-mark channel as read for the sender (optional feature)
+            try
+            {
+                await _readStateService.MarkChannelAsReadAsync(channelId, userId, message.Id);
+            }
+            catch (Exception ex)
+            {
+                // Log but don't fail the message send if read state update fails
+                _logger.LogWarning(ex, "Failed to auto-update read state for user {UserId} in channel {ChannelId}",
+                    userId, channelId);
+            }
+
+            // Broadcast to all users in the channel via SignalR
+            await _hubContext.Clients.Group(channelId.ToString()).SendAsync("ReceiveMessage", message);
+
+            _logger.LogInformation("User {UserId} sent message {MessageId} to channel {ChannelId} via REST API",
+                userId, message.Id, channelId);
+
             return CreatedAtAction(
                 nameof(GetMessage),
                 new { channelId = channelId, messageId = message.Id },
@@ -112,6 +136,13 @@ public class MessagesController : ControllerBase
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var message = await _messageService.UpdateMessageAsync(messageId, userId, dto);
+
+            // Broadcast edit to all users in the channel via SignalR
+            await _hubContext.Clients.Group(channelId.ToString()).SendAsync("MessageEdited", message);
+
+            _logger.LogInformation("User {UserId} edited message {MessageId} in channel {ChannelId} via REST API",
+                userId, messageId, channelId);
+
             return Ok(message);
         }
         catch (KeyNotFoundException ex)
@@ -134,6 +165,13 @@ public class MessagesController : ControllerBase
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             await _messageService.DeleteMessageAsync(messageId, userId);
+
+            // Broadcast deletion to all users in the channel via SignalR
+            await _hubContext.Clients.Group(channelId.ToString()).SendAsync("MessageDeleted", messageId.ToString());
+
+            _logger.LogInformation("User {UserId} deleted message {MessageId} in channel {ChannelId} via REST API",
+                userId, messageId, channelId);
+
             return NoContent();
         }
         catch (KeyNotFoundException ex)
