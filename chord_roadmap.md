@@ -73,6 +73,12 @@
 - ✅ DELETE: Silinen channel'dan sonraki sadece aynı type'daki channel'ları yukarı kaydırır
 - ✅ Frontend'te text/voice ayrımı için hazır (her grup 0'dan başlar)
 
+**Channel Types:**
+
+- ✅ Text (0) - Normal text messaging channels
+- ✅ Voice (1) - Voice communication channels
+- ⏳ Announcement (2) - Announcement-only channels (TODO: Backend enum'a ekle, frontend UI ekle)
+
 **Middleware Güncellemeleri (Gerekirse):**
 
 - Yeni exception tipi eklenirse → `GlobalExceptionMiddleware`'e case ekle
@@ -311,6 +317,14 @@
 ✅ Text ve voice channel'lar ayrı yönetiliyor
 ✅ Hover effects ve tooltips çalışıyor
 
+### 📝 Notlar
+
+**Channel Types Support:**
+
+- ✅ Text channels (type 0) - Full support
+- ✅ Voice channels (type 1) - Full support
+- ⏳ Announcement channels (type 2) - Backend'de database'de mevcut ama enum'da tanımlı değil (FAZ 5.7'de eklenecek)
+
 ---
 
 ## 🏗️ FAZ 5.3: VOICE CHANNEL UI INFRASTRUCTURE ⭐ YENİ
@@ -419,6 +433,53 @@
 ✅ CreateGuildModal'dan invite code ile guild'e katılma özelliği eklendi  
 ✅ Login/Register akışında invite code korunuyor  
 ✅ Invite ekranında davet eden kişi bilgisi gösteriliyor
+
+---
+
+## 🏗️ FAZ 5.7: ANNOUNCEMENT CHANNELS ⭐ YENİ
+
+**Süre**: ~1 gün  
+**DURUM**: ⏳ Başlanmadı  
+**Neden bu aşamada**: Database'de type 2 olarak mevcut ama enum'da tanımlı değil, frontend'de desteklenmiyor
+
+### Backend Görevler
+
+- [ ] ChannelType enum'a `Announcement = 2` ekle (`backend/Models/Entities/Channel.cs`)
+- [ ] Frontend `ChannelType` constant'a `Announcement: 2` ekle (`frontend/src/lib/api/channels.ts`)
+- [ ] CreateChannelModal'a Announcement seçeneği ekle (opsiyonel: sadece guild owner/admin)
+- [ ] ChannelSidebar'da Announcement channel'ları ayrı bir bölümde göster (Text Channels, Voice Channels, Announcement Channels)
+- [ ] Announcement channel'lar için özel icon (megaphone veya bell icon)
+- [ ] Announcement channel validation: Sadece okuma (read-only) veya özel yetki kontrolü (opsiyonel)
+
+### Frontend Görevler
+
+- [ ] ChannelType constant güncellemesi
+- [ ] CreateChannelModal'da Announcement seçeneği
+- [ ] ChannelSidebar'da Announcement channel'ları ayrı göster
+- [ ] Announcement channel icon (megaphone/bell)
+- [ ] Announcement channel UI styling (farklı renk veya görünüm, opsiyonel)
+
+### Deliverables
+
+✅ Announcement channel type backend'de tanımlı  
+✅ Announcement channel oluşturma çalışıyor  
+✅ Frontend'de Announcement channel'lar görünüyor  
+✅ Announcement channel'lar için özel icon ve styling
+
+### 📝 Notlar
+
+**Mevcut Durum:**
+
+- ⚠️ Database'de `type = 2` olan channel'lar mevcut
+- ⚠️ Backend enum'da `Announcement` tanımlı değil
+- ⚠️ Frontend'de Announcement desteği yok
+- ✅ Position system Announcement'ı da destekleyecek (type bazında izole)
+
+**Announcement Channel Özellikleri (Opsiyonel):**
+
+- Read-only mode (sadece guild owner/admin yazabilir)
+- Özel görünüm (farklı renk, icon)
+- Auto-follow (tüm guild üyeleri otomatik takip eder)
 
 ---
 
@@ -777,11 +838,12 @@
 5. **Faz 5.3** ✅ Voice Channel UI Infrastructure
 6. **Faz 6** ✅ Frontend Messaging & SignalR Integration
 7. **Faz 5.5** ✅ Guild Invites
-8. **Faz 6.5** 🟡 **ŞİMDİ YAPILACAK** → Mentions & Notifications
-9. **Faz 7-8** → File upload, voice channels (WebRTC)
-10. **Faz 9-9.5** → Permissions + DMs + Friends
-11. **Faz 10-11** → Testing, audit log, notifications, security
-12. **Faz 12** → Production deployment
+8. **Faz 5.7** ⏳ Announcement Channels (Database'de mevcut, enum'a ekle)
+9. **Faz 6.5** 🟡 **ŞİMDİ YAPILACAK** → Mentions & Notifications
+10. **Faz 7-8** → File upload, voice channels (WebRTC)
+11. **Faz 9-9.5** → Permissions + DMs + Friends
+12. **Faz 10-11** → Testing, audit log, notifications, security
+13. **Faz 12** → Production deployment
 
 ---
 
@@ -790,6 +852,7 @@
 **Hemen yapılacaklar:**
 
 ### FAZ 6.5: Mentions & Notifications
+
 1. MessageMention entity ve migration
 2. Backend mention parsing logic (extract @username from message content)
 3. Backend API endpoints:
