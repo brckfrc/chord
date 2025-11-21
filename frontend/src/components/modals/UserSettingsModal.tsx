@@ -243,7 +243,7 @@ export function UserSettingsModal({ open, onOpenChange }: UserSettingsModalProps
                     <SelectItem value={UserStatus.Invisible.toString()}>
                       Invisible
                     </SelectItem>
-                    <SelectItem value={UserStatus.Offline.toString()}>Offline</SelectItem>
+                    {/* Offline kaldırıldı - Invisible zaten diğerlerine offline gibi görünüyor */}
                   </SelectContent>
                 </Select>
                 {errors.status && (
