@@ -209,7 +209,9 @@ public class ChatHub : Hub
     public async Task Typing(string channelId)
     {
         var userId = GetUserId();
-        var username = Context.User?.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+        var username = Context.User?.FindFirstValue(ClaimTypes.Name) 
+            ?? Context.User?.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName) 
+            ?? "Unknown";
 
         // Broadcast to others in the channel (not to self)
         await Clients.OthersInGroup(channelId).SendAsync("UserTyping", new { userId, username, channelId });
@@ -299,7 +301,9 @@ public class ChatHub : Hub
     public async Task JoinVoiceChannel(string channelId)
     {
         var userId = GetUserId();
-        var username = Context.User?.FindFirstValue(ClaimTypes.Name) ?? "Unknown";
+        var username = Context.User?.FindFirstValue(ClaimTypes.Name) 
+            ?? Context.User?.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName) 
+            ?? "Unknown";
         var displayName = Context.User?.FindFirstValue("displayName") ?? username;
 
         try
