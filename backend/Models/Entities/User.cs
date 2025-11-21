@@ -29,7 +29,7 @@ public class User
     public DateTime? LastSeenAt { get; set; }
 
     // User status
-    public UserStatus Status { get; set; } = UserStatus.Online;
+    public UserStatus Status { get; set; } = UserStatus.Offline;
     
     /// <summary>
     /// Custom status message (e.g., "Playing games", "Working on project")

@@ -76,26 +76,26 @@ public class PresenceHub : Hub
     {
         var userId = GetUserId();
 
-        // Update user's LastSeenAt (but preserve status - user may reconnect with same status)
+        // Update user's LastSeenAt and set status to Offline
         var user = await _context.Users.FindAsync(userId);
         if (user != null)
         {
             user.LastSeenAt = DateTime.UtcNow;
-            // Don't change status - preserve it so user reconnects with same status (Idle, DND, etc.)
+            // Set status to Offline when user disconnects
+            user.Status = Models.Entities.UserStatus.Offline;
             await _context.SaveChangesAsync();
         }
 
-        _logger.LogInformation("User {UserId} disconnected (preserving status: {Status})", userId, user?.Status);
+        _logger.LogInformation("User {UserId} disconnected (status set to Offline)", userId);
 
         // Notify all clients that user is offline (for presence purposes)
         await Clients.Others.SendAsync("UserOffline", userId);
 
-        // Broadcast that user appears offline to others (but status value is preserved)
-        // Other users will see them as offline based on LastSeenAt, but status remains in DB
+        // Broadcast that user is offline to others
         await Clients.Others.SendAsync("UserStatusChanged", new
         {
             userId = userId.ToString(),
-            status = (int)Models.Entities.UserStatus.Offline, // Appears offline to others
+            status = (int)Models.Entities.UserStatus.Offline,
             customStatus = user?.CustomStatus
         });
 

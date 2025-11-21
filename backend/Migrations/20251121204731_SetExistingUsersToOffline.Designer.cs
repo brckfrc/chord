@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ChordAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251121165946_CreateMessageMentionsTable")]
-    partial class CreateMessageMentionsTable
+    [Migration("20251121204731_SetExistingUsersToOffline")]
+    partial class SetExistingUsersToOffline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
