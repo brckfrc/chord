@@ -250,9 +250,11 @@
 - [x] Migration: AddStatusFieldsToUsers ✅
 - [x] Offline durumu eklendi (disconnect olduğunda otomatik) ✅
 - [x] User entity default status → Offline (yeni kullanıcılar offline başlıyor) ✅
-- [x] PresenceHub OnDisconnectedAsync → status Offline'a set ediliyor ✅
+- [x] PresenceHub OnDisconnectedAsync → status preserve ediliyor (Offline'a set edilmiyor) ✅
+- [x] AuthService.GetCurrentUserAsync → status değiştirme kodu kaldırıldı (sadece PresenceHub yönetiyor) ✅
 - [x] Database migration → mevcut kullanıcılar Offline olarak güncellendi ✅
 - [x] Members listesinde doğru online/offline durumu gösteriliyor ✅
+- [x] Frontend: Offline seçeneği kaldırıldı (StatusUpdateModal ve UserSettingsModal'dan) - Invisible zaten diğerlerine offline gibi görünüyor ✅
 
 ### Deliverables
 
@@ -530,6 +532,10 @@
 ### Ek Özellikler (Bonus)
 
 - [x] **Status Preservation**: User status (Idle, DND, Invisible) preserved on browser close/reopen ✅
+  - OnDisconnectedAsync: Status preserve ediliyor (Offline'a set edilmiyor)
+  - OnConnectedAsync: Sadece Offline ise Online'a set ediliyor, diğer status'ler korunuyor
+  - AuthService.GetCurrentUserAsync: Status değiştirmiyor (sadece PresenceHub yönetiyor)
+  - Frontend: Offline seçeneği kaldırıldı - Invisible zaten diğerlerine offline gibi görünüyor
 - [x] **Message Grouping**: Discord-like message grouping (same user consecutive messages within 5 minutes) ✅
 - [x] **Message Timestamp Formatting**: Same day → time only, different day → date + time ✅
 - [x] **Status Update Modal**: Quick status change modal (upward-opening) ✅
