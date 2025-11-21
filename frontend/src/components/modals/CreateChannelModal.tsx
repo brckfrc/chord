@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { useToast } from "@/hooks/use-toast"
-import { Hash, Mic } from "lucide-react"
+import { Hash, Mic, Megaphone } from "lucide-react"
 
 const createChannelSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters").max(100),
@@ -117,15 +117,23 @@ export function CreateChannelModal({
           <DialogTitle className="flex items-center gap-2">
             {defaultChannelType === ChannelType.Text ? (
               <Hash className="h-5 w-5" />
-            ) : (
+            ) : defaultChannelType === ChannelType.Voice ? (
               <Mic className="h-5 w-5" />
+            ) : (
+              <Megaphone className="h-5 w-5" />
             )}
             {defaultChannelType === ChannelType.Text
               ? "Create Text Channel"
-              : "Create Voice Channel"}
+              : defaultChannelType === ChannelType.Voice
+              ? "Create Voice Channel"
+              : "Create Announcement Channel"}
           </DialogTitle>
           <DialogDescription>
-            Create a new {defaultChannelType === ChannelType.Text ? "text" : "voice"} channel in this guild
+            Create a new {defaultChannelType === ChannelType.Text
+              ? "text"
+              : defaultChannelType === ChannelType.Voice
+              ? "voice"
+              : "announcement"} channel in this guild
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

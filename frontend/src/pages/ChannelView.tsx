@@ -14,7 +14,7 @@ import {
 import { MessageList } from "@/components/messages/MessageList"
 import { MessageComposer } from "@/components/messages/MessageComposer"
 import { TypingIndicator } from "@/components/messages/TypingIndicator"
-import { Hash, Mic } from "lucide-react"
+import { Hash, Mic, Megaphone } from "lucide-react"
 import { ChannelType } from "@/lib/api/channels"
 
 export function ChannelView() {
@@ -30,7 +30,7 @@ export function ChannelView() {
 
   // Get current channel info
   const currentChannel = channels.find((c) => c.id === channelId)
-  const isTextChannel = currentChannel?.type === ChannelType.Text
+  const isTextChannel = currentChannel?.type === ChannelType.Text || currentChannel?.type === ChannelType.Announcement
 
   // SignalR connection for ChatHub
   const { invoke: chatInvoke, on: chatOn, isConnected: isChatConnected } = useSignalR(
@@ -93,9 +93,8 @@ export function ChannelView() {
 
     // ReceiveMessage event
     const handleReceiveMessage = (message: any) => {
-      if (message.channelId === channelId) {
-        dispatch(addMessage({ channelId, message }))
-      }
+      // SignalR group ensures we only receive messages for channels we've joined
+      dispatch(addMessage({ channelId, message }))
     }
 
     // MessageEdited event
@@ -187,7 +186,11 @@ export function ChannelView() {
     <div className="flex h-full flex-col bg-background">
       {/* Channel Header */}
       <div className="h-12 border-b border-border px-4 flex items-center shadow-sm flex-shrink-0">
-        <Hash className="h-5 w-5 text-muted-foreground mr-2" />
+        {currentChannel?.type === ChannelType.Announcement ? (
+          <Megaphone className="h-5 w-5 text-muted-foreground mr-2" />
+        ) : (
+          <Hash className="h-5 w-5 text-muted-foreground mr-2" />
+        )}
         <h2 className="text-base font-semibold text-foreground">
           {currentChannel?.name || `Channel ${channelId?.substring(0, 8)}...`}
         </h2>

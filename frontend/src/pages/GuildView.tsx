@@ -19,9 +19,9 @@ export function GuildView() {
 
   useEffect(() => {
     if (!isLoading && guildId && channels.length > 0) {
-      // Find first text channel
+      // Find first text or announcement channel
       const firstTextChannel = channels.find(
-        (c) => c.type === ChannelType.Text
+        (c) => c.type === ChannelType.Text || c.type === ChannelType.Announcement
       )
       if (firstTextChannel) {
         navigate(`/channels/${guildId}/${firstTextChannel.id}`, { replace: true })

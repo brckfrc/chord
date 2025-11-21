@@ -1,7 +1,11 @@
 import * as signalR from "@microsoft/signalr";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5049";
+// SignalR için base URL (hub'lar /api prefix'i olmadan map edilmiş)
+// VITE_SIGNALR_BASE_URL set edilmişse onu kullan, yoksa VITE_API_BASE_URL'den /api'yi kaldır
+const SIGNALR_BASE_URL = import.meta.env.VITE_SIGNALR_BASE_URL 
+  || (import.meta.env.VITE_API_BASE_URL 
+    ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, "")  // Fallback: /api'yi kaldır
+    : "http://localhost:5049");
 
 // Global connection manager - one connection per hubUrl
 class SignalRConnectionManager {
@@ -66,7 +70,7 @@ class SignalRConnectionManager {
   ): Promise<signalR.HubConnection> {
     // Create new connection
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${API_BASE_URL}${hubUrl}`, {
+      .withUrl(`${SIGNALR_BASE_URL}${hubUrl}`, {
         accessTokenFactory: () => getAccessToken() || "",
       })
       .withAutomaticReconnect({

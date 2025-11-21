@@ -813,6 +813,9 @@
 - [ ] GitHub Actions CI/CD (build → test → deploy)
 - [ ] Sunucuya deployment (domain bağlama, SSL)
 - [ ] Environment variables yönetimi
+  - ✅ Frontend `.env` dosyası: `VITE_API_BASE_URL` **mutlaka `/api` prefix'i içermeli** (örn: `http://localhost:5049/api`)
+  - ✅ Frontend `.env` dosyası: `VITE_SIGNALR_BASE_URL` (opsiyonel, default: `VITE_API_BASE_URL`'den `/api` kaldırılır)
+  - ⚠️ **Önemli**: `VITE_API_BASE_URL` `/api` olmadan gelirse REST API çağrıları 404 hatası verir
 - [ ] API dokümantasyonu (Swagger/Redoc)
 - [ ] README: Kurulum, kullanım, mimari diyagram
 - [ ] ER diagram güncel

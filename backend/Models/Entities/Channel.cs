@@ -5,7 +5,8 @@ namespace ChordAPI.Models.Entities;
 public enum ChannelType
 {
     Text,
-    Voice
+    Voice,
+    Announcement = 2
 }
 
 public class Channel

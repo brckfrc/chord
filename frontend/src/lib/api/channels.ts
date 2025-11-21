@@ -3,6 +3,7 @@ import { api } from "../api"
 export const ChannelType = {
   Text: 0,
   Voice: 1,
+  Announcement: 2,
 } as const
 
 export type ChannelType = (typeof ChannelType)[keyof typeof ChannelType]

@@ -127,8 +127,20 @@ REDIS_CONNECTION_STRING=localhost:6379
 Create a `.env` file in the `frontend/` directory:
 
 ```env
-VITE_API_BASE_URL=http://localhost:5049
+# REST API Base URL (must include /api prefix)
+VITE_API_BASE_URL=http://localhost:5049/api
+
+# SignalR Base URL (without /api prefix, optional - defaults to VITE_API_BASE_URL without /api)
+VITE_SIGNALR_BASE_URL=http://localhost:5049
 ```
+
+**Important Notes:**
+- `VITE_API_BASE_URL` **must include `/api` prefix** (e.g., `http://localhost:5049/api`)
+  - This is required because all REST API endpoints are mapped under `/api` route
+  - If you omit `/api`, you'll get 404 errors on API calls
+- `VITE_SIGNALR_BASE_URL` is optional
+  - If not set, it automatically removes `/api` from `VITE_API_BASE_URL`
+  - SignalR hubs are mapped at root level (`/hubs/chat`, `/hubs/presence`), not under `/api`
 
 ## 🐳 Docker Deployment
 

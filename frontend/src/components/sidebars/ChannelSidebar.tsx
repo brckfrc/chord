@@ -15,7 +15,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { CreateChannelModal } from "@/components/modals/CreateChannelModal"
 import { InviteModal } from "@/components/modals/InviteModal"
 import { ChannelType } from "@/lib/api/channels"
-import { Hash, Mic, Plus, UserPlus } from "lucide-react"
+import { Hash, Mic, Plus, UserPlus, Megaphone } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { VoiceChannelUsers } from "./VoiceChannelUsers"
 
@@ -52,8 +52,8 @@ export function ChannelSidebar() {
 
     const handleChannelClick = (channel: { id: string; type: ChannelType }) => {
         if (activeGuildId) {
-            if (channel.type === ChannelType.Text) {
-                // Text channel: normal navigation
+            if (channel.type === ChannelType.Text || channel.type === ChannelType.Announcement) {
+                // Text and Announcement channel: normal navigation
                 dispatch(setSelectedChannel(channel.id))
                 navigate(`/channels/${activeGuildId}/${channel.id}`)
             } else if (channel.type === ChannelType.Voice) {
@@ -123,6 +123,11 @@ export function ChannelSidebar() {
         setIsCreateModalOpen(true)
     }
 
+    const handleCreateAnnouncementChannel = () => {
+        setDefaultChannelType(ChannelType.Announcement)
+        setIsCreateModalOpen(true)
+    }
+
     if (!activeGuildId) {
         return (
             <div className="w-60 bg-secondary flex flex-col h-full">
@@ -135,6 +140,7 @@ export function ChannelSidebar() {
 
     const textChannels = channels.filter((c) => c.type === ChannelType.Text)
     const voiceChannels = channels.filter((c) => c.type === ChannelType.Voice)
+    const announcementChannels = channels.filter((c) => c.type === ChannelType.Announcement)
 
     return (
         <div className="w-60 bg-secondary flex flex-col h-full">
@@ -156,6 +162,43 @@ export function ChannelSidebar() {
 
             {/* Channels List */}
             <div className="flex-1 overflow-y-auto px-2 py-2 min-h-0">
+                {/* Announcement Channels */}
+                <div className="mb-4">
+                    <div className="px-2 mb-2 flex items-center justify-between group">
+                        <span className="text-xs font-semibold text-muted-foreground uppercase">
+                            Announcement Channels
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 opacity-0 group-hover:opacity-100"
+                            onClick={handleCreateAnnouncementChannel}
+                            title="Create Announcement Channel"
+                        >
+                            <Plus className="h-3 w-3" />
+                        </Button>
+                    </div>
+                    {announcementChannels.length > 0 && (
+                        <div className="space-y-1">
+                            {announcementChannels.map((channel) => (
+                                <button
+                                    key={channel.id}
+                                    onClick={() => handleChannelClick(channel)}
+                                    className={cn(
+                                        "w-full px-2 py-1.5 rounded flex items-center gap-2 text-sm transition-colors group cursor-pointer",
+                                        channelId === channel.id
+                                            ? "bg-[#1e1f22] text-foreground"
+                                            : "hover:!bg-[#3f4147]"
+                                    )}
+                                >
+                                    <Megaphone className="h-4 w-4 text-muted-foreground" />
+                                    <span className="flex-1 text-left truncate">{channel.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 {/* Text Channels */}
                 <div className="mb-4">
                     <div className="px-2 mb-2 flex items-center justify-between group">
@@ -194,7 +237,7 @@ export function ChannelSidebar() {
                 </div>
 
                 {/* Voice Channels */}
-                <div>
+                <div className="mb-4">
                     <div className="px-2 mb-1 flex items-center justify-between group">
                         <span className="text-xs font-semibold text-muted-foreground uppercase">
                             Voice Channels
