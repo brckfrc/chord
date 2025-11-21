@@ -1,10 +1,10 @@
-import { useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { useNavigate, useParams } from "react-router-dom"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { fetchMentions, markMentionAsRead } from "@/store/slices/mentionsSlice"
+import { fetchMentions, markMentionAsRead, markAllMentionsAsRead } from "@/store/slices/mentionsSlice"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { X, Hash } from "lucide-react"
+import { X, Hash, CheckCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { MessageMentionDto } from "@/lib/api/mentions"
 import { fetchChannels } from "@/store/slices/channelsSlice"
@@ -17,25 +17,54 @@ interface MentionsPanelProps {
 export function MentionsPanel({ open, onClose }: MentionsPanelProps) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
+  const { guildId } = useParams<{ guildId?: string }>()
+  const { guilds, selectedGuildId } = useAppSelector((state) => state.guilds)
   const { mentions, isLoading } = useAppSelector(
     (state) => state.mentions
   )
   const { channels } = useAppSelector((state) => state.channels)
+  const [isMarkingAll, setIsMarkingAll] = useState(false)
 
+  // Get active guild ID (from route or selected guild)
+  const activeGuildId = guildId || selectedGuildId
+
+  // Filter mentions by active guild
+  const filteredMentions = activeGuildId
+    ? mentions.filter((mention) => {
+        const channel = channels.find((c) => c.id === mention.message.channelId)
+        return channel?.guildId === activeGuildId
+      })
+    : mentions // If no active guild (e.g., in /me), show all mentions
+
+  // Fetch mentions only when panel opens
   useEffect(() => {
     if (open) {
-      dispatch(fetchMentions(false)) // Fetch all mentions
-      // Fetch channels for all mentioned channels
+      dispatch(fetchMentions(false))
+    }
+  }, [open, dispatch])
+
+  // Fetch channels for mentioned channels AFTER mentions are loaded
+  useEffect(() => {
+    if (open && !isLoading && mentions.length > 0) {
       const channelIds = new Set(mentions.map((m) => m.message.channelId))
+      const guildIdsToFetch = new Set<string>()
+      
       channelIds.forEach((channelId) => {
-        // Try to find guildId from channels cache
         const channel = channels.find((c) => c.id === channelId)
         if (channel?.guildId) {
-          dispatch(fetchChannels(channel.guildId))
+          guildIdsToFetch.add(channel.guildId)
+        }
+      })
+
+      // Only fetch if we don't have the channels cached
+      guildIdsToFetch.forEach((guildId) => {
+        const hasChannels = channels.some((c) => c.guildId === guildId)
+        if (!hasChannels) {
+          dispatch(fetchChannels(guildId))
         }
       })
     }
-  }, [open, dispatch, mentions, channels])
+  }, [open, isLoading, mentions.length, channels, dispatch])
 
   const handleMentionClick = async (mention: MessageMentionDto) => {
     // Mark as read
@@ -43,15 +72,37 @@ export function MentionsPanel({ open, onClose }: MentionsPanelProps) {
       await dispatch(markMentionAsRead(mention.id))
     }
 
-    // Navigate to the message
+    // Find channel to get guildId
+    const channel = channels.find((c) => c.id === mention.message.channelId)
+    
+    if (!channel?.guildId) {
+      console.error("Channel not found or missing guildId")
+      return
+    }
+
+    // Navigate to the message with correct route structure
     navigate(
-      `/channels/${mention.message.channelId}?message=${mention.messageId}`
+      `/channels/${channel.guildId}/${mention.message.channelId}?message=${mention.messageId}`
     )
     onClose()
   }
 
-  const unreadMentions = mentions.filter((m) => !m.isRead)
-  const readMentions = mentions.filter((m) => m.isRead)
+  const handleMarkAllAsRead = async () => {
+    const unreadMentions = filteredMentions.filter((m) => !m.isRead)
+    if (unreadMentions.length === 0) return
+
+    setIsMarkingAll(true)
+    try {
+      await dispatch(markAllMentionsAsRead(activeGuildId || undefined))
+    } catch (error) {
+      console.error("Failed to mark all mentions as read:", error)
+    } finally {
+      setIsMarkingAll(false)
+    }
+  }
+
+  const unreadMentions = filteredMentions.filter((m) => !m.isRead)
+  const readMentions = filteredMentions.filter((m) => m.isRead)
 
   if (!open) return null
 
@@ -61,23 +112,37 @@ export function MentionsPanel({ open, onClose }: MentionsPanelProps) {
         {/* Header */}
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Mentions</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="h-8 w-8"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {unreadMentions.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleMarkAllAsRead}
+                disabled={isMarkingAll}
+                className="text-xs"
+              >
+                <CheckCheck className="h-4 w-4 mr-1" />
+                {isMarkingAll ? "Marking..." : "Mark all as read"}
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Spinner className="w-6 h-6" />
             </div>
-          ) : mentions.length === 0 ? (
+          ) : filteredMentions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <p>No mentions yet</p>
             </div>

@@ -65,6 +65,24 @@ export const markMentionAsRead = createAsyncThunk(
   }
 );
 
+// Mark all mentions as read (optionally filtered by guild)
+export const markAllMentionsAsRead = createAsyncThunk(
+  "mentions/markAllMentionsAsRead",
+  async (guildId: string | undefined, { dispatch, rejectWithValue }) => {
+    try {
+      const count = await mentionsApi.markAllAsRead(guildId);
+      // Refresh mentions and unread count
+      await dispatch(fetchMentions(false));
+      await dispatch(fetchUnreadMentionCount());
+      return count;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to mark all mentions as read"
+      );
+    }
+  }
+);
+
 const mentionsSlice = createSlice({
   name: "mentions",
   initialState,
@@ -134,6 +152,13 @@ const mentionsSlice = createSlice({
           state.mentions[index].isRead = true;
           state.unreadCount = Math.max(0, state.unreadCount - 1);
         }
+      })
+      // Mark All Mentions as Read
+      .addCase(markAllMentionsAsRead.fulfilled, (state, action) => {
+        // Update mentions to mark filtered ones as read
+        // The actual update will come from fetchMentions refresh
+        const count = action.payload;
+        state.unreadCount = Math.max(0, state.unreadCount - count);
       });
   },
 });

@@ -55,5 +55,14 @@ export const mentionsApi = {
   markMentionAsRead: async (mentionId: string): Promise<void> => {
     await api.patch(`/mentions/${mentionId}/mark-read`)
   },
+
+  markAllAsRead: async (guildId?: string): Promise<number> => {
+    const params = new URLSearchParams()
+    if (guildId) {
+      params.append("guildId", guildId)
+    }
+    const response = await api.patch<{ count: number }>(`/mentions/mark-all-read?${params.toString()}`)
+    return response.data.count
+  },
 }
 

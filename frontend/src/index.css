@@ -10,6 +10,37 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari and Opera */
   }
+
+  /* Modern custom scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #1a1b1e transparent; /* Firefox: thumb and track */
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px; /* Chrome, Safari, Edge */
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent; /* Track background */
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #1a1b1e; /* Thumb color */
+    border-radius: 4px; /* Rounded corners */
+    border: 2px solid transparent; /* Creates padding effect */
+    background-clip: content-box; /* Clips background to content area */
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #2b2d31; /* Hover color */
+    background-clip: content-box;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:active {
+    background-color: #3f4147; /* Active color */
+    background-clip: content-box;
+  }
 }
 
 @layer base {

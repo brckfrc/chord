@@ -123,7 +123,7 @@ export function MessageList({ channelId }: MessageListProps) {
   return (
     <div
       ref={messagesContainerRef}
-      className="flex-1 overflow-y-auto min-h-0"
+      className="flex-1 overflow-y-auto min-h-0 scrollbar-thin"
       onScroll={(e) => {
         // Load more when scrolled to top
         const target = e.currentTarget

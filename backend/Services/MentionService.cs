@@ -76,6 +76,35 @@ public class MentionService : IMentionService
         _logger.LogInformation("Mention {MentionId} marked as read by user {UserId}", mentionId, userId);
     }
 
+    public async Task<int> MarkAllMentionsAsReadAsync(Guid userId, Guid? guildId = null)
+    {
+        IQueryable<Models.Entities.MessageMention> query = _context.MessageMentions
+            .Include(mm => mm.Message)
+                .ThenInclude(m => m.Channel)
+            .Where(mm => mm.MentionedUserId == userId && !mm.IsRead);
+
+        // If guildId is provided, filter by channels in that guild
+        if (guildId.HasValue)
+        {
+            query = query.Where(mm => mm.Message.Channel.GuildId == guildId.Value);
+        }
+
+        var unreadMentions = await query.ToListAsync();
+        var count = unreadMentions.Count;
+
+        if (count > 0)
+        {
+            foreach (var mention in unreadMentions)
+            {
+                mention.IsRead = true;
+            }
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Marked {Count} mentions as read for user {UserId} (Guild: {GuildId})", count, userId, guildId);
+        }
+
+        return count;
+    }
+
     public async Task<int> GetUnreadMentionCountAsync(Guid userId)
     {
         return await _context.MessageMentions

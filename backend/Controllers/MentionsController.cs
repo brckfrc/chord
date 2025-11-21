@@ -97,5 +97,26 @@ public class MentionsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Mark all mentions as read for the current user (optionally filtered by guild)
+    /// </summary>
+    [HttpPatch("mark-all-read")]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<int>> MarkAllMentionsAsRead([FromQuery] Guid? guildId = null)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var count = await _mentionService.MarkAllMentionsAsReadAsync(userId, guildId);
+            return Ok(new { count });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error marking all mentions as read");
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
 
