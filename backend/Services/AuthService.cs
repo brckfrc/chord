@@ -137,14 +137,12 @@ public class AuthService : IAuthService
         // Update last seen
         user.LastSeenAt = DateTime.UtcNow;
         
-        // If status is Offline, set to Online (user is accessing the app)
-        // Otherwise, keep the current status (Online, Idle, DoNotDisturb, or Invisible)
-        // This preserves user's previous status choice (Idle, DND, etc.) when reconnecting
-        if (user.Status == UserStatus.Offline)
-        {
-            user.Status = UserStatus.Online;
-        }
-        // If status is already Online, Idle, DoNotDisturb, or Invisible, keep it as is
+        // DON'T change status here - let PresenceHub handle it
+        // Status should only be changed by:
+        // 1. User explicitly setting it (UpdateStatusAsync)
+        // 2. PresenceHub.OnConnectedAsync (when user connects - only Offline -> Online)
+        // 3. PresenceHub.OnDisconnectedAsync (when user disconnects - but we preserve it now)
+        // This prevents race conditions and ensures status is only managed in one place
         
         await _context.SaveChangesAsync();
 
