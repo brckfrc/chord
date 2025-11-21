@@ -6,6 +6,7 @@ import messagesReducer from "./slices/messagesSlice"
 import presenceReducer from "./slices/presenceSlice"
 import friendsReducer from "./slices/friendsSlice"
 import dmsReducer from "./slices/dmsSlice"
+import mentionsReducer from "./slices/mentionsSlice"
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     presence: presenceReducer,
     friends: friendsReducer,
     dms: dmsReducer,
+    mentions: mentionsReducer,
   },
 })
 

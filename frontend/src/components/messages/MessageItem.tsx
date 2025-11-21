@@ -87,6 +87,42 @@ export function MessageItem({
         }
     }
 
+    // Render message content with mention highlights
+    const renderMessageWithMentions = (content: string): React.ReactNode => {
+        // Regex pattern: @username (word characters)
+        const mentionPattern = /@(\w+)/g
+        const parts: React.ReactNode[] = []
+        let lastIndex = 0
+        let match
+
+        while ((match = mentionPattern.exec(content)) !== null) {
+            // Add text before mention
+            if (match.index > lastIndex) {
+                parts.push(content.substring(lastIndex, match.index))
+            }
+
+            // Add highlighted mention
+            const username = match[1]
+            parts.push(
+                <span
+                    key={match.index}
+                    className="bg-blue-500/20 text-blue-400 rounded px-1 font-medium"
+                >
+                    @{username}
+                </span>
+            )
+
+            lastIndex = mentionPattern.lastIndex
+        }
+
+        // Add remaining text
+        if (lastIndex < content.length) {
+            parts.push(content.substring(lastIndex))
+        }
+
+        return parts.length > 0 ? <>{parts}</> : content
+    }
+
     const formatTime = (dateString: string) => {
         try {
             const date = new Date(dateString)
@@ -185,7 +221,7 @@ export function MessageItem({
                         </div>
                     ) : (
                         <div className="text-sm text-foreground whitespace-pre-wrap break-words">
-                            {message.content}
+                            {renderMessageWithMentions(message.content)}
                         </div>
                     )}
 

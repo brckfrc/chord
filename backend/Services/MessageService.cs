@@ -3,6 +3,7 @@ using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace ChordAPI.Services;
 
@@ -56,12 +57,82 @@ public class MessageService : IMessageService
         _logger.LogInformation("Message {MessageId} created in channel {ChannelId} by user {UserId}",
             message.Id, channelId, userId);
 
+        // Extract and save mentions
+        await ExtractAndSaveMentionsAsync(message.Id, channelId, dto.Content);
+
         // Load author information
         var messageWithAuthor = await _context.Messages
             .Include(m => m.Author)
             .FirstAsync(m => m.Id == message.Id);
 
         return _mapper.Map<MessageResponseDto>(messageWithAuthor);
+    }
+
+    /// <summary>
+    /// Extract @username mentions from message content and save them to database
+    /// </summary>
+    private async Task ExtractAndSaveMentionsAsync(Guid messageId, Guid channelId, string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return;
+        }
+
+        // Regex pattern: @username (word characters, case-insensitive)
+        // Matches: @username, @user_name, @user123
+        // Doesn't match: @ (alone), @@username, @user name (with space)
+        var mentionPattern = @"@(\w+)";
+        var matches = Regex.Matches(content, mentionPattern, RegexOptions.IgnoreCase);
+
+        if (matches.Count == 0)
+        {
+            return;
+        }
+
+        // Get channel and guild to find members
+        var channel = await _context.Channels
+            .Include(c => c.Guild)
+            .ThenInclude(g => g.Members)
+            .ThenInclude(m => m.User)
+            .FirstOrDefaultAsync(c => c.Id == channelId);
+
+        if (channel == null)
+        {
+            return;
+        }
+
+        // Extract unique usernames from matches
+        var mentionedUsernames = matches
+            .Cast<Match>()
+            .Select(m => m.Groups[1].Value.ToLowerInvariant())
+            .Distinct()
+            .ToList();
+
+        // Find users by username in the guild
+        var mentionedUsers = channel.Guild.Members
+            .Where(m => mentionedUsernames.Contains(m.User.Username.ToLowerInvariant()))
+            .Select(m => m.User)
+            .Distinct()
+            .ToList();
+
+        // Create MessageMention records
+        var mentions = mentionedUsers.Select(user => new MessageMention
+        {
+            Id = Guid.NewGuid(),
+            MessageId = messageId,
+            MentionedUserId = user.Id,
+            IsRead = false,
+            CreatedAt = DateTime.UtcNow
+        }).ToList();
+
+        if (mentions.Any())
+        {
+            _context.MessageMentions.AddRange(mentions);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Created {Count} mentions for message {MessageId}",
+                mentions.Count, messageId);
+        }
     }
 
     public async Task<PaginatedMessagesDto> GetChannelMessagesAsync(Guid channelId, Guid userId, int page = 1, int pageSize = 50)

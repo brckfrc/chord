@@ -11,12 +11,18 @@ public class GuildService : IGuildService
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<GuildService> _logger;
+    private readonly IChannelService _channelService;
 
-    public GuildService(AppDbContext context, IMapper mapper, ILogger<GuildService> logger)
+    public GuildService(
+        AppDbContext context, 
+        IMapper mapper, 
+        ILogger<GuildService> logger,
+        IChannelService channelService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _channelService = channelService;
     }
 
     public async Task<GuildResponseDto> CreateGuildAsync(Guid userId, CreateGuildDto dto)
@@ -48,6 +54,33 @@ public class GuildService : IGuildService
 
         _logger.LogInformation("Guild {GuildId} created by user {UserId}", guild.Id, userId);
 
+        // Automatically create default channels
+        try
+        {
+            // Create default text channel
+            await _channelService.CreateChannelAsync(guild.Id, userId, new CreateChannelDto
+            {
+                Name = "general",
+                Type = ChannelType.Text,
+                Topic = null
+            });
+
+            // Create default voice channel
+            await _channelService.CreateChannelAsync(guild.Id, userId, new CreateChannelDto
+            {
+                Name = "Lobby",
+                Type = ChannelType.Voice,
+                Topic = null
+            });
+
+            _logger.LogInformation("Default channels created for guild {GuildId}", guild.Id);
+        }
+        catch (Exception ex)
+        {
+            // Log but don't fail guild creation if channel creation fails
+            _logger.LogWarning(ex, "Failed to create default channels for guild {GuildId}", guild.Id);
+        }
+
         // Reload with navigation properties
         var createdGuild = await _context.Guilds
             .Include(g => g.Owner)
@@ -68,6 +101,7 @@ public class GuildService : IGuildService
                 .ThenInclude(g => g.Members)
             .Include(gm => gm.Guild)
                 .ThenInclude(g => g.Channels)
+            .OrderByDescending(gm => gm.JoinedAt)
             .Select(gm => gm.Guild)
             .Distinct()
             .ToListAsync();

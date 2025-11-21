@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react"
+import { useSearchParams } from "react-router-dom"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
-import { fetchMessages, addMessages } from "@/store/slices/messagesSlice"
+import { fetchMessages } from "@/store/slices/messagesSlice"
 import { MessageItem } from "./MessageItem"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,7 @@ interface MessageListProps {
 
 export function MessageList({ channelId }: MessageListProps) {
   const dispatch = useAppDispatch()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { messagesByChannel, hasMoreByChannel, nextCursorByChannel, isLoading } =
     useAppSelector((state) => state.messages)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -37,12 +39,34 @@ export function MessageList({ channelId }: MessageListProps) {
     }
   }, [channelId])
 
-  // Auto-scroll to bottom on new messages
+  // Scroll to specific message if URL has message parameter
   useEffect(() => {
-    if (messagesEndRef.current) {
+    const messageId = searchParams.get("message")
+    if (messageId && messages.length > 0) {
+      // Wait a bit for messages to render
+      setTimeout(() => {
+        const messageElement = document.getElementById(`message-${messageId}`)
+        if (messageElement) {
+          messageElement.scrollIntoView({ behavior: "smooth", block: "center" })
+          messageElement.classList.add("ring-2", "ring-blue-500", "ring-opacity-50")
+          setTimeout(() => {
+            messageElement.classList.remove("ring-2", "ring-blue-500", "ring-opacity-50")
+          }, 2000)
+          // Remove message param from URL
+          searchParams.delete("message")
+          setSearchParams(searchParams, { replace: true })
+        }
+      }, 100)
+    }
+  }, [messages, searchParams, setSearchParams])
+
+  // Auto-scroll to bottom on new messages (only if no message param)
+  useEffect(() => {
+    const messageId = searchParams.get("message")
+    if (!messageId && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
     }
-  }, [messages.length])
+  }, [messages.length, searchParams])
 
   // Load more messages (scroll to top)
   const handleLoadMore = async () => {
@@ -50,7 +74,7 @@ export function MessageList({ channelId }: MessageListProps) {
 
     isLoadingMoreRef.current = true
     try {
-      const result = await dispatch(
+      await dispatch(
         fetchMessages({ channelId, limit: 50, cursor: nextCursor })
       ).unwrap()
 
@@ -148,29 +172,30 @@ export function MessageList({ channelId }: MessageListProps) {
             })()
 
           // Check if the next message is grouped with this one
-          const isFirstInGroup = !shouldGroup && nextMessage && 
+          const isFirstInGroup = !shouldGroup && !!nextMessage && 
             message.authorId === nextMessage.authorId &&
             (() => {
               const currentTime = new Date(message.createdAt).getTime()
               const nextTime = new Date(nextMessage.createdAt).getTime()
               const diffMinutes = (nextTime - currentTime) / (1000 * 60)
               return diffMinutes < 5
-            })()
+            })() || false
 
           const showAvatar = !shouldGroup
           const showAuthor = !shouldGroup
           const isGrouped = !!shouldGroup
 
           return (
-            <MessageItem
-              key={message.id}
-              message={message}
-              channelId={channelId}
-              showAvatar={showAvatar}
-              showAuthor={showAuthor}
-              isGrouped={isGrouped}
-              isFirstInGroup={isFirstInGroup}
-            />
+            <div id={`message-${message.id}`} key={message.id}>
+              <MessageItem
+                message={message}
+                channelId={channelId}
+                showAvatar={showAvatar}
+                showAuthor={showAuthor}
+                isGrouped={isGrouped}
+                isFirstInGroup={isFirstInGroup}
+              />
+            </div>
           )
         })}
       </div>

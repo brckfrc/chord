@@ -12,17 +12,20 @@ public class ChatHub : Hub
     private readonly IMessageService _messageService;
     private readonly IReactionService _reactionService;
     private readonly IReadStateService _readStateService;
+    private readonly IMentionService _mentionService;
     private readonly ILogger<ChatHub> _logger;
 
     public ChatHub(
         IMessageService messageService,
         IReactionService reactionService,
         IReadStateService readStateService,
+        IMentionService mentionService,
         ILogger<ChatHub> logger)
     {
         _messageService = messageService;
         _reactionService = reactionService;
         _readStateService = readStateService;
+        _mentionService = mentionService;
         _logger = logger;
     }
 
@@ -111,6 +114,36 @@ public class ChatHub : Hub
 
             // Broadcast to all users in the channel (including sender)
             await Clients.Group(channelId).SendAsync("ReceiveMessage", message);
+
+            // Broadcast mentions to mentioned users
+            try
+            {
+                var mentions = await _mentionService.GetMentionsByMessageIdAsync(message.Id);
+                
+                foreach (var mention in mentions)
+                {
+                    // Send UserMentioned event to the mentioned user
+                    await Clients.User(mention.MentionedUserId.ToString()).SendAsync("UserMentioned", new
+                    {
+                        mentionId = mention.Id,
+                        messageId = message.Id,
+                        channelId = channelId,
+                        authorId = userId,
+                        content = dto.Content
+                    });
+                }
+
+                if (mentions.Any())
+                {
+                    _logger.LogInformation("Sent {Count} mention notifications for message {MessageId}",
+                        mentions.Count(), message.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log but don't fail message send if mention notification fails
+                _logger.LogWarning(ex, "Failed to send mention notifications for message {MessageId}", message.Id);
+            }
 
             _logger.LogInformation("User {UserId} sent message {MessageId} to channel {ChannelId}",
                 userId, message.Id, channelId);

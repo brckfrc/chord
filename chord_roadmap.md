@@ -79,6 +79,11 @@
 - ✅ Voice (1) - Voice communication channels
 - ⏳ Announcement (2) - Announcement-only channels (TODO: Backend enum'a ekle, frontend UI ekle)
 
+**Default Channels:**
+
+- ✅ Guild oluşturulduğunda otomatik olarak "general" text channel ve "Lobby" voice channel oluşturuluyor
+- ✅ GuildService.CreateGuildAsync içinde IChannelService kullanılarak otomatik channel oluşturma eklendi
+
 **Middleware Güncellemeleri (Gerekirse):**
 
 - Yeni exception tipi eklenirse → `GlobalExceptionMiddleware`'e case ekle
@@ -323,7 +328,13 @@
 
 - ✅ Text channels (type 0) - Full support
 - ✅ Voice channels (type 1) - Full support
-- ⏳ Announcement channels (type 2) - Backend'de database'de mevcut ama enum'da tanımlı değil (FAZ 5.7'de eklenecek)
+- ✅ Announcement channels (type 2) - Full support (FAZ 5.7'de eklendi)
+
+**Guild Sıralama:**
+
+- ✅ Guild'lar kullanıcının katılma tarihine göre sıralanıyor (en yeni katıldığı üstte)
+- ✅ Backend'de `GetUserGuildsAsync` metodunda `OrderByDescending(gm => gm.JoinedAt)` eklendi
+- ✅ Frontend'de yeni guild oluşturulduğunda `unshift` ile en başa ekleniyor
 
 ---
 
@@ -439,25 +450,25 @@
 ## 🏗️ FAZ 5.7: ANNOUNCEMENT CHANNELS ⭐ YENİ
 
 **Süre**: ~1 gün  
-**DURUM**: ⏳ Başlanmadı  
+**DURUM**: ✅ %100 TAMAMLANDI  
 **Neden bu aşamada**: Database'de type 2 olarak mevcut ama enum'da tanımlı değil, frontend'de desteklenmiyor
 
 ### Backend Görevler
 
-- [ ] ChannelType enum'a `Announcement = 2` ekle (`backend/Models/Entities/Channel.cs`)
-- [ ] Frontend `ChannelType` constant'a `Announcement: 2` ekle (`frontend/src/lib/api/channels.ts`)
-- [ ] CreateChannelModal'a Announcement seçeneği ekle (opsiyonel: sadece guild owner/admin)
-- [ ] ChannelSidebar'da Announcement channel'ları ayrı bir bölümde göster (Text Channels, Voice Channels, Announcement Channels)
-- [ ] Announcement channel'lar için özel icon (megaphone veya bell icon)
-- [ ] Announcement channel validation: Sadece okuma (read-only) veya özel yetki kontrolü (opsiyonel)
+- [x] ChannelType enum'a `Announcement = 2` ekle (`backend/Models/Entities/Channel.cs`) ✅
+- [x] Frontend `ChannelType` constant'a `Announcement: 2` ekle (`frontend/src/lib/api/channels.ts`) ✅
+- [x] CreateChannelModal'a Announcement seçeneği ekle ✅
+- [x] ChannelSidebar'da Announcement channel'ları ayrı bir bölümde göster (Text Channels, Voice Channels, Announcement Channels) ✅
+- [x] Announcement channel'lar için özel icon (megaphone icon) ✅
+- [x] Announcement channel validation: Text channel gibi çalışıyor (okuma/yazma) ✅
 
 ### Frontend Görevler
 
-- [ ] ChannelType constant güncellemesi
-- [ ] CreateChannelModal'da Announcement seçeneği
-- [ ] ChannelSidebar'da Announcement channel'ları ayrı göster
-- [ ] Announcement channel icon (megaphone/bell)
-- [ ] Announcement channel UI styling (farklı renk veya görünüm, opsiyonel)
+- [x] ChannelType constant güncellemesi ✅
+- [x] CreateChannelModal'da Announcement seçeneği ✅
+- [x] ChannelSidebar'da Announcement channel'ları ayrı göster (en üstte) ✅
+- [x] Announcement channel icon (megaphone) ✅
+- [x] Announcement channel UI styling (text channel gibi çalışıyor) ✅
 
 ### Deliverables
 
@@ -468,14 +479,15 @@
 
 ### 📝 Notlar
 
-**Mevcut Durum:**
+**Tamamlanan Özellikler:**
 
-- ⚠️ Database'de `type = 2` olan channel'lar mevcut
-- ⚠️ Backend enum'da `Announcement` tanımlı değil
-- ⚠️ Frontend'de Announcement desteği yok
-- ✅ Position system Announcement'ı da destekleyecek (type bazında izole)
+- ✅ Backend enum'da `Announcement = 2` tanımlı
+- ✅ Frontend'de Announcement desteği tam
+- ✅ Position system Announcement'ı da destekliyor (type bazında izole)
+- ✅ Announcement channel'lar ChannelSidebar'da en üstte gösteriliyor
+- ✅ Text channel gibi çalışıyor (okuma/yazma)
 
-**Announcement Channel Özellikleri (Opsiyonel):**
+**Gelecek İyileştirmeler (Opsiyonel):**
 
 - Read-only mode (sadece guild owner/admin yazabilir)
 - Özel görünüm (farklı renk, icon)
@@ -539,27 +551,32 @@
 ## 🏗️ FAZ 6.5: MENTIONS & NOTIFICATIONS ⭐ YENİ
 
 **Süre**: ~1-2 gün  
-**DURUM**: ⏳ Başlanmadı  
+**DURUM**: ✅ %100 TAMAMLANDI  
 **Neden bu aşamada**: Mesajlaşma UI hazır, mention parse ve bildirim gönderilebilir
 
 ### Backend Görevler
 
-- [ ] MessageMention entity (MessageId, MentionedUserId, IsRead, CreatedAt)
-- [ ] MessageService: ExtractMentions helper (regex: @username → userId)
-- [ ] CreateMessage'da mention parse + MessageMention kaydet
-- [ ] API: GET /users/me/mentions?unread=true
-- [ ] PATCH /mentions/{id}/mark-read
-- [ ] ChatHub: Server → Client event: UserMentioned
-- [ ] Migration: CreateMessageMentionsTable
+- [x] MessageMention entity (MessageId, MentionedUserId, IsRead, CreatedAt) ✅
+- [x] MessageService: ExtractMentions helper (regex: @username → userId) ✅
+- [x] CreateMessage'da mention parse + MessageMention kaydet ✅
+- [x] API: GET /api/mentions?unreadOnly=true ✅
+- [x] GET /api/mentions/unread-count ✅
+- [x] PATCH /api/mentions/{id}/mark-read ✅
+- [x] ChatHub: Server → Client event: UserMentioned ✅
+- [x] Migration: CreateMessageMentionsTable ✅
+- [x] MentionService ve IMentionService oluşturuldu ✅
+- [x] MentionsController ve API endpoints eklendi ✅
 
 ### Frontend Görevler
 
-- [ ] MessageComposer: @ yazınca autocomplete (guild members)
-- [ ] MessageItem: Mention highlight (blue background)
-- [ ] MentionsPanel component (unread mentions listesi)
-- [ ] Badge on user avatar (unread mention count)
-- [ ] Browser notification (Notification API)
-- [ ] Click to jump to mentioned message
+- [x] MessageComposer: @ yazınca autocomplete (guild members) ✅
+- [x] MessageItem: Mention highlight (blue background) ✅
+- [x] MentionsPanel component (unread mentions listesi) ✅
+- [x] Badge on user avatar (unread mention count) ✅
+- [x] Browser notification (Notification API) ✅
+- [x] Click to jump to mentioned message ✅
+- [x] Mentions Redux slice oluşturuldu ✅
+- [x] Mentions API client eklendi ✅
 
 ### Deliverables
 
@@ -841,36 +858,34 @@
 5. **Faz 5.3** ✅ Voice Channel UI Infrastructure
 6. **Faz 6** ✅ Frontend Messaging & SignalR Integration
 7. **Faz 5.5** ✅ Guild Invites
-8. **Faz 5.7** ⏳ Announcement Channels (Database'de mevcut, enum'a ekle)
-9. **Faz 6.5** 🟡 **ŞİMDİ YAPILACAK** → Mentions & Notifications
-10. **Faz 7-8** → File upload, voice channels (WebRTC)
+8. **Faz 5.7** ✅ Announcement Channels
+9. **Faz 6.5** ✅ Mentions & Notifications
+10. **Faz 7-8** 🟡 **SONRAKİ ADIM** → File upload, voice channels (WebRTC)
 11. **Faz 9-9.5** → Permissions + DMs + Friends
 12. **Faz 10-11** → Testing, audit log, notifications, security
 13. **Faz 12** → Production deployment
 
 ---
 
-## 🚀 SONRAKİ ADIM: FAZ 6.5
+## 🚀 SONRAKİ ADIM: FAZ 7
 
 **Hemen yapılacaklar:**
 
-### FAZ 6.5: Mentions & Notifications
+### FAZ 7: File Upload & Video Support
 
-1. MessageMention entity ve migration
-2. Backend mention parsing logic (extract @username from message content)
-3. Backend API endpoints:
-   - GET /users/me/mentions?unread=true
-   - PATCH /mentions/{id}/mark-read
-4. ChatHub: UserMentioned event (SignalR)
-5. Frontend @mention autocomplete (MessageComposer'da @ yazınca guild members)
-6. MessageItem: Mention highlight (blue background)
-7. MentionsPanel component (unread mentions listesi)
-8. Badge on user avatar (unread mention count)
-9. Browser notification (Notification API)
-10. Click to jump to mentioned message
+1. MinIO Docker container (veya Azure Blob)
+2. StorageService: Upload, Delete, Presigned URL
+3. POST /api/upload endpoint (multipart, validation: boyut, tip, süre)
+4. Message.Attachments JSON yapısı (url, type, size, name, duration)
+5. Frontend FileUploadButton component
+6. Upload API client (FormData, progress bar)
+7. VideoAttachment component (inline player)
+8. ImageAttachment component (thumbnail + lightbox)
+9. Composer'a upload butonu entegrasyonu
+10. Preview ve limit uyarıları
 
-**Tahmini süre**: ~1-2 gün  
-**Test edilebilir**: @mention bildirimleri gönderilecek, unread mentions listesi çalışacak
+**Tahmini süre**: ~1 hafta  
+**Test edilebilir**: Dosya yükleme, video/resim görüntüleme çalışacak
 
 ---
 

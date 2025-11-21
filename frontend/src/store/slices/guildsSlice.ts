@@ -155,7 +155,7 @@ const guildsSlice = createSlice({
       })
       .addCase(createGuild.fulfilled, (state, action) => {
         state.isLoading = false
-        state.guilds.push(action.payload)
+        state.guilds.unshift(action.payload)
       })
       .addCase(createGuild.rejected, (state, action) => {
         state.isLoading = false

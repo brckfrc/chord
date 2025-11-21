@@ -44,6 +44,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.MemberCount, opt => opt.Ignore())
             .ForMember(dest => dest.IsExpired, opt => opt.Ignore())
             .ForMember(dest => dest.IsMaxUsesReached, opt => opt.Ignore());
+
+        // MessageMention mappings
+        CreateMap<Models.Entities.MessageMention, MessageMentionDto>();
     }
 }
 

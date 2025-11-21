@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<Channel> Channels { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<MessageReaction> MessageReactions { get; set; }
+    public DbSet<MessageMention> MessageMentions { get; set; }
     public DbSet<ChannelReadState> ChannelReadStates { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -116,6 +117,31 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(mr => mr.MessageId);
             entity.HasIndex(mr => mr.CreatedAt);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // MessageMention configuration
+        modelBuilder.Entity<MessageMention>(entity =>
+        {
+            entity.HasOne(mm => mm.Message)
+                .WithMany()
+                .HasForeignKey(mm => mm.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(mm => mm.MentionedUser)
+                .WithMany()
+                .HasForeignKey(mm => mm.MentionedUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Unique index: A user can only be mentioned once per message (for IsRead tracking)
+            entity.HasIndex(mm => new { mm.MessageId, mm.MentionedUserId })
+                .IsUnique();
+
+            entity.HasIndex(mm => mm.MentionedUserId);
+            entity.HasIndex(mm => mm.MessageId);
+            entity.HasIndex(mm => mm.CreatedAt);
+            entity.HasIndex(mm => new { mm.MentionedUserId, mm.IsRead });
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
