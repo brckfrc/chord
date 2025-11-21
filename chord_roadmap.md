@@ -77,7 +77,7 @@
 
 - ✅ Text (0) - Normal text messaging channels
 - ✅ Voice (1) - Voice communication channels
-- ⏳ Announcement (2) - Announcement-only channels (TODO: Backend enum'a ekle, frontend UI ekle)
+- ✅ Announcement (2) - Announcement-only channels (FAZ 5.7'de tamamlandı)
 
 **Default Channels:**
 
@@ -249,6 +249,10 @@
 - [x] Server → Client: UserStatusChanged event ✅
 - [x] Migration: AddStatusFieldsToUsers ✅
 - [x] Offline durumu eklendi (disconnect olduğunda otomatik) ✅
+- [x] User entity default status → Offline (yeni kullanıcılar offline başlıyor) ✅
+- [x] PresenceHub OnDisconnectedAsync → status Offline'a set ediliyor ✅
+- [x] Database migration → mevcut kullanıcılar Offline olarak güncellendi ✅
+- [x] Members listesinde doğru online/offline durumu gösteriliyor ✅
 
 ### Deliverables
 
@@ -534,6 +538,7 @@
 - [x] **Delete Message Modal**: Custom confirmation modal (replaces browser confirm) ✅
 - [x] **Invisible Status Handling**: Invisible users appear as Offline to others ✅
 - [x] **DND Status Grouping**: Do Not Disturb users grouped under Online category ✅
+- [x] **Custom Scrollbar Styling**: Modern, ince scrollbar (mesaj listesi için) ✅
 
 ### Deliverables
 
@@ -562,10 +567,12 @@
 - [x] API: GET /api/mentions?unreadOnly=true ✅
 - [x] GET /api/mentions/unread-count ✅
 - [x] PATCH /api/mentions/{id}/mark-read ✅
+- [x] PATCH /api/mentions/mark-all-read (guildId ile filtreleme desteği) ✅
 - [x] ChatHub: Server → Client event: UserMentioned ✅
 - [x] Migration: CreateMessageMentionsTable ✅
 - [x] MentionService ve IMentionService oluşturuldu ✅
 - [x] MentionsController ve API endpoints eklendi ✅
+- [x] MarkAllMentionsAsReadAsync metodu (verimli batch update) ✅
 
 ### Frontend Görevler
 
@@ -577,13 +584,18 @@
 - [x] Click to jump to mentioned message ✅
 - [x] Mentions Redux slice oluşturuldu ✅
 - [x] Mentions API client eklendi ✅
+- [x] Guild filtreleme (sadece aktif guild'in mentions'ları gösteriliyor) ✅
+- [x] "Mark all as read" butonu (header'da, sadece unread varsa görünüyor) ✅
+- [x] Self-mention prevention (@ autocomplete'te kendini mention edemez) ✅
 
 ### Deliverables
 
 ✅ @mention autocomplete çalışıyor  
 ✅ Mention edilen kullanıcıya bildirim gidiyor  
 ✅ Unread mentions listesi çalışıyor  
-✅ Click to jump çalışıyor
+✅ Click to jump çalışıyor  
+✅ Guild filtreleme çalışıyor (aktif guild'in mentions'ları)  
+✅ "Mark all as read" butonu çalışıyor (verimli batch update)
 
 ---
 
