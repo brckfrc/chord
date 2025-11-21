@@ -16,6 +16,7 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
     const dispatch = useAppDispatch()
     const { channels } = useAppSelector((state) => state.channels)
     const { membersByGuild } = useAppSelector((state) => state.guilds)
+    const { user } = useAppSelector((state) => state.auth)
     const [content, setContent] = useState("")
     const [isSending, setIsSending] = useState(false)
     const [mentionQuery, setMentionQuery] = useState("")
@@ -62,15 +63,22 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
         }
     }, [content])
 
-    // Filter members for autocomplete
-    const filteredMembers = mentionQuery
+    // Filter members for autocomplete (exclude current user)
+    const filteredMembers = (mentionQuery
         ? guildMembers.filter((member) => {
+            // Kendi kendini mention edemez
+            if (member.userId === user?.id) {
+                return false
+            }
             const username = member.user?.username?.toLowerCase() || ""
             const displayName = member.user?.displayName?.toLowerCase() || ""
             const query = mentionQuery.toLowerCase()
             return username.startsWith(query) || displayName.startsWith(query)
         })
-        : guildMembers
+        : guildMembers.filter((member) => {
+            // Kendi kendini mention edemez
+            return member.userId !== user?.id
+        }))
 
     // Limit to 10 results
     const mentionSuggestions = filteredMembers.slice(0, 10)
