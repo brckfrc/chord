@@ -1,24 +1,27 @@
 import * as signalR from "@microsoft/signalr";
 
-// SignalR için base URL (hub'lar /api prefix'i olmadan map edilmiş)
-// VITE_SIGNALR_BASE_URL set edilmişse onu kullan, yoksa VITE_API_BASE_URL'den /api'yi kaldır
-const SIGNALR_BASE_URL = import.meta.env.VITE_SIGNALR_BASE_URL 
-  || (import.meta.env.VITE_API_BASE_URL 
-    ? import.meta.env.VITE_API_BASE_URL.replace(/\/api$/, "")  // Fallback: /api'yi kaldır
-    : "http://localhost:5049");
+// SignalR base URL (hubs are mapped at root level, not under /api)
+const SIGNALR_BASE_URL =
+  import.meta.env.VITE_SIGNALR_BASE_URL || "http://localhost:5049";
 
 // Global connection manager - one connection per hubUrl
 class SignalRConnectionManager {
   private connections: Map<string, signalR.HubConnection> = new Map();
-  private connectionStates: Map<string, "Disconnected" | "Connecting" | "Connected" | "Reconnecting"> = new Map();
+  private connectionStates: Map<
+    string,
+    "Disconnected" | "Connecting" | "Connected" | "Reconnecting"
+  > = new Map();
   private subscribers: Map<string, Set<() => void>> = new Map();
-  private connectingPromises: Map<string, Promise<signalR.HubConnection>> = new Map();
+  private connectingPromises: Map<string, Promise<signalR.HubConnection>> =
+    new Map();
 
   getConnection(hubUrl: string): signalR.HubConnection | null {
     return this.connections.get(hubUrl) || null;
   }
 
-  getConnectionState(hubUrl: string): "Disconnected" | "Connecting" | "Connected" | "Reconnecting" {
+  getConnectionState(
+    hubUrl: string
+  ): "Disconnected" | "Connecting" | "Connected" | "Reconnecting" {
     return this.connectionStates.get(hubUrl) || "Disconnected";
   }
 
@@ -28,7 +31,10 @@ class SignalRConnectionManager {
   ): Promise<signalR.HubConnection> {
     // If connection already exists and is connected, return it
     const existingConnection = this.connections.get(hubUrl);
-    if (existingConnection && existingConnection.state === signalR.HubConnectionState.Connected) {
+    if (
+      existingConnection &&
+      existingConnection.state === signalR.HubConnectionState.Connected
+    ) {
       return existingConnection;
     }
 
@@ -51,7 +57,10 @@ class SignalRConnectionManager {
     }
 
     // Create connection promise
-    const connectionPromise = this._createConnectionInternal(hubUrl, getAccessToken);
+    const connectionPromise = this._createConnectionInternal(
+      hubUrl,
+      getAccessToken
+    );
     this.connectingPromises.set(hubUrl, connectionPromise);
 
     try {
@@ -87,7 +96,7 @@ class SignalRConnectionManager {
     this.connectionStates.set(hubUrl, "Connecting");
 
     // Connection state handlers
-    connection.onclose((error) => {
+    connection.onclose((_error) => {
       // Only update state if this is still the active connection
       if (this.connections.get(hubUrl) === connection) {
         this.connectionStates.set(hubUrl, "Disconnected");
@@ -95,14 +104,14 @@ class SignalRConnectionManager {
       }
     });
 
-    connection.onreconnecting((error) => {
+    connection.onreconnecting((_error) => {
       if (this.connections.get(hubUrl) === connection) {
         this.connectionStates.set(hubUrl, "Reconnecting");
         this.notifySubscribers(hubUrl);
       }
     });
 
-    connection.onreconnected((connectionId) => {
+    connection.onreconnected((_connectionId) => {
       if (this.connections.get(hubUrl) === connection) {
         this.connectionStates.set(hubUrl, "Connected");
         this.notifySubscribers(hubUrl);
@@ -156,7 +165,10 @@ class SignalRConnectionManager {
 
   async stopConnection(hubUrl: string): Promise<void> {
     const connection = this.connections.get(hubUrl);
-    if (connection && connection.state !== signalR.HubConnectionState.Disconnected) {
+    if (
+      connection &&
+      connection.state !== signalR.HubConnectionState.Disconnected
+    ) {
       await connection.stop().catch(console.error);
       this.connections.delete(hubUrl);
       this.connectionStates.delete(hubUrl);
@@ -174,4 +186,3 @@ class SignalRConnectionManager {
 }
 
 export const connectionManager = new SignalRConnectionManager();
-

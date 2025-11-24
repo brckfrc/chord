@@ -1,4 +1,4 @@
-# 🎵 Chord - Discord-like Real-Time Chat Application
+# 🎙️ Chord - Discord-like Real-Time Chat Application
 
 Chord is a modern, real-time chat application inspired by Discord, built with .NET 9 and React. It features guilds (servers), channels, real-time messaging via SignalR, voice channel presence, reactions, pinned messages, and more.
 
@@ -20,6 +20,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 ## 🛠️ Tech Stack
 
 ### Backend
+
 - **.NET 9.0** - Web API framework
 - **Entity Framework Core 9** - ORM
 - **SQL Server** - Primary database
@@ -32,6 +33,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **FluentValidation** - Input validation
 
 ### Frontend
+
 - **React 18** - UI framework
 - **TypeScript** - Type safety
 - **Vite** - Build tool
@@ -80,6 +82,7 @@ dotnet run
 ```
 
 Backend will be available at:
+
 - **API**: `http://localhost:5049`
 - **Swagger**: `http://localhost:5049/swagger`
 
@@ -130,17 +133,18 @@ Create a `.env` file in the `frontend/` directory:
 # REST API Base URL (must include /api prefix)
 VITE_API_BASE_URL=http://localhost:5049/api
 
-# SignalR Base URL (without /api prefix, optional - defaults to VITE_API_BASE_URL without /api)
+# SignalR Base URL (without /api prefix, required)
 VITE_SIGNALR_BASE_URL=http://localhost:5049
 ```
 
 **Important Notes:**
+
 - `VITE_API_BASE_URL` **must include `/api` prefix** (e.g., `http://localhost:5049/api`)
   - This is required because all REST API endpoints are mapped under `/api` route
   - If you omit `/api`, you'll get 404 errors on API calls
-- `VITE_SIGNALR_BASE_URL` is optional
-  - If not set, it automatically removes `/api` from `VITE_API_BASE_URL`
+- `VITE_SIGNALR_BASE_URL` is required
   - SignalR hubs are mapped at root level (`/hubs/chat`, `/hubs/presence`), not under `/api`
+  - **Do not include trailing slash** - hubUrl already starts with `/` (e.g., use `http://localhost:5049` not `http://localhost:5049/`)
 
 ## 🐳 Docker Deployment
 
@@ -353,6 +357,7 @@ npm run preview
 ## 📚 API Documentation
 
 Once the backend is running, visit:
+
 - **Swagger UI**: `http://localhost:5049/swagger`
 - **Health Check**: `http://localhost:5049/health`
 
@@ -401,4 +406,3 @@ For questions or support, please open an issue on GitHub.
 ---
 
 **Note**: This is an active development project. See `chord_roadmap.md` for detailed feature roadmap and development phases.
-

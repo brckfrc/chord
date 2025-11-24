@@ -1,73 +1,87 @@
-# React + TypeScript + Vite
+# Chord Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript frontend for Chord, a Discord-like real-time chat application.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool
+- **Redux Toolkit** - State management
+- **React Router** - Routing
+- **Tailwind CSS** - Styling
+- **shadcn/ui** - UI components
+- **SignalR Client** - Real-time communication
+- **React Hook Form + Zod** - Form validation
 
-## React Compiler
+## Prerequisites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js 18+
+- npm or yarn
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 1. Install Dependencies
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Setup Environment Variables
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Create a `.env` file in the `frontend/` directory:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+# REST API Base URL (must include /api prefix)
+VITE_API_BASE_URL=http://localhost:5049/api
+
+# SignalR Base URL (without /api prefix, required)
+VITE_SIGNALR_BASE_URL=http://localhost:5049
 ```
+
+**Important Notes:**
+
+- `VITE_API_BASE_URL` **must include `/api` prefix** (e.g., `http://localhost:5049/api`)
+  - This is required because all REST API endpoints are mapped under `/api` route
+  - If you omit `/api`, you'll get 404 errors on API calls
+- `VITE_SIGNALR_BASE_URL` is required
+  - SignalR hubs are mapped at root level (`/hubs/chat`, `/hubs/presence`), not under `/api`
+  - **Do not include trailing slash** - hubUrl already starts with `/` (e.g., use `http://localhost:5049` not `http://localhost:5049/`)
+
+### 3. Start Development Server
+
+```bash
+npm run dev
+```
+
+Frontend will be available at `http://localhost:5173`
+
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/      # React components
+│   ├── pages/           # Page components
+│   ├── store/           # Redux store
+│   ├── lib/             # Utilities & API clients
+│   └── hooks/           # Custom React hooks
+└── public/              # Static assets
+```
+
+## Upcoming Features
+
+- File upload UI (upload button, progress bar, preview, attachment components)
+- WebRTC voice integration (RTCPeerConnection, audio stream management, STUN/TURN config)
+- Direct Messages UI (DM channel list, friend requests, DM navigation)
+- Notification settings UI (per-channel preferences, mute/unmute, browser notification filtering)
+- Performance optimizations (code splitting, lazy loading, memoization)
+- E2E testing (Playwright/Cypress, critical flow tests)
+- Production build optimization (bundle size, asset optimization, PWA support)

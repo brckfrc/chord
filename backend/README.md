@@ -262,117 +262,48 @@ docker compose -f docker-compose.prod.yml restart api
 - Hot reload is enabled by default
 - Check `Logs/` directory for application logs
 
-## Project Status
+## Upcoming Features
 
-### ✅ Phase 1: Authentication System (100% Complete)
-**Completed:**
-- ✅ User registration with validation (BCrypt password hashing)
-- ✅ User login (email or username)
-- ✅ JWT access token generation (60 min expiry)
-- ✅ Refresh token mechanism with rotation (30 day expiry)
-- ✅ Protected endpoints (`/me`, `/logout`)
-- ✅ Docker Compose setup (SQL Server + Redis)
-- ✅ Entity Framework Core migrations (User, Guild, Channel, Message, GuildMember)
-- ✅ Serilog logging (console + file)
-- ✅ Health check endpoint (`/health`)
-- ✅ Swagger UI with JWT authentication
-- ✅ CORS configuration
-- ✅ AutoMapper for DTOs
-- ✅ Environment variables (.env) management
-- ✅ Global error handling middleware (dev/prod mode aware)
-- ✅ Rate limiting middleware (100 req/min default, configurable)
-- ✅ xUnit test project structure (to be expanded in Phase 10)
-
-### ✅ Phase 2: Guild & Channel Management (100% Complete)
-**Completed:**
-- ✅ Guild, Channel, GuildMember entities
-- ✅ Database migrations with relationships
-- ✅ Guild DTOs & Service (CRUD, member management)
-- ✅ Channel DTOs & Service (CRUD, type-aware positioning)
-- ✅ Authorization in service layer (IsGuildOwner, IsGuildMember)
-- ✅ Member management endpoints
-- ✅ Position system (scoped by channel type: Text/Voice)
-- ✅ Unique index on (GuildId, Type, Position)
-
-**Notes:**
-- Position shifting is type-aware: Text channels (0,1,2...) and Voice channels (0,1,2...) are independent
-- Middleware updates only needed for special cases - current setup is sufficient ✅
-
-### ✅ Phase 3: SignalR & Real-Time Messaging (100% Complete)
-**Completed:**
-- ✅ Message entity with soft delete & attachments
-- ✅ MessageService: CRUD, pagination
-- ✅ REST endpoints: GET/POST/PUT/DELETE messages
-- ✅ ChatHub: Real-time text messaging (send, edit, delete, typing)
-- ✅ ChatHub: Voice channel presence (join, leave, mute/deafen state tracking)
-- ✅ PresenceHub: Global online/offline status
-- ✅ Redis backplane for horizontal scaling
-- ✅ JWT authentication for SignalR (query string token)
-- ✅ Comprehensive event documentation (SIGNALR_EVENTS.md)
-
-**Voice Channel Infrastructure:**
-- ✅ `JoinVoiceChannel` - Show user as active in voice channel
-- ✅ `LeaveVoiceChannel` - Remove from voice channel
-- ✅ `UpdateVoiceState` - Toggle mute/deafen status
-- ✅ Real-time events: `UserJoinedVoiceChannel`, `UserLeftVoiceChannel`, `UserVoiceStateChanged`
-- 🔜 WebRTC audio streaming will be added in Phase 8
-
-**Key Architecture:**
-- **PresenceHub**: Global online status (app-level, not channel-specific)
-- **ChatHub JoinChannel**: Text message subscription (internal, not visible to others)
-- **ChatHub JoinVoiceChannel**: Voice presence (visible to all, includes mute/deafen state)
-- Users can be in one voice channel while viewing any text channel
-
-### 🟡 Phase 3.5: Core UX Features (Next - 2-3 days)
-**Upcoming:**
-- ⏳ Message Reactions (emoji reactions like Discord)
-- ⏳ Pinned Messages (pin important messages to top)
-- ⏳ Unread Messages tracking (last read position, unread count)
-- ⏳ User Status (Online/Idle/DND/Invisible + custom status)
-
-**Why now?** These are easy to implement, frontend-independent, and critical for Discord-like UX.
-
-### 📋 Planned Phases
-- **Phase 4-6**: React frontend (auth, guilds, channels, messages, SignalR integration)
-- **Phase 5.5**: Guild invites (invite links to join guilds)
-- **Phase 6.5**: Mentions & notifications (@username mentions)
-- **Phase 7**: File upload & video support
-- **Phase 8**: WebRTC voice channels (STUN/TURN, actual audio streaming)
-- **Phase 9**: Permissions & roles
-- **Phase 9.5**: Direct Messages & Friends (1-1 messaging, friend system)
-- **Phase 10**: Testing, observability & audit logs
-- **Phase 11**: Performance, security & notification settings
-- **Phase 12**: Production deployment
+- File upload & video support (MinIO/Azure Blob, presigned URLs, attachment handling)
+- WebRTC voice channels (STUN/TURN server, RTC signaling hub, P2P audio streaming)
+- Permissions & roles (role-based authorization, channel permissions, admin panel)
+- Direct Messages & Friends (friendship system, DM channels, friend-only messaging)
+- Testing, observability & audit logs (unit tests, integration tests, OpenTelemetry, audit trail)
+- Performance, security & notification settings (load testing, rate limiting improvements, notification preferences)
+- Production deployment (CI/CD pipeline, Docker production config, SSL/TLS setup)
 
 ---
 
 ## API Endpoints
 
 ### Authentication ✅
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | `/api/Auth/register` | Register new user | No |
-| POST | `/api/Auth/login` | Login with credentials | No |
-| POST | `/api/Auth/refresh` | Refresh access token | No |
-| GET | `/api/Auth/me` | Get current user profile | Yes |
-| POST | `/api/Auth/logout` | Logout user | Yes |
+
+| Method | Endpoint             | Description              | Auth Required |
+| ------ | -------------------- | ------------------------ | ------------- |
+| POST   | `/api/Auth/register` | Register new user        | No            |
+| POST   | `/api/Auth/login`    | Login with credentials   | No            |
+| POST   | `/api/Auth/refresh`  | Refresh access token     | No            |
+| GET    | `/api/Auth/me`       | Get current user profile | Yes           |
+| POST   | `/api/Auth/logout`   | Logout user              | Yes           |
 
 ### Guilds 🔜
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | `/api/Guilds` | Create guild | Yes |
-| GET | `/api/Guilds` | List user's guilds | Yes |
-| GET | `/api/Guilds/{id}` | Get guild details | Yes |
-| PUT | `/api/Guilds/{id}` | Update guild | Yes (Owner) |
-| DELETE | `/api/Guilds/{id}` | Delete guild | Yes (Owner) |
-| POST | `/api/Guilds/{id}/members` | Add member | Yes |
-| DELETE | `/api/Guilds/{id}/members/{userId}` | Remove member | Yes |
+
+| Method | Endpoint                            | Description        | Auth Required |
+| ------ | ----------------------------------- | ------------------ | ------------- |
+| POST   | `/api/Guilds`                       | Create guild       | Yes           |
+| GET    | `/api/Guilds`                       | List user's guilds | Yes           |
+| GET    | `/api/Guilds/{id}`                  | Get guild details  | Yes           |
+| PUT    | `/api/Guilds/{id}`                  | Update guild       | Yes (Owner)   |
+| DELETE | `/api/Guilds/{id}`                  | Delete guild       | Yes (Owner)   |
+| POST   | `/api/Guilds/{id}/members`          | Add member         | Yes           |
+| DELETE | `/api/Guilds/{id}/members/{userId}` | Remove member      | Yes           |
 
 ---
 
 ## Database Schema
 
 ### Current Entities
+
 - **Users**: Authentication, profile (Id, Username, Email, PasswordHash, DisplayName, AvatarUrl, RefreshToken, timestamps)
 - **Guilds**: Discord-like servers (Id, Name, Description, IconUrl, OwnerId, timestamps)
 - **Channels**: Text/Voice channels in guilds (Id, GuildId, Name, Type, Topic, Position, CreatedAt)
@@ -384,7 +315,9 @@ docker compose -f docker-compose.prod.yml restart api
 ## Testing
 
 ### Manual Testing
+
 1. **Swagger UI**: `http://localhost:5049/swagger`
+
    - Register a user
    - Login to get tokens
    - Click "Authorize" button, enter `Bearer {accessToken}`
@@ -393,20 +326,5 @@ docker compose -f docker-compose.prod.yml restart api
 2. **Postman**: Import `ChordAPI.postman_collection.json`
 
 ### Automated Tests
+
 🔄 xUnit test project in progress
-
----
-
-## Next Steps
-
-### Phase 1 Completion (Current)
-1. ✅ ~~Authentication endpoints~~
-2. 🔄 Global error handling middleware
-3. 🔄 Rate limiting middleware
-4. 🔄 xUnit test project (AuthService tests)
-
-### Phase 2 (Next)
-1. Guild DTOs & Service
-2. Channel DTOs & Service
-3. Authorization policies
-4. CRUD endpoints
