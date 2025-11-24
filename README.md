@@ -91,6 +91,9 @@ Backend will be available at:
 ```bash
 cd frontend
 
+# Copy environment template
+cp .env.example .env
+
 # Install dependencies
 npm install
 
@@ -267,6 +270,13 @@ sudo certbot --nginx -d api.yourdomain.com
 
 ```bash
 cd frontend
+
+# Copy environment template and update with production URLs
+cp .env.example .env
+# Edit .env with production API URLs (e.g., https://api.yourdomain.com)
+
+# Install dependencies
+npm install
 
 # Build for production
 npm run build
