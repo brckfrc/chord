@@ -10,12 +10,12 @@ public class MessageMentionDto
     public Guid MentionedUserId { get; set; }
     public bool IsRead { get; set; }
     public DateTime CreatedAt { get; set; }
-    
+
     /// <summary>
     /// The message that contains the mention
     /// </summary>
     public MessageResponseDto Message { get; set; } = null!;
-    
+
     /// <summary>
     /// The user who was mentioned
     /// </summary>
