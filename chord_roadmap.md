@@ -107,7 +107,7 @@
 - [x] Connection mapping service (SignalR built-in kullanılıyor) ✅
 - [x] MessageService: CRUD, pagination ✅
 - [x] REST endpoints (fallback): GET/POST /channels/{id}/messages ✅
-- [x] Hub event dokümantasyonu (SIGNALR_EVENTS.md) ✅
+- [x] Hub event dokümantasyonu (backend/README.md) ✅
 - [x] Voice channel presence infrastructure ✅
 - [~] SignalR integration testleri (FAZ 10'da detaylandırılacak)
 

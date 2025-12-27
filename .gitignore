@@ -80,3 +80,6 @@ backend/Caddyfile
 !backend/livekit.yaml.template
 !backend/turnserver.conf.template
 !backend/Caddyfile.template
+
+# Blue-Green Deployment State
+.deploy-state

@@ -1,0 +1,265 @@
+# Chord Production Deployment
+# Blue-Green Deployment Configuration
+#
+# Usage:
+#   Blue stack:  docker compose -f docker-compose.deploy.yml --profile blue up -d
+#   Green stack: docker compose -f docker-compose.deploy.yml --profile green up -d
+#
+# Infrastructure (always running):
+#   docker compose -f docker-compose.deploy.yml --profile infra up -d
+
+services:
+  # ===========================================
+  # INFRASTRUCTURE (Shared)
+  # ===========================================
+  
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: chord-sqlserver
+    profiles: ["infra"]
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${SQL_SA_PASSWORD}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "${SQL_PORT:-1433}:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - chord-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '$$SA_PASSWORD' -Q 'SELECT 1' -C || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: chord-redis
+    profiles: ["infra"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - chord-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: chord-minio
+    profiles: ["infra"]
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - chord-network
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: chord-livekit
+    profiles: ["infra"]
+    environment:
+      - LIVEKIT_KEYS=${LIVEKIT_API_KEY:-devkey}:${LIVEKIT_API_SECRET}
+      - LIVEKIT_NODE_IP=${LIVEKIT_NODE_IP:-}
+    ports:
+      - "${LIVEKIT_WS_PORT:-7880}:7880"
+      - "${LIVEKIT_RTC_PORT:-7881}:7881/udp"
+      - "${LIVEKIT_RTC_PORT:-7881}:7881/tcp"
+    volumes:
+      - ./backend/livekit.yaml:/livekit.yaml:ro
+    command: --config /livekit.yaml --node-ip ${LIVEKIT_NODE_IP:-}
+    networks:
+      - chord-network
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7880"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  coturn:
+    image: coturn/coturn:latest
+    container_name: chord-coturn
+    profiles: ["infra"]
+    ports:
+      - "${TURN_PORT:-3478}:3478/udp"
+      - "${TURN_PORT:-3478}:3478/tcp"
+    volumes:
+      - ./backend/turnserver.conf:/etc/turnserver.conf:ro
+    command: -c /etc/turnserver.conf
+    network_mode: "${TURN_NETWORK_MODE:-bridge}"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: chord-caddy
+    profiles: ["infra"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./backend/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - chord-network
+    restart: unless-stopped
+    depends_on:
+      - api-blue
+      - api-green
+      - frontend-blue
+      - frontend-green
+
+  # ===========================================
+  # BLUE STACK
+  # ===========================================
+  
+  api-blue:
+    image: ${REGISTRY:-ghcr.io}/${GITHUB_REPO:-chord}/api:${IMAGE_TAG:-latest}
+    container_name: chord-api-blue
+    profiles: ["blue"]
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - SQL_SA_PASSWORD=${SQL_SA_PASSWORD}
+      - SQL_SERVER_HOST=sqlserver
+      - SQL_SERVER_PORT=1433
+      - DATABASE_NAME=${DATABASE_NAME:-ChordDB}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ISSUER=${JWT_ISSUER:-ChordAPI}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-ChordClient}
+      - JWT_EXPIRY_MINUTES=${JWT_EXPIRY_MINUTES:-60}
+      - JWT_REFRESH_TOKEN_EXPIRY_DAYS=${JWT_REFRESH_TOKEN_EXPIRY_DAYS:-7}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - REDIS_CONNECTION=redis:6379
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-chord-uploads}
+      - MINIO_USE_SSL=false
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - LIVEKIT_URL=${LIVEKIT_URL:-ws://livekit:7880}
+    ports:
+      - "5000:80"
+    networks:
+      - chord-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  frontend-blue:
+    image: ${REGISTRY:-ghcr.io}/${GITHUB_REPO:-chord}/frontend:${IMAGE_TAG:-latest}
+    container_name: chord-frontend-blue
+    profiles: ["blue"]
+    ports:
+      - "3000:80"
+    networks:
+      - chord-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # ===========================================
+  # GREEN STACK
+  # ===========================================
+  
+  api-green:
+    image: ${REGISTRY:-ghcr.io}/${GITHUB_REPO:-chord}/api:${IMAGE_TAG:-latest}
+    container_name: chord-api-green
+    profiles: ["green"]
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - SQL_SA_PASSWORD=${SQL_SA_PASSWORD}
+      - SQL_SERVER_HOST=sqlserver
+      - SQL_SERVER_PORT=1433
+      - DATABASE_NAME=${DATABASE_NAME:-ChordDB}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ISSUER=${JWT_ISSUER:-ChordAPI}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-ChordClient}
+      - JWT_EXPIRY_MINUTES=${JWT_EXPIRY_MINUTES:-60}
+      - JWT_REFRESH_TOKEN_EXPIRY_DAYS=${JWT_REFRESH_TOKEN_EXPIRY_DAYS:-7}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - REDIS_CONNECTION=redis:6379
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-chord-uploads}
+      - MINIO_USE_SSL=false
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - LIVEKIT_URL=${LIVEKIT_URL:-ws://livekit:7880}
+    ports:
+      - "5001:80"
+    networks:
+      - chord-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+
+  frontend-green:
+    image: ${REGISTRY:-ghcr.io}/${GITHUB_REPO:-chord}/frontend:${IMAGE_TAG:-latest}
+    container_name: chord-frontend-green
+    profiles: ["green"]
+    ports:
+      - "3001:80"
+    networks:
+      - chord-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  sqlserver_data:
+  redis_data:
+  minio_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  chord-network:
+    driver: bridge
+
