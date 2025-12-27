@@ -1,8 +1,25 @@
 # Chord API - Backend
 
+> **Purpose:** Complete backend documentation including API endpoints, SignalR events, 
+> LiveKit voice/video integration, and mobile app integration guide.
+
 ASP.NET Core backend for Chord, a Discord-like real-time chat application.
 
-**Repository:** [https://github.com/brckfrc/chord.git](https://github.com/brckfrc/chord.git)
+## Table of Contents
+
+- [Tech Stack](#tech-stack)
+- [Quick Setup](#quick-setup)
+- [Project Structure](#project-structure)
+- [Configuration](#configuration)
+- [API Endpoints](#api-endpoints)
+- [SignalR Hubs](#signalr-hubs)
+- [Voice & Video (LiveKit)](#voice--video-livekit)
+- [Mobile App Integration](#mobile-app-integration)
+- [Database Schema](#database-schema)
+- [Production Deployment](#production-deployment)
+- [Testing](#testing)
+
+---
 
 ## Tech Stack
 
@@ -19,380 +36,154 @@ ASP.NET Core backend for Chord, a Discord-like real-time chat application.
 - **Serilog 9** - Logging
 - **AutoMapper 12** - Object mapping
 - **FluentValidation 11** - Input validation
-- **Minio SDK 6.0.3** - MinIO client
-- **LiveKit Server SDK 1.0.8** - LiveKit token generation
+- **ImageSharp** - Server-side image processing
 
-## Prerequisites
+---
 
-- .NET 9 SDK
-- Docker & Docker Compose (for SQL Server & Redis)
+## Quick Setup
 
-## ⚡ Quick Setup with Script
-
-For the fastest setup, use the automated script from the project root:
+### Automated (Recommended)
 
 ```bash
 cd ..  # Go to project root
 ./setup-env.sh dev
 ```
 
-This will automatically configure everything including environment variables, Docker services, and database migrations. For manual setup, continue below.
+This automatically configures environment variables, Docker services, and database migrations.
 
----
-
-## Getting Started (Manual)
-
-### 1. Setup Environment Variables
+### Manual Setup
 
 ```bash
-# Copy template and edit with your passwords
+# 1. Copy environment template
 cp .env.example .env
-nano .env  # or use any editor
-```
+nano .env
 
-### 2. Start Database & Redis
-
-```bash
+# 2. Start infrastructure
 docker compose -f docker-compose.dev.yml up -d
-```
 
-This will start:
-
-| Service       | Port       | Description                    |
-| ------------- | ---------- | ------------------------------ |
-| SQL Server    | 1433       | Primary database               |
-| Redis         | 6379       | Cache & SignalR backplane      |
-| MinIO API     | 9000       | Object storage                 |
-| MinIO Console | 9001       | Web UI (minioadmin/minioadmin) |
-| LiveKit       | 7880, 7881 | WebRTC signaling & media       |
-| Coturn        | 3478       | STUN/TURN server               |
-
-### 3. Apply Migrations
-
-```bash
-# Initial migration already exists
-# For new migrations: dotnet ef migrations add YourMigrationName
+# 3. Apply migrations
 dotnet ef database update
-```
 
-### 4. Run the Application
-
-```bash
+# 4. Run the API
 dotnet run
 ```
 
-The API will be available at:
+**Access:**
 
-- HTTP: `http://localhost:5049`
-- HTTPS: `https://localhost:7224`
+- API: `http://localhost:5049`
 - Swagger: `http://localhost:5049/swagger`
+- MinIO Console: `http://localhost:9001`
+
+---
 
 ## Project Structure
 
 ```
 backend/
-├── Controllers/       # API endpoints
-│   ├── UploadController.cs   # File upload endpoint
-│   └── VoiceController.cs    # Voice channel token endpoint
-├── Hubs/             # SignalR hubs
-│   ├── ChatHub.cs    # Messaging & voice channel join
-│   └── PresenceHub.cs # User presence
+├── Controllers/           # API endpoints
+│   ├── AuthController.cs
+│   ├── GuildsController.cs
+│   ├── ChannelsController.cs
+│   ├── MessagesController.cs
+│   ├── UploadController.cs
+│   ├── VoiceController.cs
+│   ├── RolesController.cs
+│   ├── InvitesController.cs
+│   ├── MentionsController.cs
+│   └── ReactionsController.cs
+├── Hubs/                  # SignalR hubs
+│   ├── ChatHub.cs
+│   └── PresenceHub.cs
 ├── Models/
-│   ├── Entities/     # Database entities
-│   └── DTOs/         # Data transfer objects
-│       ├── UploadResponseDto.cs      # Upload response
-│       ├── AttachmentDto.cs          # Message attachment
-│       ├── VoiceTokenDto.cs          # Voice token request/response
-│       └── VoiceJoinResponseDto.cs   # Voice join response
-├── Data/             # DbContext
-├── Services/         # Business logic
-│   ├── IStorageService.cs   # Storage interface
-│   ├── StorageService.cs    # MinIO implementation
-│   ├── IVoiceService.cs     # Voice service interface
-│   └── VoiceService.cs      # LiveKit token generation
-├── Middleware/       # Custom middleware
-├── Migrations/       # EF Core migrations
-├── livekit.yaml      # LiveKit server config
-├── turnserver.conf   # Coturn config
-├── Caddyfile         # Caddy reverse proxy config
-├── setup.sh          # Deployment setup script
-├── docker-compose.dev.yml       # Development services
-├── docker-compose.prod.yml      # Production services
-├── docker-compose.standalone.yml # Standalone with Caddy
-└── Program.cs        # Application entry point
+│   ├── Entities/          # Database entities
+│   └── DTOs/              # Data transfer objects
+├── Services/              # Business logic
+├── Data/                  # DbContext
+├── Middleware/            # Custom middleware
+├── Migrations/            # EF Core migrations
+├── docker-compose.*.yml   # Docker configurations
+└── Program.cs             # Application entry point
 ```
+
+---
 
 ## Configuration
 
 ### Environment Variables (.env)
 
-**All secrets are stored in `.env` file** - copy `.env.example` and fill your values:
+Copy `.env.example` and fill your values:
 
 ```bash
 cp .env.example .env
 ```
 
-**Required variables:**
-
-- `SQL_SA_PASSWORD` - SQL Server password
-- `JWT_SECRET` - JWT signing key (min 32 chars)
-- `DATABASE_NAME` - Database name (default: ChordDB)
-- `CORS_ORIGINS` - Allowed frontend URLs (comma-separated)
-
-**Optional variables (with defaults):**
-
-- `MINIO_ENDPOINT` - MinIO endpoint (default: localhost:9000)
-- `MINIO_ROOT_USER` - MinIO root username for container (default: minioadmin)
-- `MINIO_ROOT_PASSWORD` - MinIO root password for container (default: minioadmin)
-- `MINIO_ACCESS_KEY` - MinIO access key for backend API (same as ROOT_USER)
-- `MINIO_SECRET_KEY` - MinIO secret key for backend API (same as ROOT_PASSWORD)
-- `MINIO_BUCKET_NAME` - Bucket name (default: chord-uploads)
-- `MINIO_USE_SSL` - Use SSL (default: false)
-- `MINIO_PUBLIC_ENDPOINT` - Public URL for file access (default: http://localhost:9000)
-
-**LiveKit variables:**
-
-- `LIVEKIT_API_KEY` - LiveKit API key (default: devkey)
-- `LIVEKIT_API_SECRET` - LiveKit API secret (generated by setup script)
-- `LIVEKIT_URL` - LiveKit WebSocket URL (default: ws://localhost:7880)
-- `LIVEKIT_NODE_IP` - Node IP for LAN access (your machine's LAN IP)
-
-⚠️ **Never commit `.env` to git** - already in `.gitignore`
-
-## Docker Commands
-
-```bash
-# Start containers
-docker compose -f docker-compose.dev.yml up -d
-
-# Stop containers
-docker compose -f docker-compose.dev.yml down
-
-# View logs
-docker compose -f docker-compose.dev.yml logs -f
-
-# Remove volumes (fresh start)
-docker compose -f docker-compose.dev.yml down -v
-```
-
-## Production Deployment
-
-### Prerequisites on Server
-
-- Docker & Docker Compose
-- Git
-
-**That's it!** Everything else runs in Docker containers.
-
-### Deployment Steps
-
-**1. Clone the repository:**
-
-```bash
-git clone https://github.com/brckfrc/chord.git
-cd chord/backend
-```
-
-**2. Create production `.env` file:**
-
-```bash
-cp .env.example .env
-nano .env  # or vim, use your preferred editor
-```
-
-**3. Generate strong secrets:**
-
-```bash
-# Generate SQL Server password
-openssl rand -base64 32
-
-# Generate JWT secret (min 32 chars)
-openssl rand -base64 48
-```
-
-**4. Update `.env` with production values:**
-
-```env
-SQL_SA_PASSWORD=<generated-password>
-JWT_SECRET=<generated-jwt-secret>
-CORS_ORIGINS=https://yourdomain.com,https://api.yourdomain.com
-```
-
-**5. Secure the `.env` file:**
-
-```bash
-chmod 600 .env
-```
-
-**6. Build and start all services:**
-
-```bash
-docker compose -f docker-compose.prod.yml up -d --build
-```
-
-**7. Apply database migrations:**
-
-```bash
-# Wait for SQL Server to be healthy (check with: docker ps)
-docker exec chord-api dotnet ef database update
-```
-
-**8. Verify deployment:**
-
-```bash
-# Check all containers are healthy
-docker ps
-
-# Check API health
-curl http://localhost:5000/health
-
-# View logs
-docker compose -f docker-compose.prod.yml logs -f
-```
-
-### Using Cloud Secret Managers (Optional but Recommended)
-
-Instead of `.env` file, use cloud provider secrets:
-
-- **Azure**: Azure Key Vault
-- **AWS**: AWS Secrets Manager / Parameter Store
-- **DigitalOcean**: App Platform Environment Variables
-- **Google Cloud**: Secret Manager
-
-### Reverse Proxy (Nginx/Caddy)
-
-The API runs on port 5000. Use a reverse proxy for:
-
-- SSL/TLS termination
-- Domain routing
-- Load balancing
-
-**Example Nginx config:**
-
-```nginx
-server {
-    listen 80;
-    server_name api.yourdomain.com;
-
-    location / {
-        proxy_pass http://localhost:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection keep-alive;
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-### SSL with Let's Encrypt
-
-```bash
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d api.yourdomain.com
-```
-
-### Production Commands
-
-```bash
-# Stop all services
-docker compose -f docker-compose.prod.yml down
-
-# Update to latest code
-git pull
-docker compose -f docker-compose.prod.yml up -d --build
-
-# View logs
-docker compose -f docker-compose.prod.yml logs -f api
-
-# Database backup
-docker exec chord-sqlserver /opt/mssql-tools/bin/sqlcmd \
-  -S localhost -U sa -P "$SQL_SA_PASSWORD" \
-  -Q "BACKUP DATABASE [ChordDB] TO DISK = N'/var/opt/mssql/backup/ChordDB.bak'"
-
-# Restart specific service
-docker compose -f docker-compose.prod.yml restart api
-
-# MinIO console (web UI for file management)
-# Access: http://localhost:9001 (login: minioadmin/minioadmin)
-```
-
-### MinIO Configuration (Production)
-
-For production, update MinIO credentials in `.env`:
-
-```env
-# MinIO container credentials
-MINIO_ROOT_USER=your-secure-username
-MINIO_ROOT_PASSWORD=your-secure-password
-
-# Backend API credentials (must match above)
-MINIO_ACCESS_KEY=your-secure-username
-MINIO_SECRET_KEY=your-secure-password
-
-# Public endpoint for file URLs
-MINIO_PUBLIC_ENDPOINT=https://files.yourdomain.com
-```
-
-**Important:** In production, use a reverse proxy (Nginx/Caddy) to serve MinIO files over HTTPS.
-
-### LiveKit Configuration (Production)
-
-For production with voice/video, configure LiveKit in `.env`:
-
-```env
-LIVEKIT_API_KEY=your-api-key
-LIVEKIT_API_SECRET=your-strong-secret
-LIVEKIT_URL=wss://livekit.yourdomain.com
-LIVEKIT_NODE_IP=your-server-public-ip
-```
-
-**Note:** In production, LiveKit requires a public IP and proper TURN server configuration for NAT traversal.
-
-## Development
-
-- Use C# extension for VSCode/Cursor
-- Hot reload is enabled by default
-- Check `Logs/` directory for application logs
-
-## Completed Features
-
-- ✅ **File Upload & Video Support**: MinIO object storage, 25MB limit, image/video/document support, drag-drop upload, progress tracking
-- ✅ **WebRTC Voice Channels**: LiveKit SFU integration, multi-user voice chat, speaking indicators
-- ✅ **Profile Photos**: Avatar upload for users and guild icons, auto-resize to 256x256 WebP
-- ✅ **Role-Based Permissions**: Custom roles with granular permissions, owner/general default roles
-- ✅ **Guild Settings**: Tabbed modal for overview, roles, and member management
-- ✅ **Automated Setup**: `setup-env.sh` script for easy local and production deployment
-
-## Upcoming Features
-
-- Direct Messages & Friends (friendship system, DM channels, friend-only messaging)
-- Testing, observability & audit logs (unit tests, integration tests, OpenTelemetry, audit trail)
-- Performance, security & notification settings (load testing, rate limiting improvements, notification preferences)
-- CI/CD pipeline (GitHub Actions, automated deployment)
+**Required:**
+
+| Variable          | Description                    |
+| ----------------- | ------------------------------ |
+| `SQL_SA_PASSWORD` | SQL Server password            |
+| `JWT_SECRET`      | JWT signing key (min 32 chars) |
+
+**Optional:**
+
+| Variable             | Default             | Description            |
+| -------------------- | ------------------- | ---------------------- |
+| `DATABASE_NAME`      | ChordDB             | Database name          |
+| `CORS_ORIGINS`       | localhost:5173      | Allowed frontend URLs  |
+| `MINIO_ENDPOINT`     | localhost:9000      | MinIO endpoint         |
+| `LIVEKIT_API_KEY`    | devkey              | LiveKit API key        |
+| `LIVEKIT_API_SECRET` | (generated)         | LiveKit API secret     |
+| `LIVEKIT_URL`        | ws://localhost:7880 | LiveKit WebSocket URL  |
+| `LIVEKIT_NODE_IP`    | (your LAN IP)       | Node IP for LAN access |
 
 ---
 
 ## API Endpoints
 
-### Authentication ✅
+### Authentication
 
-| Method | Endpoint             | Description              | Auth Required |
-| ------ | -------------------- | ------------------------ | ------------- |
-| POST   | `/api/Auth/register` | Register new user        | No            |
-| POST   | `/api/Auth/login`    | Login with credentials   | No            |
-| POST   | `/api/Auth/refresh`  | Refresh access token     | No            |
-| GET    | `/api/Auth/me`       | Get current user profile | Yes           |
-| POST   | `/api/Auth/logout`   | Logout user              | Yes           |
+| Method | Endpoint             | Description          | Auth |
+| ------ | -------------------- | -------------------- | ---- |
+| POST   | `/api/Auth/register` | Register new user    | No   |
+| POST   | `/api/Auth/login`    | Login                | No   |
+| POST   | `/api/Auth/refresh`  | Refresh access token | No   |
+| GET    | `/api/Auth/me`       | Get current user     | Yes  |
+| POST   | `/api/Auth/logout`   | Logout               | Yes  |
 
-### File Upload ✅
+### Guilds
 
-| Method | Endpoint      | Description                  | Auth Required |
-| ------ | ------------- | ---------------------------- | ------------- |
-| POST   | `/api/Upload` | Upload file (max 25MB)       | Yes           |
-| DELETE | `/api/Upload` | Delete file (query: fileUrl) | Yes           |
+| Method | Endpoint           | Description        | Auth        |
+| ------ | ------------------ | ------------------ | ----------- |
+| POST   | `/api/Guilds`      | Create guild       | Yes         |
+| GET    | `/api/Guilds`      | List user's guilds | Yes         |
+| GET    | `/api/Guilds/{id}` | Get guild details  | Yes         |
+| PUT    | `/api/Guilds/{id}` | Update guild       | Yes (Owner) |
+| DELETE | `/api/Guilds/{id}` | Delete guild       | Yes (Owner) |
+
+### Channels
+
+| Method | Endpoint                              | Description    | Auth |
+| ------ | ------------------------------------- | -------------- | ---- |
+| POST   | `/api/guilds/{guildId}/Channels`      | Create channel | Yes  |
+| GET    | `/api/guilds/{guildId}/Channels`      | List channels  | Yes  |
+| PUT    | `/api/guilds/{guildId}/Channels/{id}` | Update channel | Yes  |
+| DELETE | `/api/guilds/{guildId}/Channels/{id}` | Delete channel | Yes  |
+
+### Messages
+
+| Method | Endpoint                                  | Description    | Auth |
+| ------ | ----------------------------------------- | -------------- | ---- |
+| POST   | `/api/channels/{channelId}/Messages`      | Send message   | Yes  |
+| GET    | `/api/channels/{channelId}/Messages`      | Get messages   | Yes  |
+| PUT    | `/api/channels/{channelId}/Messages/{id}` | Edit message   | Yes  |
+| DELETE | `/api/channels/{channelId}/Messages/{id}` | Delete message | Yes  |
+
+### File Upload
+
+| Method | Endpoint                  | Description            | Auth |
+| ------ | ------------------------- | ---------------------- | ---- |
+| POST   | `/api/Upload`             | Upload file (max 25MB) | Yes  |
+| DELETE | `/api/Upload?fileUrl=...` | Delete file            | Yes  |
 
 **Supported file types:**
 
@@ -402,70 +193,484 @@ LIVEKIT_NODE_IP=your-server-public-ip
 | Video    | mp4, webm, quicktime                | 25MB     |
 | Document | pdf, docx, xlsx, txt, csv, zip, rar | 25MB     |
 
-### Voice Channels ✅
+### Voice
 
-| Method | Endpoint               | Description             | Auth Required |
-| ------ | ---------------------- | ----------------------- | ------------- |
-| POST   | `/api/Voice/token`     | Get LiveKit room token  | Yes           |
-| GET    | `/api/Voice/room/{id}` | Get room status (debug) | Yes           |
+| Method | Endpoint               | Description            | Auth |
+| ------ | ---------------------- | ---------------------- | ---- |
+| POST   | `/api/Voice/token`     | Get LiveKit room token | Yes  |
+| GET    | `/api/Voice/room/{id}` | Get room status        | Yes  |
 
-**Request body for POST `/api/Voice/token`:**
+### Roles
 
-```json
-{
-  "channelId": "guid-of-voice-channel"
+| Method | Endpoint                           | Description | Auth              |
+| ------ | ---------------------------------- | ----------- | ----------------- |
+| GET    | `/api/guilds/{guildId}/roles`      | List roles  | Yes               |
+| POST   | `/api/guilds/{guildId}/roles`      | Create role | Yes (ManageRoles) |
+| PUT    | `/api/guilds/{guildId}/roles/{id}` | Update role | Yes (ManageRoles) |
+| DELETE | `/api/guilds/{guildId}/roles/{id}` | Delete role | Yes (ManageRoles) |
+
+---
+
+## SignalR Hubs
+
+### Connection URLs
+
+```
+ChatHub:     wss://your-domain/hubs/chat?access_token=JWT_TOKEN
+PresenceHub: wss://your-domain/hubs/presence?access_token=JWT_TOKEN
+```
+
+### Authentication
+
+```javascript
+const connection = new HubConnectionBuilder()
+  .withUrl("https://api.example.com/hubs/chat", {
+    accessTokenFactory: () => yourJwtToken,
+  })
+  .withAutomaticReconnect()
+  .build();
+```
+
+---
+
+### ChatHub Methods
+
+#### Server Methods (Client → Server)
+
+| Method              | Parameters                          | Description                            |
+| ------------------- | ----------------------------------- | -------------------------------------- |
+| `JoinChannel`       | `channelId`                         | Subscribe to text channel messages     |
+| `LeaveChannel`      | `channelId`                         | Unsubscribe from channel               |
+| `SendMessage`       | `channelId, {content, attachments}` | Send message                           |
+| `EditMessage`       | `channelId, messageId, {content}`   | Edit message                           |
+| `DeleteMessage`     | `channelId, messageId`              | Delete message                         |
+| `Typing`            | `channelId`                         | Broadcast typing indicator             |
+| `JoinVoiceChannel`  | `channelId`                         | Join voice channel (visible to others) |
+| `LeaveVoiceChannel` | `channelId`                         | Leave voice channel                    |
+| `UpdateVoiceState`  | `channelId, isMuted, isDeafened`    | Update mute/deafen status              |
+
+#### Client Events (Server → Client)
+
+| Event                    | Payload                                                           | Description                  |
+| ------------------------ | ----------------------------------------------------------------- | ---------------------------- |
+| `ReceiveMessage`         | `MessageResponseDto`                                              | New message received         |
+| `MessageEdited`          | `MessageResponseDto`                                              | Message was edited           |
+| `MessageDeleted`         | `messageId`                                                       | Message was deleted          |
+| `UserTyping`             | `{userId, username, channelId}`                                   | User is typing               |
+| `UserJoinedVoiceChannel` | `{userId, username, displayName, channelId, isMuted, isDeafened}` | User joined voice            |
+| `UserLeftVoiceChannel`   | `{userId, channelId}`                                             | User left voice              |
+| `UserVoiceStateChanged`  | `{userId, channelId, isMuted, isDeafened}`                        | Voice state changed          |
+| `JoinedChannel`          | `channelId`                                                       | Confirmation of channel join |
+| `JoinedVoiceChannel`     | `channelId`                                                       | Confirmation of voice join   |
+| `Error`                  | `message`                                                         | Error message                |
+
+---
+
+### PresenceHub Methods
+
+#### Server Methods
+
+| Method           | Parameters | Description                 |
+| ---------------- | ---------- | --------------------------- |
+| `GetOnlineUsers` | -          | Get list of online user IDs |
+| `UpdatePresence` | -          | Keep-alive heartbeat        |
+
+#### Client Events
+
+| Event         | Payload  | Description       |
+| ------------- | -------- | ----------------- |
+| `UserOnline`  | `userId` | User came online  |
+| `UserOffline` | `userId` | User went offline |
+
+---
+
+### SignalR Usage Examples
+
+```javascript
+// Join text channel for messages
+await connection.invoke("JoinChannel", "channel-guid");
+
+// Send message
+await connection.invoke("SendMessage", "channel-guid", {
+  content: "Hello!",
+  attachments: null,
+});
+
+// Join voice channel (shows you in participant list)
+await connection.invoke("JoinVoiceChannel", "voice-channel-guid");
+
+// Toggle mute
+await connection.invoke("UpdateVoiceState", "voice-channel-guid", true, false);
+
+// Listen for events
+connection.on("ReceiveMessage", (message) => {
+  console.log(`${message.author.username}: ${message.content}`);
+});
+
+connection.on("UserJoinedVoiceChannel", (data) => {
+  console.log(`${data.displayName} joined voice`);
+});
+```
+
+---
+
+## Voice & Video (LiveKit)
+
+### Architecture
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                      Client (Web/Mobile)                    │
+├────────────────────────────────────────────────────────────┤
+│  1. POST /api/Voice/token → Get LiveKit token              │
+│  2. Connect to LiveKit: wss://domain:7880                  │
+│  3. RTC Media: UDP :7881                                   │
+└────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌────────────────────────────────────────────────────────────┐
+│  LiveKit Server (SFU)                                      │
+│  - WebSocket signaling (:7880)                             │
+│  - RTC media relay (:7881 UDP/TCP)                         │
+│  - Room management                                          │
+│  - Participant tracking                                     │
+└────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌────────────────────────────────────────────────────────────┐
+│  Coturn (STUN/TURN)                                        │
+│  - NAT traversal (:3478)                                   │
+│  - Relay for restrictive networks                          │
+└────────────────────────────────────────────────────────────┘
+```
+
+### Getting Voice Token
+
+```javascript
+// 1. Request token from backend
+const response = await fetch("/api/Voice/token", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${accessToken}`,
+  },
+  body: JSON.stringify({ channelId: "voice-channel-guid" }),
+});
+
+const { token, url, roomName } = await response.json();
+
+// 2. Connect to LiveKit
+import { Room } from "livekit-client";
+
+const room = new Room();
+await room.connect(url, token);
+
+// 3. Publish local audio
+const localTrack = await room.localParticipant.setMicrophoneEnabled(true);
+```
+
+### Required Ports
+
+| Port | Protocol | Service | Purpose             |
+| ---- | -------- | ------- | ------------------- |
+| 7880 | TCP      | LiveKit | WebSocket signaling |
+| 7881 | UDP/TCP  | LiveKit | RTC media           |
+| 3478 | UDP/TCP  | Coturn  | STUN/TURN           |
+
+---
+
+## Mobile App Integration
+
+### Endpoint Architecture
+
+Native mobile apps connect directly to backend services:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    chord.domain.com                          │
+├─────────────────────────────────────────────────────────────┤
+│  /api/*      → REST API (auth, guilds, messages, etc.)      │
+│  /hubs/*     → SignalR (real-time chat, presence)           │
+├─────────────────────────────────────────────────────────────┤
+│  :7880       → LiveKit (voice/video signaling)              │
+│  :7881       → RTC Media (audio/video streams)              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### iOS Configuration
+
+```swift
+struct ChordConfig {
+    // REST API
+    static let apiBaseURL = "https://chord.example.com/api"
+
+    // SignalR Hubs
+    static let signalRURL = "https://chord.example.com"
+    static let chatHubPath = "/hubs/chat"
+    static let presenceHubPath = "/hubs/presence"
+
+    // LiveKit (Voice/Video)
+    static let liveKitURL = "wss://chord.example.com:7880"
 }
 ```
 
-**Response:**
+### Android Configuration
 
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIs...",
-  "url": "ws://localhost:7880",
-  "roomName": "voice_channel-guid"
+```kotlin
+object ChordConfig {
+    // REST API
+    const val API_BASE_URL = "https://chord.example.com/api"
+
+    // SignalR Hubs
+    const val SIGNALR_URL = "https://chord.example.com"
+    const val CHAT_HUB_PATH = "/hubs/chat"
+    const val PRESENCE_HUB_PATH = "/hubs/presence"
+
+    // LiveKit (Voice/Video)
+    const val LIVEKIT_URL = "wss://chord.example.com:7880"
 }
 ```
 
-### Guilds ✅
+### CORS Note
 
-| Method | Endpoint                            | Description        | Auth Required |
-| ------ | ----------------------------------- | ------------------ | ------------- |
-| POST   | `/api/Guilds`                       | Create guild       | Yes           |
-| GET    | `/api/Guilds`                       | List user's guilds | Yes           |
-| GET    | `/api/Guilds/{id}`                  | Get guild details  | Yes           |
-| PUT    | `/api/Guilds/{id}`                  | Update guild       | Yes (Owner)   |
-| DELETE | `/api/Guilds/{id}`                  | Delete guild       | Yes (Owner)   |
-| POST   | `/api/Guilds/{id}/members`          | Add member         | Yes           |
-| DELETE | `/api/Guilds/{id}/members/{userId}` | Remove member      | Yes           |
+**Native mobile apps don't need CORS configuration.** CORS is a browser-only security feature. Native apps (Swift, Kotlin, React Native with native HTTP) can directly connect to all endpoints.
+
+### Authentication Flow
+
+```
+1. POST /api/Auth/login
+   Request:  { "email": "...", "password": "..." }
+   Response: { "accessToken": "...", "refreshToken": "..." }
+
+2. Store tokens securely (Keychain/KeyStore)
+
+3. All requests include:
+   Authorization: Bearer <accessToken>
+
+4. When accessToken expires:
+   POST /api/Auth/refresh
+   Request:  { "refreshToken": "..." }
+   Response: { "accessToken": "...", "refreshToken": "..." }
+```
+
+### SignalR Connection (iOS)
+
+```swift
+import SignalRClient
+
+let connection = HubConnectionBuilder(url: URL(string: "\(ChordConfig.signalRURL)/hubs/chat")!)
+    .withHttpConnectionOptions { options in
+        options.accessTokenProvider = { accessToken }
+    }
+    .withAutoReconnect()
+    .build()
+
+connection.on(method: "ReceiveMessage") { (message: MessageDto) in
+    print("New message: \(message.content)")
+}
+
+connection.start()
+```
+
+### SignalR Connection (Android)
+
+```kotlin
+import com.microsoft.signalr.HubConnectionBuilder
+
+val connection = HubConnectionBuilder
+    .create("${ChordConfig.SIGNALR_URL}/hubs/chat")
+    .withAccessTokenProvider { accessToken }
+    .build()
+
+connection.on("ReceiveMessage", { message: MessageDto ->
+    println("New message: ${message.content}")
+}, MessageDto::class.java)
+
+connection.start().blockingAwait()
+```
+
+### LiveKit Integration (iOS)
+
+```swift
+import LiveKit
+
+let room = Room()
+
+// Get token from backend
+let tokenResponse = try await api.getVoiceToken(channelId: channelId)
+
+// Connect to LiveKit
+try await room.connect(url: tokenResponse.url, token: tokenResponse.token)
+
+// Enable microphone
+try await room.localParticipant.setMicrophone(enabled: true)
+
+// Listen for participants
+room.add(delegate: self)
+```
+
+### LiveKit Integration (Android)
+
+```kotlin
+import io.livekit.android.room.Room
+
+val room = Room(context)
+
+// Get token from backend
+val tokenResponse = api.getVoiceToken(channelId)
+
+// Connect to LiveKit
+room.connect(tokenResponse.url, tokenResponse.token)
+
+// Enable microphone
+room.localParticipant.setMicrophoneEnabled(true)
+
+// Listen for events
+room.addListener(roomListener)
+```
 
 ---
 
 ## Database Schema
 
-### Current Entities
+### Entities
 
-- **Users**: Authentication, profile (Id, Username, Email, PasswordHash, DisplayName, AvatarUrl, RefreshToken, timestamps)
-- **Guilds**: Discord-like servers (Id, Name, Description, IconUrl, OwnerId, timestamps)
-- **Channels**: Text/Voice channels in guilds (Id, GuildId, Name, Type, Topic, Position, CreatedAt)
-- **Messages**: Chat messages with attachments (Id, ChannelId, AuthorId, Content, Attachments JSON, timestamps, IsEdited)
-- **GuildMembers**: Many-to-many relationship (GuildId, UserId, JoinedAt, Nickname, Role)
+| Entity             | Description                                               |
+| ------------------ | --------------------------------------------------------- |
+| `User`             | Authentication, profile (username, email, avatar, status) |
+| `Guild`            | Discord-like servers (name, icon, owner)                  |
+| `Channel`          | Text/Voice channels in guilds                             |
+| `Message`          | Chat messages with attachments                            |
+| `GuildMember`      | Guild membership (user, guild, nickname)                  |
+| `GuildMemberRole`  | Member role assignments                                   |
+| `Role`             | Guild roles with permissions                              |
+| `MessageReaction`  | Emoji reactions on messages                               |
+| `ChannelReadState` | Unread message tracking                                   |
+| `GuildInvite`      | Invite links                                              |
+
+### Permission Bitfield
+
+```csharp
+[Flags]
+public enum GuildPermissions : long
+{
+    None = 0,
+    ViewChannels = 1 << 0,
+    SendMessages = 1 << 1,
+    ManageMessages = 1 << 2,
+    ManageChannels = 1 << 3,
+    ManageGuild = 1 << 4,
+    ManageRoles = 1 << 5,
+    KickMembers = 1 << 6,
+    BanMembers = 1 << 7,
+    CreateInvite = 1 << 8,
+    ChangeNickname = 1 << 9,
+    ManageNicknames = 1 << 10,
+    VoiceConnect = 1 << 11,
+    VoiceSpeak = 1 << 12,
+    VoiceMuteMembers = 1 << 13,
+    VoiceDeafenMembers = 1 << 14,
+    VoiceMoveMembers = 1 << 15,
+    Administrator = 1 << 16,
+    All = long.MaxValue
+}
+```
+
+---
+
+## Production Deployment
+
+### CI/CD (Recommended)
+
+Push to main branch for automatic deployment via GitHub Actions:
+
+```bash
+git push origin main
+# Automatic: build → test → push to GHCR → deploy to VPS
+```
+
+See `docs/DEPLOYMENT.md` for full CI/CD setup.
+
+### Manual Deployment
+
+```bash
+# 1. Clone and setup
+git clone https://github.com/brckfrc/chord.git
+cd chord
+./setup-env.sh prod
+
+# 2. Start services
+./start-prod.sh
+
+# 3. Deploy application
+./scripts/deploy.sh --image-tag latest --registry ghcr.io --repo username/chord
+```
+
+### Docker Commands
+
+```bash
+# Start development services
+docker compose -f docker-compose.dev.yml up -d
+
+# Stop services
+docker compose -f docker-compose.dev.yml down
+
+# View logs
+docker compose -f docker-compose.dev.yml logs -f
+
+# Fresh start (remove volumes)
+docker compose -f docker-compose.dev.yml down -v
+```
 
 ---
 
 ## Testing
 
-### Manual Testing
+### Swagger UI
 
-1. **Swagger UI**: `http://localhost:5049/swagger`
+1. Open `http://localhost:5049/swagger`
+2. Register a user via `/api/Auth/register`
+3. Login via `/api/Auth/login`
+4. Click "Authorize", enter `Bearer {accessToken}`
+5. Test endpoints
 
-   - Register a user
-   - Login to get tokens
-   - Click "Authorize" button, enter `Bearer {accessToken}`
-   - Test protected endpoints
+### Postman
 
-2. **Postman**: Import `ChordAPI.postman_collection.json`
+Import `ChordAPI.postman_collection.json` for ready-to-use requests.
 
-### Automated Tests
+### SignalR Testing
 
-🔄 xUnit test project in progress
+```javascript
+// Browser console
+const connection = new signalR.HubConnectionBuilder()
+  .withUrl("http://localhost:5049/hubs/chat?access_token=YOUR_JWT")
+  .build();
+
+await connection.start();
+await connection.invoke("JoinChannel", "channel-guid");
+```
+
+---
+
+## Completed Features
+
+- ✅ User authentication (JWT, refresh tokens)
+- ✅ Guilds and channels (CRUD)
+- ✅ Real-time messaging (SignalR)
+- ✅ File upload (MinIO, 25MB limit)
+- ✅ Voice/Video chat (LiveKit SFU)
+- ✅ Profile photos (auto-resize to 256x256 WebP)
+- ✅ Role-based permissions (custom roles, owner/general defaults)
+- ✅ Message reactions and pinning
+- ✅ Typing indicators
+- ✅ User presence (online/offline/idle/dnd)
+- ✅ Guild invites
+- ✅ Unread message tracking
+- ✅ CI/CD with Blue-Green deployment
+
+## Upcoming Features
+
+- Direct Messages & Friends
+- Push notifications
+- Message search
+- Audit logs

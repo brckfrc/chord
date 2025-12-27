@@ -1,5 +1,7 @@
 # Chord Frontend
 
+> **Purpose:** Frontend setup, development scripts, project structure, and UI components.
+
 React + TypeScript frontend for Chord, a Discord-like real-time chat application.
 
 ## Tech Stack

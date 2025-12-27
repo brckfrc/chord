@@ -1,5 +1,8 @@
 # 🎯 CHORD PROJESİ - FAZ ROADMAP
 
+> **Purpose:** Development phases, feature roadmap, and task tracking.
+> This is the internal project management document.
+
 ## 📋 Temel Yapı
 
 - **Repo**: Monorepo (backend + frontend)

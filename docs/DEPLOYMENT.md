@@ -1,14 +1,19 @@
 # Chord Deployment Guide
 
+> **Purpose:** Production deployment scenarios, CI/CD setup, environment configuration,
+> and infrastructure management. For API documentation, see [backend/README.md](../backend/README.md).
+
 This guide covers different deployment scenarios for Chord.
 
 ## Deployment Options
 
-| Option | Best For | Complexity |
-|--------|----------|------------|
-| [Development](#development-local) | Local testing | Easy |
-| [Behind Proxy](#production---behind-reverse-proxy) | YunoHost, Traefik, etc. | Medium |
-| [Standalone](#production---standalone-with-caddy) | Single server deployment | Easy |
+| Option                                               | Best For                           | Complexity |
+| ---------------------------------------------------- | ---------------------------------- | ---------- |
+| [Development](#development-local)                    | Local testing                      | Easy       |
+| [CI/CD Blue-Green](#cicd-with-blue-green-deployment) | Automated production (recommended) | Medium     |
+| [Behind Proxy](#production---behind-reverse-proxy)   | YunoHost, Traefik, etc.            | Medium     |
+| [Standalone](#production---standalone-with-caddy)    | Simple single server               | Easy       |
+| [Mobile App](#mobile-app-integration)                | iOS/Android native apps            | Easy       |
 
 ---
 
@@ -24,6 +29,7 @@ docker compose -f docker-compose.dev.yml up -d
 ```
 
 This starts:
+
 - SQL Server (:1433)
 - Redis (:6379)
 - MinIO (:9000, :9001)
@@ -47,10 +53,124 @@ npm run dev
 ```
 
 Access:
+
 - Frontend: http://localhost:5173
 - API: http://localhost:5049
 - Swagger: http://localhost:5049/swagger
 - MinIO Console: http://localhost:9001
+
+---
+
+## CI/CD with Blue-Green Deployment
+
+Automated deployment using GitHub Actions and Blue-Green strategy for zero-downtime updates.
+
+### Architecture
+
+```
+GitHub Push → Build Images → Push to GHCR → SSH Deploy → Blue-Green Switch
+```
+
+- **Blue Stack**: API on :5000, Frontend on :3000
+- **Green Stack**: API on :5001, Frontend on :3001
+- **Caddy**: Routes traffic to active stack
+
+### Prerequisites
+
+1. VPS with Docker installed
+2. GitHub repository with Actions enabled
+3. SSH key for deployment
+
+### Setup GitHub Secrets
+
+In your GitHub repository, go to **Settings → Secrets and variables → Actions** and add:
+
+| Secret            | Description         | Example                 |
+| ----------------- | ------------------- | ----------------------- |
+| `VPS_HOST`        | Server hostname/IP  | `chord.example.com`     |
+| `VPS_USER`        | SSH username        | `deploy`                |
+| `VPS_SSH_KEY`     | SSH private key     | `-----BEGIN OPENSSH...` |
+| `VPS_SSH_PORT`    | SSH port (optional) | `22`                    |
+| `VPS_DEPLOY_PATH` | Deployment path     | `/opt/chord`            |
+
+### Initial Server Setup
+
+```bash
+# 1. Clone repository on server
+cd /opt
+git clone https://github.com/brckfrc/chord.git
+cd chord
+
+# 2. Run environment setup
+chmod +x setup-env.sh
+./setup-env.sh  # Select "prod" mode
+
+# 3. Start infrastructure
+docker compose -f docker-compose.deploy.yml --profile infra up -d
+
+# 4. Create deploy user (optional, recommended)
+useradd -m -s /bin/bash deploy
+usermod -aG docker deploy
+```
+
+### How It Works
+
+1. **Push to main** triggers GitHub Actions
+2. **CI Job** runs tests and linting
+3. **Build Job** creates Docker images and pushes to GHCR
+4. **Deploy Job** connects via SSH and runs `scripts/deploy.sh`
+5. **deploy.sh** performs:
+   - Detects active stack (blue or green)
+   - Pulls new images
+   - Starts inactive stack
+   - Health check (60s timeout)
+   - Updates Caddy to route to new stack
+   - Stops old stack
+
+### Manual Deployment
+
+```bash
+# Deploy specific version
+./scripts/deploy.sh \
+  --image-tag abc123 \
+  --registry ghcr.io \
+  --repo username/chord
+
+# Check status
+./scripts/rollback.sh --status
+
+# Manual rollback
+./scripts/rollback.sh
+```
+
+### Blue-Green Commands
+
+```bash
+# Start infrastructure only
+docker compose -f docker-compose.deploy.yml --profile infra up -d
+
+# Start blue stack
+docker compose -f docker-compose.deploy.yml --profile blue up -d
+
+# Start green stack
+docker compose -f docker-compose.deploy.yml --profile green up -d
+
+# View logs
+docker compose -f docker-compose.deploy.yml logs -f api-blue
+docker compose -f docker-compose.deploy.yml logs -f api-green
+```
+
+### Rollback
+
+If deployment fails, the script automatically rolls back. For manual rollback:
+
+```bash
+# Switch to previous stack
+./scripts/rollback.sh
+
+# Switch to specific stack
+./scripts/rollback.sh --to blue
+```
 
 ---
 
@@ -132,33 +252,38 @@ services:
 
 ## Production - Standalone with Caddy
 
-Use this for single-server deployment with automatic SSL.
+Use this for simple single-server deployment without CI/CD automation.
+Best for: Personal servers, small deployments, or when you don't need blue-green deployment.
 
-### Option A: Interactive Setup
+> **Note:** For automated deployments with zero-downtime, use [CI/CD Blue-Green](#cicd-with-blue-green-deployment) instead.
+
+### Setup
 
 ```bash
-cd backend
-chmod +x setup.sh
-./setup.sh
+# Clone and setup
+git clone https://github.com/brckfrc/chord.git
+cd chord
+
+# Run interactive setup (select "prod" mode)
+chmod +x setup-env.sh
+./setup-env.sh prod
+
+# Start all services
+./start-prod.sh
 ```
 
-The script will:
-1. Create `.env` from template
-2. Ask for your domain
-3. Generate secure secrets
-4. Start all containers with Caddy
-
-### Option B: Manual Setup
+### Manual Updates
 
 ```bash
+# Pull latest code
+git pull
+
+# Rebuild and restart
 cd backend
+docker compose -f docker-compose.standalone.yml up -d --build
 
-# 1. Configure environment
-cp .env.example .env
-nano .env  # Set DOMAIN=yourdomain.com
-
-# 2. Start with Caddy
-docker compose -f docker-compose.standalone.yml up -d
+# Run migrations if needed
+docker exec chord-api dotnet ef database update
 ```
 
 ### Verify Deployment
@@ -176,44 +301,60 @@ docker compose -f docker-compose.standalone.yml logs -f
 
 ---
 
+## Mobile App Integration
+
+Native mobile apps (iOS/Android) connect directly to Chord without additional configuration.
+
+**Key Points:**
+- CORS doesn't apply to native apps (browser-only)
+- Same JWT authentication works for mobile
+- No separate domain needed
+
+**Required Ports:** 443 (API), 7880 (LiveKit), 7881 (RTC), 3478 (TURN)
+
+For complete mobile integration guide with code examples, see:
+**[backend/README.md - Mobile App Integration](../backend/README.md#mobile-app-integration)**
+
+---
+
 ## Environment Variables Reference
 
 ### Required
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| SQL_SA_PASSWORD | SQL Server password | StrongP@ssw0rd123! |
-| JWT_SECRET | JWT signing key (32+ chars) | YourRandomSecretKey... |
+| Variable        | Description                 | Example                |
+| --------------- | --------------------------- | ---------------------- |
+| SQL_SA_PASSWORD | SQL Server password         | StrongP@ssw0rd123!     |
+| JWT_SECRET      | JWT signing key (32+ chars) | YourRandomSecretKey... |
 
 ### Optional
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| DATABASE_NAME | ChordDB | SQL Server database name |
-| JWT_EXPIRY_MINUTES | 60 | Access token lifetime |
-| CORS_ORIGINS | localhost:3000,5173 | Allowed frontend origins |
+| Variable           | Default             | Description              |
+| ------------------ | ------------------- | ------------------------ |
+| DATABASE_NAME      | ChordDB             | SQL Server database name |
+| JWT_EXPIRY_MINUTES | 60                  | Access token lifetime    |
+| CORS_ORIGINS       | localhost:3000,5173 | Allowed frontend origins |
 
 ### LiveKit & Voice
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| LIVEKIT_API_KEY | devkey | LiveKit API key |
-| LIVEKIT_API_SECRET | secret | LiveKit API secret |
-| LIVEKIT_URL | ws://localhost:7880 | LiveKit server URL |
-| TURN_SECRET | turnpassword123 | Coturn shared secret |
+| Variable           | Default             | Description          |
+| ------------------ | ------------------- | -------------------- |
+| LIVEKIT_API_KEY    | devkey              | LiveKit API key      |
+| LIVEKIT_API_SECRET | secret              | LiveKit API secret   |
+| LIVEKIT_URL        | ws://localhost:7880 | LiveKit server URL   |
+| TURN_SECRET        | turnpassword123     | Coturn shared secret |
 
 ### Port Configuration
 
 Leave empty to disable external binding (useful behind proxy):
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| API_PORT | 5000 | API external port |
-| SQL_PORT | 1433 | SQL Server port |
-| REDIS_PORT | 6379 | Redis port |
-| LIVEKIT_WS_PORT | 7880 | LiveKit WebSocket |
-| LIVEKIT_RTC_PORT | 7881 | LiveKit RTC (UDP) |
-| TURN_PORT | 3478 | Coturn STUN/TURN |
+| Variable         | Default | Description       |
+| ---------------- | ------- | ----------------- |
+| API_PORT         | 5000    | API external port |
+| SQL_PORT         | 1433    | SQL Server port   |
+| REDIS_PORT       | 6379    | Redis port        |
+| LIVEKIT_WS_PORT  | 7880    | LiveKit WebSocket |
+| LIVEKIT_RTC_PORT | 7881    | LiveKit RTC (UDP) |
+| TURN_PORT        | 3478    | Coturn STUN/TURN  |
 
 ---
 
@@ -223,11 +364,11 @@ Leave empty to disable external binding (useful behind proxy):
 
 For voice/video to work, these ports must be accessible:
 
-| Port | Protocol | Service | Required |
-|------|----------|---------|----------|
-| 3478 | UDP/TCP | STUN/TURN | Yes |
-| 7880 | TCP | LiveKit WebSocket | Yes |
-| 7881 | UDP/TCP | LiveKit RTC | Yes |
+| Port | Protocol | Service           | Required |
+| ---- | -------- | ----------------- | -------- |
+| 3478 | UDP/TCP  | STUN/TURN         | Yes      |
+| 7880 | TCP      | LiveKit WebSocket | Yes      |
+| 7881 | UDP/TCP  | LiveKit RTC       | Yes      |
 
 ### Firewall Configuration
 
@@ -316,15 +457,34 @@ docker exec chord-minio mc mirror local/chord-uploads /backup/
 
 ## Updating
 
+### With CI/CD (Recommended)
+
+Simply push to main branch - GitHub Actions handles everything:
+
+```bash
+git add .
+git commit -m "Your changes"
+git push origin main
+# Automatic build, test, and blue-green deploy
+```
+
+### Manual Update (Standalone)
+
 ```bash
 # Pull latest code
 git pull
 
 # Rebuild and restart
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.standalone.yml up -d --build
 
 # Run new migrations
 docker exec chord-api dotnet ef database update
 ```
 
+### Manual Update (Behind Proxy)
 
+```bash
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+docker exec chord-api dotnet ef database update
+```
