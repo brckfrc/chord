@@ -992,7 +992,7 @@ main() {
         echo "   - Access from other devices on LAN: http://$HOST:5173"
         echo "   - Changed networks? Run: ./update-ip.sh"
         echo "   - View logs: docker compose -f backend/docker-compose.dev.yml logs -f"
-        echo "   - Recreate: rm backend/.env frontend/.env && ./setup-env.sh dev"
+        echo "   - Recreate: rm -f backend/.env frontend/.env backend/livekit.yaml backend/turnserver.conf && ./setup-env.sh dev"
     else
         echo "Generated files:"
         echo "   - backend/.env"

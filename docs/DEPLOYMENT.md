@@ -400,6 +400,26 @@ sudo firewall-cmd --reload
 
 ## Troubleshooting
 
+### Clean Reset (Regenerate All Configs)
+
+If you need to regenerate configuration files with new secrets:
+
+```bash
+# Stop all services
+./stop.sh
+
+# Remove all generated files
+rm -f backend/.env frontend/.env \
+      backend/livekit.yaml backend/turnserver.conf \
+      backend/Caddyfile start-dev.sh stop.sh start-prod.sh
+
+# Optional: Reset database (deletes all data!)
+docker compose -f backend/docker-compose.dev.yml down -v
+
+# Regenerate everything with new secrets
+./setup-env.sh dev   # or: ./setup-env.sh prod
+```
+
 ### Containers not starting
 
 ```bash
