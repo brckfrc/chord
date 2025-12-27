@@ -19,6 +19,7 @@ import { MentionsPanel } from "@/components/messages/MentionsPanel"
 import { Hash, Mic, Megaphone, Bell } from "lucide-react"
 import { ChannelType } from "@/lib/api/channels"
 import { Button } from "@/components/ui/button"
+import { VoiceRoom } from "@/components/voice"
 
 export function ChannelView() {
   const { channelId } = useParams<{
@@ -209,18 +210,21 @@ export function ChannelView() {
     }
   }, [channelId, isChatConnected, chatOn, dispatch])
 
-  // Don't show messaging UI for voice channels
+  // Show VoiceRoom for voice channels
   if (!isTextChannel) {
     return (
       <div className="flex h-full flex-col bg-background">
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Mic className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground text-sm">Voice Channel</p>
-            <p className="text-muted-foreground text-xs mt-1">
-              Click to join voice channel
-            </p>
-          </div>
+        {/* Channel Header */}
+        <div className="h-12 border-b border-border px-4 flex items-center shadow-sm flex-shrink-0">
+          <Mic className="h-5 w-5 text-muted-foreground mr-2 flex-shrink-0" />
+          <h2 className="text-base font-semibold text-foreground truncate">
+            {currentChannel?.name || "Voice Channel"}
+          </h2>
+        </div>
+        
+        {/* VoiceRoom fills the content area */}
+        <div className="flex-1 flex items-center justify-center p-4">
+          <VoiceRoom />
         </div>
       </div>
     )

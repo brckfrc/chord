@@ -15,12 +15,12 @@ public class GuildMember
     [MaxLength(50)]
     public string? Nickname { get; set; }
 
-    [MaxLength(20)]
-    public string Role { get; set; } = "Member"; // Owner, Admin, Member
-
     // Navigation properties
     public virtual Guild Guild { get; set; } = null!;
     public virtual User User { get; set; } = null!;
+
+    // Many-to-many relationship with roles
+    public virtual ICollection<GuildMemberRole> MemberRoles { get; set; } = new List<GuildMemberRole>();
 }
 
 

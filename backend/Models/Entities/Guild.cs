@@ -27,6 +27,7 @@ public class Guild
     public virtual User Owner { get; set; } = null!;
     public virtual ICollection<GuildMember> Members { get; set; } = new List<GuildMember>();
     public virtual ICollection<Channel> Channels { get; set; } = new List<Channel>();
+    public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
 }
 
 

@@ -8,6 +8,7 @@ import friendsReducer from "./slices/friendsSlice"
 import dmsReducer from "./slices/dmsSlice"
 import mentionsReducer from "./slices/mentionsSlice"
 import voiceReducer from "./slices/voiceSlice"
+import rolesReducer from "./slices/rolesSlice"
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     dms: dmsReducer,
     mentions: mentionsReducer,
     voice: voiceReducer,
+    roles: rolesReducer,
   },
 })
 

@@ -12,17 +12,20 @@ public class GuildService : IGuildService
     private readonly IMapper _mapper;
     private readonly ILogger<GuildService> _logger;
     private readonly IChannelService _channelService;
+    private readonly IRoleService _roleService;
 
     public GuildService(
         AppDbContext context, 
         IMapper mapper, 
         ILogger<GuildService> logger,
-        IChannelService channelService)
+        IChannelService channelService,
+        IRoleService roleService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
         _channelService = channelService;
+        _roleService = roleService;
     }
 
     public async Task<GuildResponseDto> CreateGuildAsync(Guid userId, CreateGuildDto dto)
@@ -45,14 +48,25 @@ public class GuildService : IGuildService
         {
             GuildId = guild.Id,
             UserId = userId,
-            JoinedAt = DateTime.UtcNow,
-            Role = "Owner"
+            JoinedAt = DateTime.UtcNow
         };
 
         _context.GuildMembers.Add(ownerMember);
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Guild {GuildId} created by user {UserId}", guild.Id, userId);
+
+        // Create default roles and assign to owner
+        try
+        {
+            await _roleService.CreateDefaultRolesAsync(guild.Id, userId);
+            _logger.LogInformation("Default roles created for guild {GuildId}", guild.Id);
+        }
+        catch (Exception ex)
+        {
+            // Log but don't fail guild creation if role creation fails
+            _logger.LogWarning(ex, "Failed to create default roles for guild {GuildId}", guild.Id);
+        }
 
         // Automatically create default channels
         try
@@ -142,9 +156,16 @@ public class GuildService : IGuildService
             throw new KeyNotFoundException("Guild not found");
         }
 
-        if (guild.OwnerId != userId)
+        // Check if user has permission to manage guild
+        var hasPermission = await _context.GuildMemberRoles
+            .Where(gmr => gmr.GuildId == guildId && gmr.UserId == userId)
+            .Include(gmr => gmr.Role)
+            .AnyAsync(gmr => (gmr.Role.Permissions & (long)GuildPermission.ManageGuild) != 0 ||
+                             (gmr.Role.Permissions & (long)GuildPermission.Administrator) != 0);
+
+        if (guild.OwnerId != userId && !hasPermission)
         {
-            throw new UnauthorizedAccessException("Only the guild owner can update the guild");
+            throw new UnauthorizedAccessException("You don't have permission to update this guild");
         }
 
         guild.Name = dto.Name;
@@ -206,14 +227,23 @@ public class GuildService : IGuildService
         {
             GuildId = guildId,
             UserId = userIdToAdd,
-            JoinedAt = DateTime.UtcNow,
-            Role = "Member"
+            JoinedAt = DateTime.UtcNow
         };
 
         _context.GuildMembers.Add(newMember);
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("User {UserId} added to guild {GuildId}", userIdToAdd, guildId);
+
+        // Assign general role to new member
+        try
+        {
+            await _roleService.AssignGeneralRoleAsync(guildId, userIdToAdd);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to assign general role to user {UserId} in guild {GuildId}", userIdToAdd, guildId);
+        }
 
         // Reload with navigation properties
         var memberWithUser = await _context.GuildMembers

@@ -11,12 +11,14 @@ import {
 } from "@/store/slices/channelsSlice"
 import { joinVoiceChannel, leaveVoiceChannel } from "@/store/slices/voiceSlice"
 import { useSignalR } from "@/hooks/useSignalR"
+import { usePermission, GuildPermission } from "@/hooks/usePermission"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { CreateChannelModal } from "@/components/modals/CreateChannelModal"
 import { InviteModal } from "@/components/modals/InviteModal"
+import { GuildSettingsModal } from "@/components/modals/GuildSettingsModal"
 import { ChannelType } from "@/lib/api/channels"
-import { Hash, Mic, Plus, UserPlus, Megaphone } from "lucide-react"
+import { Hash, Mic, Plus, UserPlus, Megaphone, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { VoiceChannelUsers } from "./VoiceChannelUsers"
 
@@ -31,6 +33,7 @@ export function ChannelSidebar() {
     const { user: currentUser } = useAppSelector((state) => state.auth)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
     const [defaultChannelType, setDefaultChannelType] = useState<ChannelType>(ChannelType.Text)
 
     // SignalR connection for ChatHub
@@ -38,6 +41,11 @@ export function ChannelSidebar() {
 
     const activeGuildId = guildId || selectedGuildId
     const activeGuild = guilds.find((g) => g.id === activeGuildId)
+
+    // Permission checks
+    const { hasPermission, isOwner } = usePermission(activeGuildId || "")
+    const canManageChannels = hasPermission(GuildPermission.ManageChannels)
+    const canAccessSettings = isOwner || hasPermission(GuildPermission.ManageGuild) || hasPermission(GuildPermission.ManageRoles)
 
     useEffect(() => {
         if (activeGuildId) {
@@ -58,11 +66,13 @@ export function ChannelSidebar() {
                 dispatch(setSelectedChannel(channel.id))
                 navigate(`/channels/${activeGuildId}/${channel.id}`)
             } else if (channel.type === ChannelType.Voice) {
-                // Voice channel: join only (no leave on click)
+                // Voice channel: join and navigate to show VoiceRoom
                 // Leave can only be done via VoiceBar disconnect button
                 // Only one voice channel can be active at a time
                 if (activeVoiceChannelId === channel.id) {
-                    // Already in this voice channel - do nothing
+                    // Already in this voice channel - just navigate to show VoiceRoom
+                    dispatch(setSelectedChannel(channel.id))
+                    navigate(`/channels/${activeGuildId}/${channel.id}`)
                     return
                 } else {
                     // Join new voice channel (leave previous one if exists)
@@ -72,7 +82,7 @@ export function ChannelSidebar() {
                     if (previousChannelId && currentUser) {
                         // Clear voiceSlice state first
                         dispatch(leaveVoiceChannel())
-                        
+
                         // Call SignalR LeaveVoiceChannel for previous channel
                         if (isChatConnected) {
                             chatInvoke("LeaveVoiceChannel", previousChannelId).catch((error) => {
@@ -86,6 +96,10 @@ export function ChannelSidebar() {
                             })
                         )
                     }
+
+                    // Navigate to voice channel route to show VoiceRoom
+                    dispatch(setSelectedChannel(channel.id))
+                    navigate(`/channels/${activeGuildId}/${channel.id}`)
 
                     // Join new voice channel
                     dispatch(setActiveVoiceChannel(channel.id))
@@ -109,9 +123,9 @@ export function ChannelSidebar() {
                     // Call SignalR JoinVoiceChannel and handle response
                     if (isChatConnected) {
                         chatInvoke("JoinVoiceChannel", channel.id)
-                            .then((response: { 
-                                success: boolean; 
-                                liveKitToken?: string; 
+                            .then((response: {
+                                success: boolean;
+                                liveKitToken?: string;
                                 liveKitUrl?: string;
                                 roomName?: string;
                             }) => {
@@ -173,15 +187,28 @@ export function ChannelSidebar() {
                 <h2 className="text-sm font-semibold text-foreground truncate">
                     {activeGuild?.name || "Guild"}
                 </h2>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                    onClick={() => setIsInviteModalOpen(true)}
-                    title="Invite People"
-                >
-                    <UserPlus className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                    {canAccessSettings && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                            onClick={() => setIsSettingsModalOpen(true)}
+                            title="Server Settings"
+                        >
+                            <Settings className="h-4 w-4" />
+                        </Button>
+                    )}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                        onClick={() => setIsInviteModalOpen(true)}
+                        title="Invite People"
+                    >
+                        <UserPlus className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
 
             {/* Channels List */}
@@ -192,15 +219,17 @@ export function ChannelSidebar() {
                         <span className="text-xs font-semibold text-muted-foreground uppercase">
                             Announcement Channels
                         </span>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 opacity-0 group-hover:opacity-100"
-                            onClick={handleCreateAnnouncementChannel}
-                            title="Create Announcement Channel"
-                        >
-                            <Plus className="h-3 w-3" />
-                        </Button>
+                        {canManageChannels && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 opacity-0 group-hover:opacity-100"
+                                onClick={handleCreateAnnouncementChannel}
+                                title="Create Announcement Channel"
+                            >
+                                <Plus className="h-3 w-3" />
+                            </Button>
+                        )}
                     </div>
                     {announcementChannels.length > 0 && (
                         <div className="space-y-1">
@@ -229,15 +258,17 @@ export function ChannelSidebar() {
                         <span className="text-xs font-semibold text-muted-foreground uppercase">
                             Text Channels
                         </span>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 opacity-0 group-hover:opacity-100"
-                            onClick={handleCreateTextChannel}
-                            title="Create Text Channel"
-                        >
-                            <Plus className="h-3 w-3" />
-                        </Button>
+                        {canManageChannels && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 opacity-0 group-hover:opacity-100"
+                                onClick={handleCreateTextChannel}
+                                title="Create Text Channel"
+                            >
+                                <Plus className="h-3 w-3" />
+                            </Button>
+                        )}
                     </div>
                     {textChannels.length > 0 && (
                         <div className="space-y-1">
@@ -266,15 +297,17 @@ export function ChannelSidebar() {
                         <span className="text-xs font-semibold text-muted-foreground uppercase">
                             Voice Channels
                         </span>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 opacity-0 group-hover:opacity-100"
-                            onClick={handleCreateVoiceChannel}
-                            title="Create Voice Channel"
-                        >
-                            <Plus className="h-3 w-3" />
-                        </Button>
+                        {canManageChannels && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 opacity-0 group-hover:opacity-100"
+                                onClick={handleCreateVoiceChannel}
+                                title="Create Voice Channel"
+                            >
+                                <Plus className="h-3 w-3" />
+                            </Button>
+                        )}
                     </div>
                     {voiceChannels.length > 0 && (
                         <div className="space-y-1">
@@ -314,15 +347,17 @@ export function ChannelSidebar() {
                 {!isLoading && channels.length === 0 && (
                     <div className="px-2 py-4 text-center">
                         <p className="text-sm text-muted-foreground">No channels yet</p>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="mt-2"
-                            onClick={handleCreateTextChannel}
-                        >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Create Channel
-                        </Button>
+                        {canManageChannels && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="mt-2"
+                                onClick={handleCreateTextChannel}
+                            >
+                                <Plus className="h-4 w-4 mr-1" />
+                                Create Channel
+                            </Button>
+                        )}
                     </div>
                 )}
             </div>
@@ -339,6 +374,15 @@ export function ChannelSidebar() {
                     open={isInviteModalOpen}
                     onOpenChange={setIsInviteModalOpen}
                     guildId={activeGuildId}
+                />
+            )}
+
+            {activeGuildId && activeGuild && (
+                <GuildSettingsModal
+                    open={isSettingsModalOpen}
+                    onOpenChange={setIsSettingsModalOpen}
+                    guildId={activeGuildId}
+                    guildName={activeGuild.name}
                 />
             )}
         </div>

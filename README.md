@@ -9,6 +9,9 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **Voice & Video Chat**: Real-time voice/video communication with LiveKit SFU (10+ users)
 - **Speaking Indicators**: See who's talking with animated green rings
 - **File Upload & Attachments**: Upload images, videos, and documents (25MB limit)
+- **Profile Photos**: Upload avatars for users and icons for guilds (auto-resized to 256x256 WebP)
+- **Role-Based Permissions**: Custom roles with granular permissions (ManageGuild, ManageChannels, etc.)
+- **Guild Settings**: Tabbed settings modal for managing overview, roles, and members
 - **Message Reactions**: React to messages with emojis
 - **Pinned Messages**: Pin important messages to the top
 - **Unread Tracking**: Track unread messages per channel
@@ -38,6 +41,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **Serilog** - Structured logging
 - **AutoMapper** - Object mapping
 - **FluentValidation** - Input validation
+- **ImageSharp** - Server-side image processing
 
 ### Frontend
 
@@ -55,11 +59,54 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 ## 📋 Prerequisites
 
 - **.NET 9 SDK** - [Download](https://dotnet.microsoft.com/download/dotnet/9.0)
-- **Node.js 18+** - [Download](https://nodejs.org/)
+- **Node.js 18+** - [Download](https://nodejs.org/) (or use nvm - script can install it)
 - **Docker & Docker Compose** - [Download](https://www.docker.com/get-started)
 - **Git** - [Download](https://git-scm.com/)
 
-## 🚀 Quick Start
+## ⚡ Automated Setup (Recommended)
+
+The easiest way to get Chord running is with the automated setup script:
+
+```bash
+git clone https://github.com/brckfrc/chord.git
+cd chord
+
+# For development (localhost + LAN access)
+./setup-env.sh dev
+
+# For production (with domain and SSL)
+./setup-env.sh prod
+```
+
+The script will:
+- ✅ Check and install dependencies (Docker, Node.js via nvm, dotnet-ef)
+- ✅ Detect your LAN IP for network access
+- ✅ Generate secure secrets (SQL, JWT, MinIO, LiveKit, TURN)
+- ✅ Create all configuration files from templates
+- ✅ Start Docker services (SQL Server, Redis, MinIO, LiveKit, Coturn)
+- ✅ Run database migrations
+- ✅ Configure MinIO bucket with public access
+- ✅ Configure firewall rules (if sudo available)
+- ✅ Generate `start-dev.sh` and `stop.sh` helper scripts
+
+After setup completes:
+```bash
+./start-dev.sh   # Start all services
+./stop.sh        # Stop all services
+```
+
+### Changing Networks (Laptop Users)
+
+If you change WiFi networks and need to update your IP:
+```bash
+./update-ip.sh   # Quick IP update without full setup
+```
+
+> **Note:** For manual setup or customization, see the detailed instructions below.
+
+---
+
+## 🚀 Manual Setup (Quick Start)
 
 ### 1. Clone the Repository
 
@@ -135,10 +182,18 @@ REDIS_CONNECTION_STRING=localhost:6379
 
 # MinIO (optional, defaults shown)
 MINIO_ENDPOINT=localhost:9000
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin
+MINIO_ACCESS_KEY=minioadmin      # Same as ROOT_USER (for backend API)
+MINIO_SECRET_KEY=minioadmin      # Same as ROOT_PASSWORD (for backend API)
 MINIO_BUCKET_NAME=chord-uploads
 MINIO_USE_SSL=false
+
+# LiveKit (Voice/Video)
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=your-secret-key
+LIVEKIT_URL=ws://localhost:7880
+LIVEKIT_NODE_IP=192.168.1.x      # Your LAN IP for network access
 ```
 
 ⚠️ **Never commit `.env` files to git** - they're already in `.gitignore`

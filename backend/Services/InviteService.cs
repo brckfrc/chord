@@ -11,15 +11,18 @@ public class InviteService : IInviteService
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<InviteService> _logger;
+    private readonly IRoleService _roleService;
 
     public InviteService(
         AppDbContext context,
         IMapper mapper,
-        ILogger<InviteService> logger)
+        ILogger<InviteService> logger,
+        IRoleService roleService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _roleService = roleService;
     }
 
     public async Task<InviteResponseDto> CreateInviteAsync(Guid guildId, Guid userId, CreateInviteDto dto)
@@ -149,8 +152,7 @@ public class InviteService : IInviteService
         {
             GuildId = invite.GuildId,
             UserId = userId,
-            JoinedAt = DateTime.UtcNow,
-            Role = "Member"
+            JoinedAt = DateTime.UtcNow
         };
 
         _context.GuildMembers.Add(newMember);
@@ -160,6 +162,16 @@ public class InviteService : IInviteService
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("User {UserId} joined guild {GuildId} via invite {Code}", userId, invite.GuildId, code);
+
+        // Assign general role to new member
+        try
+        {
+            await _roleService.AssignGeneralRoleAsync(invite.GuildId, userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to assign general role to user {UserId} in guild {GuildId}", userId, invite.GuildId);
+        }
 
         // Reload guild with navigation properties
         var guild = await _context.Guilds

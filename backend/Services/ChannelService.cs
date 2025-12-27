@@ -11,12 +11,18 @@ public class ChannelService : IChannelService
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<ChannelService> _logger;
+    private readonly IPermissionService _permissionService;
 
-    public ChannelService(AppDbContext context, IMapper mapper, ILogger<ChannelService> logger)
+    public ChannelService(
+        AppDbContext context,
+        IMapper mapper,
+        ILogger<ChannelService> logger,
+        IPermissionService permissionService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _permissionService = permissionService;
     }
 
     public async Task<ChannelResponseDto> CreateChannelAsync(Guid guildId, Guid userId, CreateChannelDto dto)
@@ -28,11 +34,9 @@ public class ChannelService : IChannelService
             throw new KeyNotFoundException("Guild not found");
         }
 
-        // Check if user is the guild owner
-        if (guild.OwnerId != userId)
-        {
-            throw new UnauthorizedAccessException("Only the guild owner can create channels");
-        }
+        // Check if user has permission to manage channels
+        await _permissionService.CheckPermissionAsync(guildId, userId, GuildPermission.ManageChannels,
+            "You don't have permission to create channels");
 
         // Auto-calculate position: Always append to the end (scoped by type)
         var maxPosition = await _context.Channels
@@ -117,11 +121,9 @@ public class ChannelService : IChannelService
             throw new KeyNotFoundException("Channel not found");
         }
 
-        // Check if user is the guild owner
-        if (channel.Guild.OwnerId != userId)
-        {
-            throw new UnauthorizedAccessException("Only the guild owner can update channels");
-        }
+        // Check if user has permission to manage channels
+        await _permissionService.CheckPermissionAsync(channel.GuildId, userId, GuildPermission.ManageChannels,
+            "You don't have permission to update channels");
 
         var oldPosition = channel.Position;
         var newPosition = dto.Position;
@@ -185,11 +187,9 @@ public class ChannelService : IChannelService
             throw new KeyNotFoundException("Channel not found");
         }
 
-        // Check if user is the guild owner
-        if (channel.Guild.OwnerId != userId)
-        {
-            throw new UnauthorizedAccessException("Only the guild owner can delete channels");
-        }
+        // Check if user has permission to manage channels
+        await _permissionService.CheckPermissionAsync(channel.GuildId, userId, GuildPermission.ManageChannels,
+            "You don't have permission to delete channels");
 
         var deletedPosition = channel.Position;
         var channelType = channel.Type;

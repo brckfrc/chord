@@ -48,6 +48,8 @@ export function useLiveKit(): UseLiveKitReturn {
   const [isCameraEnabled, setIsCameraEnabled] = useState(false)
 
   const roomRef = useRef<Room | null>(null)
+  const isConnectedRef = useRef(false)
+  const isConnectingRef = useRef(false)
 
   // Map ConnectionState to our VoiceConnectionState
   const mapConnectionState = (state: ConnectionState): VoiceConnectionState => {
@@ -97,7 +99,14 @@ export function useLiveKit(): UseLiveKitReturn {
       return
     }
 
+    // Prevent multiple simultaneous connection attempts
+    if (isConnectingRef.current) {
+      console.log("Already connecting, skipping...")
+      return
+    }
+
     try {
+      isConnectingRef.current = true
       dispatch(setConnectionState("connecting"))
 
       const newRoom = new Room({
@@ -162,6 +171,8 @@ export function useLiveKit(): UseLiveKitReturn {
       // Connect to the room
       await newRoom.connect(liveKitUrl, liveKitToken)
 
+      isConnectedRef.current = true
+      isConnectingRef.current = false
       setLocalParticipant(newRoom.localParticipant)
       dispatch(setConnectionState("connected"))
 
@@ -178,6 +189,8 @@ export function useLiveKit(): UseLiveKitReturn {
       updateParticipants()
     } catch (error) {
       console.error("Failed to connect to LiveKit:", error)
+      isConnectingRef.current = false
+      isConnectedRef.current = false
       dispatch(setVoiceError(error instanceof Error ? error.message : "Failed to connect"))
       dispatch(setConnectionState("disconnected"))
     }
@@ -185,6 +198,8 @@ export function useLiveKit(): UseLiveKitReturn {
 
   // Disconnect from room
   const disconnect = useCallback(async () => {
+    isConnectedRef.current = false
+    isConnectingRef.current = false
     if (roomRef.current) {
       await roomRef.current.disconnect()
       roomRef.current = null
@@ -256,10 +271,12 @@ export function useLiveKit(): UseLiveKitReturn {
     }
   }, [dispatch])
 
-  // Cleanup on unmount
+  // Cleanup on unmount - only disconnect if truly connected
   useEffect(() => {
     return () => {
-      if (roomRef.current) {
+      if (isConnectedRef.current && roomRef.current) {
+        isConnectedRef.current = false
+        isConnectingRef.current = false
         roomRef.current.disconnect()
       }
     }

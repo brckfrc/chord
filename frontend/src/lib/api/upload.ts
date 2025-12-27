@@ -9,6 +9,10 @@ export interface UploadResponseDto {
   mimeType: string;
 }
 
+export interface AvatarUploadResponseDto {
+  avatarUrl: string;
+}
+
 export interface AttachmentDto {
   url: string;
   type: "image" | "video" | "document";
@@ -58,6 +62,38 @@ export const uploadApi = {
     await api.delete("/upload", {
       params: { fileUrl },
     });
+  },
+
+  /**
+   * Upload user avatar
+   */
+  uploadAvatar: async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await api.post<AvatarUploadResponseDto>("/upload/avatar", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data.avatarUrl;
+  },
+
+  /**
+   * Upload guild icon
+   */
+  uploadGuildIcon: async (guildId: string, file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await api.post<AvatarUploadResponseDto>(`/upload/guild/${guildId}/icon`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data.avatarUrl;
   },
 };
 

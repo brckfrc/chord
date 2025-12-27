@@ -771,22 +771,38 @@ TURN_REALM=chord.local
 
 ## 🏗️ FAZ 9: PERMISSIONS & ROLES
 
-**Süre**: ~3-4 gün
+**Süre**: ~3-4 gün  
+**DURUM**: ✅ %100 TAMAMLANDI
 
-### Görevler
+### Backend Görevler
 
-- [ ] GuildMember.Role field (Owner, Admin, Member)
-- [ ] ChannelPermission entity (CanRead, CanWrite, CanSpeak)
-- [ ] Authorization handlers (rol bazlı politikalar)
-- [ ] Permission check middleware/service
-- [ ] Frontend: Permission-based UI (buton gizleme, disable)
-- [ ] Admin panel UI (basit rol değiştirme - opsiyonel)
+- [x] GuildPermission enum (bitfield - 19 permission flags)
+- [x] Role entity (Id, GuildId, Name, Color, Position, Permissions, IsSystemRole)
+- [x] GuildMemberRole join entity (many-to-many)
+- [x] Migration: AddRolesSystem (create tables, seed owner/general roles)
+- [x] IPermissionService: GetUserPermissions, HasPermission, IsOwner, CanManageRole
+- [x] IRoleService: CRUD, reorder, assign/remove roles
+- [x] RolesController: Full API for role management
+- [x] Integration with GuildService, ChannelService, MessageService
+
+### Frontend Görevler
+
+- [x] GuildPermission enum (frontend mirror)
+- [x] rolesSlice: Redux state management
+- [x] usePermission hook: Easy permission checking
+- [x] RoleManagement component: Role CRUD with drag-drop reorder
+- [x] MemberRolesTab component: Assign roles to members
+- [x] GuildSettingsModal: Tabbed settings (Overview, Roles, Members)
+- [x] Permission-based UI (create channel, delete message, etc.)
 
 ### Deliverables
 
-✅ Rol bazlı yetkilendirme çalışıyor  
-✅ Yetkisiz işlemlerde 403  
-✅ Frontend permission'a göre butonlar görünüyor
+✅ Bitfield-based permission system (19 permissions)  
+✅ System roles: owner (position 0), general (position 999)  
+✅ Custom roles with colors and drag-drop reordering  
+✅ Role hierarchy enforcement  
+✅ Frontend permission hooks and UI integration  
+✅ Guild Settings modal with tabs
 
 ---
 
@@ -983,25 +999,17 @@ TURN_REALM=chord.local
 8. **Faz 5.7** ✅ Announcement Channels
 9. **Faz 6.5** ✅ Mentions & Notifications
 10. **Faz 7** ✅ File Upload & Video Support
-11. **Faz 8** 🟡 **SONRAKİ ADIM** → Voice channels (WebRTC)
-12. **Faz 9-9.5** → Permissions + DMs + Friends
-13. **Faz 10-11** → Testing, audit log, notifications, security
-14. **Faz 12** → Production deployment
+11. **Faz 8** ✅ Voice Channels (WebRTC + LiveKit)
+12. **Faz 9** ✅ Permissions & Roles + Guild Settings + Profile Photos
+13. **Faz 9.5** 🟡 **SONRAKİ ADIM** → DMs + Friends
+14. **Faz 10-11** → Testing, audit log, notifications, security
+15. **Faz 12** → Production deployment
 
 ---
 
-## 🚀 SONRAKİ ADIM: FAZ 9
+## 🚀 SONRAKİ ADIM: FAZ 9.5
 
 **Hemen yapılacaklar:**
-
-### FAZ 9: Permissions & Roles
-
-1. GuildMember.Role field (Owner, Admin, Member)
-2. ChannelPermission entity (CanRead, CanWrite, CanSpeak)
-3. Authorization handlers (rol bazli politikalar)
-4. Permission check middleware/service
-5. Frontend: Permission-based UI (buton gizleme, disable)
-6. Admin panel UI (basit rol degistirme - opsiyonel)
 
 ### FAZ 9.5: Direct Messages & Friends
 
@@ -1011,25 +1019,52 @@ TURN_REALM=chord.local
 4. DM API + SignalR integration
 5. Frontend: Friends list, DM conversations
 
-**Tahmini sure**: ~1 hafta  
-**Test edilebilir**: Rol yonetimi, DM ve arkadaslik sistemi calisacak
+**Tahmini süre**: ~3-4 gün  
+**Test edilebilir**: DM ve arkadaşlık sistemi çalışacak
+
+---
+
+## ✅ SON TAMAMLANAN: FAZ 9
+
+### Permissions & Roles
+
+- Bitfield-based GuildPermission (19 permission flags)
+- Role entity with position hierarchy
+- System roles: owner (full access), general (basic permissions)
+- RolesController with full CRUD API
+- Frontend: Role management UI with drag-drop reorder
+- Guild Settings modal (Overview, Roles, Members tabs)
+
+### Profile Photos
+
+- User avatar upload (POST /api/upload/avatar)
+- Guild icon upload (POST /api/upload/guild/{id}/icon)
+- Server-side image processing (ImageSharp)
+- Auto-resize to 256x256, convert to WebP
+- Frontend: AvatarUpload component
+- Integration in User Settings and Guild Settings
 
 ---
 
 ## 📊 ÖZELLIK ÖZETİ
 
-| Özellik                    | Faz | Zorluk    | Frontend Bağımlılığı | Öncelik    |
-| -------------------------- | --- | --------- | -------------------- | ---------- |
-| Reactions                  | 3.5 | Kolay     | Hayır                | ⭐⭐⭐⭐⭐ |
-| Pinned Messages            | 3.5 | Çok Kolay | Hayır                | ⭐⭐⭐⭐   |
-| Unread Messages            | 3.5 | Kolay     | Hayır                | ⭐⭐⭐⭐⭐ |
-| User Status                | 3.5 | Çok Kolay | Hayır                | ⭐⭐⭐     |
-| Voice Channel UI (UI Only) | 5.3 | Orta      | Evet (Guild UI)      | ⭐⭐⭐⭐⭐ |
-| Guild Invites              | 5.5 | Orta      | Evet (Guild UI)      | ⭐⭐⭐⭐   |
-| Mentions                   | 6.5 | Orta      | Evet (Message UI)    | ⭐⭐⭐⭐   |
-| DMs                        | 9.5 | Orta      | Evet (Permissions)   | ⭐⭐⭐⭐   |
-| Friends                    | 9.5 | Orta      | Evet (Permissions)   | ⭐⭐⭐     |
-| Audit Log                  | 10  | Kolay     | Hayır                | ⭐⭐⭐     |
-| Notification Settings      | 11  | Orta      | Evet (Full UI)       | ⭐⭐⭐     |
+| Özellik                    | Faz | Zorluk    | Frontend Bağımlılığı | Durum |
+| -------------------------- | --- | --------- | -------------------- | ----- |
+| Reactions                  | 3.5 | Kolay     | Hayır                | ✅    |
+| Pinned Messages            | 3.5 | Çok Kolay | Hayır                | ✅    |
+| Unread Messages            | 3.5 | Kolay     | Hayır                | ✅    |
+| User Status                | 3.5 | Çok Kolay | Hayır                | ✅    |
+| Voice Channel UI (UI Only) | 5.3 | Orta      | Evet (Guild UI)      | ✅    |
+| Guild Invites              | 5.5 | Orta      | Evet (Guild UI)      | ✅    |
+| Mentions                   | 6.5 | Orta      | Evet (Message UI)    | ✅    |
+| File Upload                | 7   | Orta      | Evet (Message UI)    | ✅    |
+| Voice/Video (WebRTC)       | 8   | Zor       | Evet (LiveKit)       | ✅    |
+| Permissions & Roles        | 9   | Orta      | Evet (Guild UI)      | ✅    |
+| Guild Settings Modal       | 9   | Kolay     | Evet (Permissions)   | ✅    |
+| Profile Photos             | 9   | Kolay     | Evet (MinIO)         | ✅    |
+| DMs                        | 9.5 | Orta      | Evet (Permissions)   | ⏳    |
+| Friends                    | 9.5 | Orta      | Evet (Permissions)   | ⏳    |
+| Audit Log                  | 10  | Kolay     | Hayır                | ⏳    |
+| Notification Settings      | 11  | Orta      | Evet (Full UI)       | ⏳    |
 
 ---

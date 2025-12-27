@@ -25,6 +25,7 @@ export interface UserDto {
   displayName: string
   status: number
   customStatus?: string
+  avatarUrl?: string
   createdAt: string
 }
 

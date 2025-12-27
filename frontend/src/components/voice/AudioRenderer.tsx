@@ -59,3 +59,4 @@ export function AudioRenderer({ participant }: AudioRendererProps) {
   return <audio ref={audioRef} autoPlay playsInline className="hidden" />
 }
 
+

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import { useLiveKit } from "@/hooks/useLiveKit"
 import { setVoiceError } from "@/store/slices/voiceSlice"
@@ -14,6 +14,8 @@ export function VoiceRoom() {
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const maxRetries = 3
+  const isMountedRef = useRef(false)
+  const hasAttemptedConnectRef = useRef(false)
   
   const {
     connect,
@@ -26,6 +28,14 @@ export function VoiceRoom() {
     toggleCamera,
     isSpeaking,
   } = useLiveKit()
+
+  // Track mount status to handle React Strict Mode double-invoke
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   // Check microphone permission
   useEffect(() => {
@@ -48,22 +58,29 @@ export function VoiceRoom() {
 
   // Auto-connect when token is available
   useEffect(() => {
-    if (liveKitToken && connectionState === "connecting" && !permissionDenied) {
+    if (liveKitToken && connectionState === "connecting" && !permissionDenied && !hasAttemptedConnectRef.current) {
+      hasAttemptedConnectRef.current = true
       connect().catch((err) => {
         console.error('Failed to connect:', err)
         if (err.message?.includes('Permission denied') || err.message?.includes('NotAllowedError')) {
           setPermissionDenied(true)
         }
+        // Reset so retry can work
+        hasAttemptedConnectRef.current = false
       })
     }
   }, [liveKitToken, connectionState, connect, permissionDenied])
 
   // Auto-retry on disconnect (up to maxRetries)
   useEffect(() => {
-    if (connectionState === "disconnected" && liveKitToken && retryCount < maxRetries && !permissionDenied) {
+    // Only retry if we actually attempted to connect before
+    if (connectionState === "disconnected" && liveKitToken && retryCount < maxRetries && !permissionDenied && hasAttemptedConnectRef.current) {
       const timer = setTimeout(() => {
-        setRetryCount((prev) => prev + 1)
-        connect()
+        if (isMountedRef.current) {
+          setRetryCount((prev) => prev + 1)
+          hasAttemptedConnectRef.current = false // Reset so connect can attempt again
+          connect()
+        }
       }, 2000 * (retryCount + 1)) // Exponential backoff
       return () => clearTimeout(timer)
     }
@@ -76,19 +93,13 @@ export function VoiceRoom() {
     }
   }, [connectionState])
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (connectionState === "connected") {
-        disconnect()
-      }
-    }
-  }, [connectionState, disconnect])
+  // Note: Cleanup is handled by useLiveKit hook - no need to duplicate here
 
   // Handle manual retry
   const handleRetry = () => {
     setRetryCount(0)
     setPermissionDenied(false)
+    hasAttemptedConnectRef.current = false
     dispatch(setVoiceError(null))
     connect()
   }
@@ -98,6 +109,7 @@ export function VoiceRoom() {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true })
       setPermissionDenied(false)
+      hasAttemptedConnectRef.current = false
       dispatch(setVoiceError(null))
       connect()
     } catch (err) {

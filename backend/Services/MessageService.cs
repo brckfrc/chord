@@ -12,12 +12,18 @@ public class MessageService : IMessageService
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<MessageService> _logger;
+    private readonly IPermissionService _permissionService;
 
-    public MessageService(AppDbContext context, IMapper mapper, ILogger<MessageService> logger)
+    public MessageService(
+        AppDbContext context,
+        IMapper mapper,
+        ILogger<MessageService> logger,
+        IPermissionService permissionService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _permissionService = permissionService;
     }
 
     public async Task<MessageResponseDto> CreateMessageAsync(Guid channelId, Guid userId, CreateMessageDto dto)
@@ -249,13 +255,14 @@ public class MessageService : IMessageService
             throw new KeyNotFoundException("Message not found");
         }
 
-        // Check if user is the author or guild owner
+        // Check if user is the author or has ManageMessages permission
         var isAuthor = message.AuthorId == userId;
-        var isGuildOwner = message.Channel.Guild.OwnerId == userId;
+        var hasManageMessages = await _permissionService.HasPermissionAsync(
+            message.Channel.GuildId, userId, GuildPermission.ManageMessages);
 
-        if (!isAuthor && !isGuildOwner)
+        if (!isAuthor && !hasManageMessages)
         {
-            throw new UnauthorizedAccessException("Only the message author or guild owner can delete this message");
+            throw new UnauthorizedAccessException("Only the message author or users with ManageMessages permission can delete this message");
         }
 
         // Soft delete
@@ -278,11 +285,9 @@ public class MessageService : IMessageService
             throw new KeyNotFoundException("Message not found");
         }
 
-        // Check if user is guild owner (for now, only owner can pin)
-        if (message.Channel.Guild.OwnerId != userId)
-        {
-            throw new UnauthorizedAccessException("Only the guild owner can pin messages");
-        }
+        // Check if user has ManageMessages permission
+        await _permissionService.CheckPermissionAsync(message.Channel.GuildId, userId, GuildPermission.ManageMessages,
+            "You don't have permission to pin messages");
 
         // Check if already pinned
         if (message.IsPinned)
@@ -314,11 +319,9 @@ public class MessageService : IMessageService
             throw new KeyNotFoundException("Message not found");
         }
 
-        // Check if user is guild owner (for now, only owner can unpin)
-        if (message.Channel.Guild.OwnerId != userId)
-        {
-            throw new UnauthorizedAccessException("Only the guild owner can unpin messages");
-        }
+        // Check if user has ManageMessages permission
+        await _permissionService.CheckPermissionAsync(message.Channel.GuildId, userId, GuildPermission.ManageMessages,
+            "You don't have permission to unpin messages");
 
         // Check if not pinned
         if (!message.IsPinned)

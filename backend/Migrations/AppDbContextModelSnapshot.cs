@@ -193,16 +193,36 @@ namespace ChordAPI.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
                     b.HasKey("GuildId", "UserId");
 
                     b.HasIndex("UserId");
 
                     b.ToTable("GuildMembers");
+                });
+
+            modelBuilder.Entity("ChordAPI.Models.Entities.GuildMemberRole", b =>
+                {
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.HasKey("GuildId", "UserId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("GuildId", "UserId");
+
+                    b.ToTable("GuildMemberRoles");
                 });
 
             modelBuilder.Entity("ChordAPI.Models.Entities.Message", b =>
@@ -331,6 +351,50 @@ namespace ChordAPI.Migrations
                         .IsUnique();
 
                     b.ToTable("MessageReactions");
+                });
+
+            modelBuilder.Entity("ChordAPI.Models.Entities.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsSystemRole")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<long>("Permissions")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasIndex("GuildId", "Name")
+                        .IsUnique();
+
+                    b.HasIndex("GuildId", "Position");
+
+                    b.ToTable("Roles");
                 });
 
             modelBuilder.Entity("ChordAPI.Models.Entities.User", b =>
@@ -484,6 +548,25 @@ namespace ChordAPI.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ChordAPI.Models.Entities.GuildMemberRole", b =>
+                {
+                    b.HasOne("ChordAPI.Models.Entities.Role", "Role")
+                        .WithMany("MemberRoles")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("ChordAPI.Models.Entities.GuildMember", "GuildMember")
+                        .WithMany("MemberRoles")
+                        .HasForeignKey("GuildId", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GuildMember");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("ChordAPI.Models.Entities.Message", b =>
                 {
                     b.HasOne("ChordAPI.Models.Entities.User", "Author")
@@ -548,6 +631,17 @@ namespace ChordAPI.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ChordAPI.Models.Entities.Role", b =>
+                {
+                    b.HasOne("ChordAPI.Models.Entities.Guild", "Guild")
+                        .WithMany("Roles")
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
+                });
+
             modelBuilder.Entity("ChordAPI.Models.Entities.Channel", b =>
                 {
                     b.Navigation("Messages");
@@ -558,6 +652,18 @@ namespace ChordAPI.Migrations
                     b.Navigation("Channels");
 
                     b.Navigation("Members");
+
+                    b.Navigation("Roles");
+                });
+
+            modelBuilder.Entity("ChordAPI.Models.Entities.GuildMember", b =>
+                {
+                    b.Navigation("MemberRoles");
+                });
+
+            modelBuilder.Entity("ChordAPI.Models.Entities.Role", b =>
+                {
+                    b.Navigation("MemberRoles");
                 });
 
             modelBuilder.Entity("ChordAPI.Models.Entities.User", b =>

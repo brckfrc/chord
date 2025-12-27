@@ -1,10 +1,12 @@
 import { useState, useMemo } from "react"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
+import { useParams } from "react-router-dom"
 import { removeMessage } from "@/store/slices/messagesSlice"
 import { Button } from "@/components/ui/button"
 import { Pencil, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSignalR } from "@/hooks/useSignalR"
+import { usePermission, GuildPermission } from "@/hooks/usePermission"
 import { DeleteMessageModal } from "@/components/modals/DeleteMessageModal"
 import { ImageAttachment } from "./ImageAttachment"
 import { VideoAttachment } from "./VideoAttachment"
@@ -40,8 +42,13 @@ export function MessageItem({
     // SignalR connection for editing and deleting messages
     const { invoke: chatInvoke, isConnected: isChatConnected } = useSignalR("/hubs/chat")
 
+    // Get guildId from route params for permission check
+    const { guildId } = useParams<{ guildId?: string }>()
+    const { hasPermission } = usePermission(guildId)
+
     const isAuthor = user?.id === message.authorId
-    const canDelete = isAuthor // TODO: Add guild owner check when permissions are implemented
+    const canManageMessages = hasPermission(GuildPermission.ManageMessages)
+    const canDelete = isAuthor || canManageMessages
 
     // Parse attachments from JSON string
     const parsedAttachments = useMemo<AttachmentDto[]>(() => {

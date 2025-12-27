@@ -64,14 +64,16 @@ services:
     container_name: chord-livekit
     environment:
       # Format must be "key: secret" with a space after colon
-      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-7b5a93c4f51fadd897fb0307833236f9}"
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET}"
+      # Node IP for LAN access (set in .env for remote access)
+      LIVEKIT_NODE_IP: "${LIVEKIT_NODE_IP:-}"
     ports:
       - "${LIVEKIT_WS_PORT:-7880}:7880"
       - "${LIVEKIT_RTC_PORT:-7881}:7881/udp"
       - "${LIVEKIT_RTC_PORT:-7881}:7881/tcp"
     volumes:
       - ./livekit.yaml:/livekit.yaml:ro
-    command: --config /livekit.yaml
+    command: --config /livekit.yaml --node-ip ${LIVEKIT_NODE_IP:-}
     networks:
       - chord-network
     restart: unless-stopped

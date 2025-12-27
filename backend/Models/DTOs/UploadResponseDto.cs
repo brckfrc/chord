@@ -36,3 +36,14 @@ public class UploadResponseDto
     public string MimeType { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// DTO for avatar/icon upload responses
+/// </summary>
+public class AvatarUploadResponseDto
+{
+    /// <summary>
+    /// URL of the uploaded avatar/icon
+    /// </summary>
+    public string AvatarUrl { get; set; } = string.Empty;
+}
+

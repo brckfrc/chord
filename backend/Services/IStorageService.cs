@@ -29,5 +29,14 @@ public interface IStorageService
     /// <param name="expiryMinutes">Expiry time in minutes (default: 60)</param>
     /// <returns>Presigned URL</returns>
     Task<string> GeneratePresignedUrlAsync(string fileUrl, int expiryMinutes = 60);
+
+    /// <summary>
+    /// Uploads raw bytes to storage with a specific object name
+    /// </summary>
+    /// <param name="data">Byte array to upload</param>
+    /// <param name="objectName">Object name/path in storage</param>
+    /// <param name="contentType">MIME type of the content</param>
+    /// <returns>Public URL of the uploaded file</returns>
+    Task<string> UploadBytesAsync(byte[] data, string objectName, string contentType);
 }
 

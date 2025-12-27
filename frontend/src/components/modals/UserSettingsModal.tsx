@@ -33,6 +33,9 @@ import {
   Shield,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { AvatarUpload } from "@/components/ui/AvatarUpload"
+import { uploadApi } from "@/lib/api/upload"
+import { setUser } from "@/store/slices/authSlice"
 
 // UserStatus enum values
 const UserStatus = {
@@ -225,6 +228,34 @@ export function UserSettingsModal({ open, onOpenChange }: UserSettingsModalProps
               </p>
             </div>
             <div className="space-y-4">
+              {/* Avatar Upload */}
+              <div className="space-y-2">
+                <Label>Avatar</Label>
+                <div className="flex items-center gap-4">
+                  <AvatarUpload
+                    currentImageUrl={user?.avatarUrl}
+                    fallback={user?.displayName || user?.username || "U"}
+                    onUpload={async (file) => {
+                      const avatarUrl = await uploadApi.uploadAvatar(file)
+                      // Update user state with new avatar
+                      if (user) {
+                        dispatch(setUser({ ...user, avatarUrl }))
+                      }
+                      toast({
+                        title: "Avatar Updated",
+                        description: "Your avatar has been updated successfully.",
+                      })
+                      return avatarUrl
+                    }}
+                    size="lg"
+                  />
+                  <div className="text-sm text-muted-foreground">
+                    <p>Click to upload a new avatar</p>
+                    <p>JPG, PNG, GIF or WebP (max 8MB)</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
                 <Select

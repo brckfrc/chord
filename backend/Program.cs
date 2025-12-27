@@ -71,7 +71,10 @@ builder.Services.AddScoped<IReactionService, ReactionService>();
 builder.Services.AddScoped<IReadStateService, ReadStateService>();
 builder.Services.AddScoped<IMentionService, MentionService>();
 builder.Services.AddScoped<IStorageService, StorageService>();
+builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IVoiceService, VoiceService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 
 // LiveKit Configuration
 var liveKitApiKey = Environment.GetEnvironmentVariable("LIVEKIT_API_KEY") ?? "devkey";

@@ -107,6 +107,10 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    // Set user data directly (e.g., after avatar upload)
+    setUser: (state, action: PayloadAction<UserDto>) => {
+      state.user = action.payload;
+    },
     // Update user status from SignalR StatusUpdated event
     updateStatusFromSignalR: (state, action: PayloadAction<{ status: number; customStatus?: string }>) => {
       if (state.user) {
@@ -213,5 +217,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, updateStatusFromSignalR } = authSlice.actions;
+export const { clearError, setUser, updateStatusFromSignalR } = authSlice.actions;
 export default authSlice.reducer;

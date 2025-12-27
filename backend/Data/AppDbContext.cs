@@ -18,6 +18,8 @@ public class AppDbContext : DbContext
     public DbSet<MessageReaction> MessageReactions { get; set; }
     public DbSet<MessageMention> MessageMentions { get; set; }
     public DbSet<ChannelReadState> ChannelReadStates { get; set; }
+    public DbSet<Role> Roles { get; set; }
+    public DbSet<GuildMemberRole> GuildMemberRoles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -193,6 +195,45 @@ public class AppDbContext : DbContext
             entity.HasIndex(i => i.CreatedAt);
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // Role configuration
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.HasOne(r => r.Guild)
+                .WithMany(g => g.Roles)
+                .HasForeignKey(r => r.GuildId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Unique index: Role name must be unique within a guild
+            entity.HasIndex(r => new { r.GuildId, r.Name }).IsUnique();
+
+            entity.HasIndex(r => r.GuildId);
+            entity.HasIndex(r => new { r.GuildId, r.Position });
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // GuildMemberRole configuration (composite key for many-to-many)
+        modelBuilder.Entity<GuildMemberRole>(entity =>
+        {
+            entity.HasKey(gmr => new { gmr.GuildId, gmr.UserId, gmr.RoleId });
+
+            entity.HasOne(gmr => gmr.GuildMember)
+                .WithMany(gm => gm.MemberRoles)
+                .HasForeignKey(gmr => new { gmr.GuildId, gmr.UserId })
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Use NoAction to avoid multiple cascade paths (Guild -> Roles -> GuildMemberRoles)
+            entity.HasOne(gmr => gmr.Role)
+                .WithMany(r => r.MemberRoles)
+                .HasForeignKey(gmr => gmr.RoleId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(gmr => gmr.RoleId);
+            entity.HasIndex(gmr => new { gmr.GuildId, gmr.UserId });
+
+            entity.Property(e => e.AssignedAt).HasDefaultValueSql("GETUTCDATE()");
         });
     }
 }

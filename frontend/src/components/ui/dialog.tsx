@@ -17,7 +17,7 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-[150] flex items-center justify-center"
       onClick={() => onOpenChange(false)}
     >
       <div
@@ -35,7 +35,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       <div
         ref={ref}
         className={cn(
-          "relative z-50 w-full max-w-lg rounded-lg border border-border bg-background p-6 shadow-lg",
+          "relative z-[150] w-full max-w-lg rounded-lg border border-border bg-background p-6 shadow-lg",
           className
         )}
         {...props}

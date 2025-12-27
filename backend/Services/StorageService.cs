@@ -144,6 +144,28 @@ public class StorageService : IStorageService
         return presignedUrl;
     }
 
+    public async Task<string> UploadBytesAsync(byte[] data, string objectName, string contentType)
+    {
+        // Ensure bucket exists
+        await EnsureBucketExistsAsync();
+
+        using var stream = new MemoryStream(data);
+        var putObjectArgs = new PutObjectArgs()
+            .WithBucket(_bucketName)
+            .WithObject(objectName)
+            .WithStreamData(stream)
+            .WithObjectSize(data.Length)
+            .WithContentType(contentType);
+
+        await _minioClient.PutObjectAsync(putObjectArgs);
+
+        _logger.LogInformation("Bytes uploaded: {ObjectName}", objectName);
+
+        // Build public URL
+        var url = $"{_publicEndpoint}/{_bucketName}/{objectName}";
+        return url;
+    }
+
     private string? DetermineFileType(string mimeType)
     {
         if (AllowedImageTypes.Contains(mimeType))
