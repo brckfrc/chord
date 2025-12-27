@@ -607,30 +607,75 @@
 
 ## 🏗️ FAZ 7: FILE UPLOAD & VIDEO SUPPORT
 
-**Süre**: ~1 hafta
+**Süre**: ~1 hafta  
+**DURUM**: ✅ %100 TAMAMLANDI
 
 ### Backend
 
-- [ ] MinIO Docker container (veya Azure Blob)
-- [ ] StorageService: Upload, Delete, Presigned UackRL
-- [ ] POST /api/upload endpoint (multipart, validation: boyut, tip, süre)
-- [ ] Message.Attachments JSON yapısı (url, type, size, name, duration)
+- [x] MinIO Docker container (docker-compose.dev.yml ve docker-compose.prod.yml) ✅
+- [x] StorageService: Upload, Delete, Presigned URL (IStorageService + StorageService) ✅
+- [x] POST /api/upload endpoint (UploadController, multipart, validation: 25MB boyut, MIME tip) ✅
+- [x] DELETE /api/upload endpoint (dosya silme) ✅
+- [x] Message.Attachments JSON yapısı (url, type, size, name, duration) ✅
+- [x] UploadResponseDto ve AttachmentDto DTOs ✅
+- [x] Minio NuGet package (6.0.3) ✅
+- [x] Program.cs'e IStorageService DI registration ve MinIO config ✅
 
 ### Frontend
 
-- [ ] FileUploadButton component
-- [ ] Upload API client (FormData, progress bar)
-- [ ] VideoAttachment component (inline player)
-- [ ] ImageAttachment component (thumbnail + lightbox)
-- [ ] Composer'a upload butonu entegrasyonu
-- [ ] Preview ve limit uyarıları
+- [x] FileUploadButton component (drag-drop, file selection, preview, progress bar) ✅
+- [x] Upload API client (upload.ts, FormData, progress tracking) ✅
+- [x] VideoAttachment component (HTML5 player, controls, duration display) ✅
+- [x] ImageAttachment component (thumbnail, lightbox, lazy loading) ✅
+- [x] DocumentAttachment component (file icon, name, size, download) ✅
+- [x] MessageComposer'a upload butonu entegrasyonu ✅
+- [x] MessageItem'a attachment rendering ✅
+- [x] File validation utilities (boyut, tip kontrolleri) ✅
+
+### Ek İyileştirmeler
+
+- [x] MessageItem floating action bar (Discord-like, sağ üst köşe) ✅
+- [x] DocumentAttachment doğrudan indirme (fetch + blob, yönlendirmesiz) ✅
+- [x] ProtectedRoute F5 refresh fix (sayfa yenilemede mevcut sayfada kalma) ✅
 
 ### Deliverables
 
-✅ Dosya yükleme çalışıyor  
-✅ Video inline oynatılıyor  
+✅ Dosya yükleme çalışıyor (25MB limit)  
+✅ Video inline oynatılıyor (HTML5 player, controls)  
 ✅ Resim thumbnail + lightbox  
-✅ Boyut/süre limitleri kontrol ediliyor
+✅ Document dosyaları görüntüleme ve indirme  
+✅ Boyut/tip limitleri kontrol ediliyor  
+✅ Drag-drop ve progress bar çalışıyor
+
+### 📝 Notlar
+
+**Docker MinIO Yapılandırması:**
+
+- Image: `minio/minio:latest`
+- Portlar: 9000 (API), 9001 (Console)
+- Network: `chord-network`
+- Volume: `minio_data` (persistent)
+- Health check aktif
+- Console erişim: http://localhost:9001 (minioadmin/minioadmin)
+
+**Dosya Limitleri:**
+
+| Tip      | Max Boyut | Desteklenen Formatlar               |
+| -------- | --------- | ----------------------------------- |
+| Image    | 25MB      | jpg, png, gif, webp                 |
+| Video    | 25MB      | mp4, webm, quicktime                |
+| Document | 25MB      | pdf, docx, xlsx, txt, csv, zip, rar |
+
+**Başlatma Komutları:**
+
+```bash
+# Development - altyapıyı başlat
+cd backend
+docker compose -f docker-compose.dev.yml up -d
+
+# API'yi ayrı çalıştır
+dotnet run
+```
 
 ---
 
@@ -878,32 +923,35 @@
 7. **Faz 5.5** ✅ Guild Invites
 8. **Faz 5.7** ✅ Announcement Channels
 9. **Faz 6.5** ✅ Mentions & Notifications
-10. **Faz 7-8** 🟡 **SONRAKİ ADIM** → File upload, voice channels (WebRTC)
-11. **Faz 9-9.5** → Permissions + DMs + Friends
-12. **Faz 10-11** → Testing, audit log, notifications, security
-13. **Faz 12** → Production deployment
+10. **Faz 7** ✅ File Upload & Video Support
+11. **Faz 8** 🟡 **SONRAKİ ADIM** → Voice channels (WebRTC)
+12. **Faz 9-9.5** → Permissions + DMs + Friends
+13. **Faz 10-11** → Testing, audit log, notifications, security
+14. **Faz 12** → Production deployment
 
 ---
 
-## 🚀 SONRAKİ ADIM: FAZ 7
+## 🚀 SONRAKİ ADIM: FAZ 8
 
 **Hemen yapılacaklar:**
 
-### FAZ 7: File Upload & Video Support
+### FAZ 8: Voice Channels & WebRTC
 
-1. MinIO Docker container (veya Azure Blob)
-2. StorageService: Upload, Delete, Presigned URL
-3. POST /api/upload endpoint (multipart, validation: boyut, tip, süre)
-4. Message.Attachments JSON yapısı (url, type, size, name, duration)
-5. Frontend FileUploadButton component
-6. Upload API client (FormData, progress bar)
-7. VideoAttachment component (inline player)
-8. ImageAttachment component (thumbnail + lightbox)
-9. Composer'a upload butonu entegrasyonu
-10. Preview ve limit uyarıları
+1. Coturn STUN/TURN server (Docker)
+2. RtcSignalingHub: Offer, Answer, IceCandidate relay
+3. VoiceSession yönetimi (kimin hangi odada olduğu)
+4. Channel type'a göre VoiceChannel validasyonu
+5. WebRTC P2P bağlantı logic (RTCPeerConnection)
+6. Voice channel UI (join/leave butonları - mevcut)
+7. VoiceRoom component (katılımcı listesi, mute/unmute - mevcut)
+8. RtcSignalingHub event listeners (offer, answer, ice)
+9. Mikrofon izni kontrolü
+10. Audio stream yönetimi (mute/unmute, disconnect)
+11. Max 5 kişi limiti kontrolü
+12. Error handling (bağlantı hatası, retry)
 
-**Tahmini süre**: ~1 hafta  
-**Test edilebilir**: Dosya yükleme, video/resim görüntüleme çalışacak
+**Tahmini süre**: ~2 hafta  
+**Test edilebilir**: Sesli kanala katılma, P2P ses iletişimi çalışacak
 
 ---
 

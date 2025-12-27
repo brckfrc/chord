@@ -7,6 +7,7 @@ using ChordAPI.Services;
 using ChordAPI.Middleware;
 using Serilog;
 using StackExchange.Redis;
+using Minio;
 
 // Load .env file
 DotNetEnv.Env.Load();
@@ -69,6 +70,23 @@ builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IReactionService, ReactionService>();
 builder.Services.AddScoped<IReadStateService, ReadStateService>();
 builder.Services.AddScoped<IMentionService, MentionService>();
+builder.Services.AddScoped<IStorageService, StorageService>();
+
+// MinIO Configuration
+var minioEndpoint = Environment.GetEnvironmentVariable("MINIO_ENDPOINT") ?? "localhost:9000";
+var minioAccessKey = Environment.GetEnvironmentVariable("MINIO_ACCESS_KEY") ?? "minioadmin";
+var minioSecretKey = Environment.GetEnvironmentVariable("MINIO_SECRET_KEY") ?? "minioadmin";
+var minioUseSsl = Environment.GetEnvironmentVariable("MINIO_USE_SSL")?.ToLower() == "true";
+
+builder.Services.AddMinio(configureClient => configureClient
+    .WithEndpoint(minioEndpoint)
+    .WithCredentials(minioAccessKey, minioSecretKey)
+    .WithSSL(minioUseSsl)
+    .Build());
+
+// Add MinIO configuration to IConfiguration for StorageService
+builder.Configuration["Minio:BucketName"] = Environment.GetEnvironmentVariable("MINIO_BUCKET_NAME") ?? "chord-uploads";
+builder.Configuration["Minio:PublicEndpoint"] = Environment.GetEnvironmentVariable("MINIO_PUBLIC_ENDPOINT") ?? $"http://{minioEndpoint}";
 
 // Database - Build connection string from environment variables
 var sqlPassword = Environment.GetEnvironmentVariable("SQL_SA_PASSWORD") ?? throw new InvalidOperationException("SQL_SA_PASSWORD not found in environment");

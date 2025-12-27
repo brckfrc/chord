@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import { removeMessage } from "@/store/slices/messagesSlice"
 import { Button } from "@/components/ui/button"
@@ -6,7 +6,11 @@ import { Pencil, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSignalR } from "@/hooks/useSignalR"
 import { DeleteMessageModal } from "@/components/modals/DeleteMessageModal"
+import { ImageAttachment } from "./ImageAttachment"
+import { VideoAttachment } from "./VideoAttachment"
+import { DocumentAttachment } from "./DocumentAttachment"
 import type { MessageDto } from "@/lib/api/messages"
+import type { AttachmentDto } from "@/lib/api/upload"
 
 interface MessageItemProps {
     message: MessageDto
@@ -29,7 +33,6 @@ export function MessageItem({
     const { user } = useAppSelector((state) => state.auth)
     const [isEditing, setIsEditing] = useState(false)
     const [editContent, setEditContent] = useState(message.content)
-    const [showActions, setShowActions] = useState(false)
     const [isUpdating, setIsUpdating] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -39,6 +42,20 @@ export function MessageItem({
 
     const isAuthor = user?.id === message.authorId
     const canDelete = isAuthor // TODO: Add guild owner check when permissions are implemented
+
+    // Parse attachments from JSON string
+    const parsedAttachments = useMemo<AttachmentDto[]>(() => {
+        if (!message.attachments) return []
+        try {
+            const parsed = JSON.parse(message.attachments)
+            if (Array.isArray(parsed)) {
+                return parsed as AttachmentDto[]
+            }
+            return []
+        } catch {
+            return []
+        }
+    }, [message.attachments])
 
     const handleEdit = async () => {
         if (editContent.trim() === message.content.trim()) {
@@ -161,11 +178,9 @@ export function MessageItem({
     return (
         <div
             className={cn(
-                "group px-4 hover:bg-[#2f3136] transition-colors",
+                "group relative px-4 hover:bg-[#2f3136] transition-colors",
                 isGrouped ? "pt-1 pb-0" : isFirstInGroup ? "pt-1.5 pb-0.5" : "py-2"
             )}
-            onMouseEnter={() => setShowActions(true)}
-            onMouseLeave={() => setShowActions(false)}
         >
             <div className="flex items-start gap-3">
                 {/* Avatar - only show if showAvatar is true */}
@@ -220,43 +235,80 @@ export function MessageItem({
                             </div>
                         </div>
                     ) : (
-                        <div className="text-sm text-foreground whitespace-pre-wrap break-words">
-                            {renderMessageWithMentions(message.content)}
-                        </div>
+                        <>
+                            {message.content && (
+                                <div className="text-sm text-foreground whitespace-pre-wrap break-words">
+                                    {renderMessageWithMentions(message.content)}
+                                </div>
+                            )}
+
+                            {/* Attachments */}
+                            {parsedAttachments.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {parsedAttachments.map((attachment, index) => {
+                                        if (attachment.type === "image") {
+                                            return (
+                                                <ImageAttachment
+                                                    key={`${attachment.url}-${index}`}
+                                                    attachment={attachment}
+                                                />
+                                            )
+                                        }
+                                        if (attachment.type === "video") {
+                                            return (
+                                                <VideoAttachment
+                                                    key={`${attachment.url}-${index}`}
+                                                    attachment={attachment}
+                                                />
+                                            )
+                                        }
+                                        return (
+                                            <DocumentAttachment
+                                                key={`${attachment.url}-${index}`}
+                                                attachment={attachment}
+                                            />
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </>
                     )}
 
-                    {/* Actions */}
-                    {showActions && isAuthor && !isEditing && (
-                        <div className="flex items-center gap-1 mt-1">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => {
-                                    setIsEditing(true)
-                                    setEditContent(message.content)
-                                }}
-                                disabled={isDeleting}
-                            >
-                                <Pencil className="h-3 w-3 mr-1" />
-                                Edit
-                            </Button>
-                            {canDelete && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 px-2 text-xs text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => setShowDeleteModal(true)}
-                                    disabled={isDeleting}
-                                >
-                                    <Trash2 className="h-3 w-3 mr-1" />
-                                    Delete
-                                </Button>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
+
+            {/* Floating Actions - Discord style */}
+            {isAuthor && !isEditing && (
+                <div className="absolute -top-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none group-hover:pointer-events-auto">
+                    <div className="flex items-center gap-0.5 bg-[#2b2d31] border border-border rounded-md shadow-lg p-0.5">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-[#3f4147]"
+                            onClick={() => {
+                                setIsEditing(true)
+                                setEditContent(message.content)
+                            }}
+                            disabled={isDeleting}
+                            title="Edit"
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                        {canDelete && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-[#3f4147]"
+                                onClick={() => setShowDeleteModal(true)}
+                                disabled={isDeleting}
+                                title="Delete"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Delete Confirmation Modal */}
             <DeleteMessageModal

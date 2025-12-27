@@ -7,6 +7,8 @@ import { Send } from "lucide-react"
 import { useSignalR } from "@/hooks/useSignalR"
 import { cn } from "@/lib/utils"
 import type { GuildMemberDto } from "@/lib/api/guilds"
+import { FileUploadButton } from "./FileUploadButton"
+import type { UploadResponseDto, AttachmentDto } from "@/lib/api/upload"
 
 interface MessageComposerProps {
     channelId: string
@@ -22,6 +24,7 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
     const [mentionQuery, setMentionQuery] = useState("")
     const [mentionStartIndex, setMentionStartIndex] = useState<number | null>(null)
     const [selectedMentionIndex, setSelectedMentionIndex] = useState(0)
+    const [attachments, setAttachments] = useState<UploadResponseDto[]>([])
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const mentionListRef = useRef<HTMLDivElement>(null)
@@ -48,10 +51,10 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
 
         const cursorPosition = textarea.selectionStart
         const textBeforeCursor = content.substring(0, cursorPosition)
-        
+
         // Find @ mention pattern
         const mentionMatch = textBeforeCursor.match(/@(\w*)$/)
-        
+
         if (mentionMatch) {
             const matchIndex = textBeforeCursor.lastIndexOf("@")
             setMentionStartIndex(matchIndex)
@@ -83,6 +86,29 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
     // Limit to 10 results
     const mentionSuggestions = filteredMembers.slice(0, 10)
 
+    // Handle attachment upload complete
+    const handleUploadComplete = (attachment: UploadResponseDto) => {
+        setAttachments((prev) => [...prev, attachment])
+    }
+
+    // Handle attachment removal
+    const handleUploadRemove = (url: string) => {
+        setAttachments((prev) => prev.filter((a) => a.url !== url))
+    }
+
+    // Convert UploadResponseDto to AttachmentDto for message
+    const attachmentsToJson = (): string | null => {
+        if (attachments.length === 0) return null
+        const dtos: AttachmentDto[] = attachments.map((a) => ({
+            url: a.url,
+            type: a.type,
+            size: a.size,
+            name: a.name,
+            duration: a.duration,
+        }))
+        return JSON.stringify(dtos)
+    }
+
     // Handle mention selection
     const insertMention = (member: GuildMemberDto) => {
         if (mentionStartIndex === null || !textareaRef.current) return
@@ -91,11 +117,11 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
         const beforeMention = content.substring(0, mentionStartIndex)
         const afterMention = content.substring(textareaRef.current.selectionStart)
         const newContent = `${beforeMention}@${username} ${afterMention}`
-        
+
         setContent(newContent)
         setMentionStartIndex(null)
         setMentionQuery("")
-        
+
         // Set cursor position after mention
         setTimeout(() => {
             if (textareaRef.current) {
@@ -167,7 +193,8 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        if (!content.trim() || isSending) {
+        // Allow sending if there's content OR attachments
+        if ((!content.trim() && attachments.length === 0) || isSending) {
             return
         }
 
@@ -176,7 +203,7 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
             // Send via SignalR (will be broadcast via ReceiveMessage event)
             await chatInvoke("SendMessage", channelId, {
                 content: content.trim(),
-                attachments: null,
+                attachments: attachmentsToJson(),
             })
 
             // Stop typing indicator after sending message
@@ -186,8 +213,9 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
                 console.error("Failed to send stop typing indicator:", error)
             }
 
-            // Clear input
+            // Clear input and attachments
             setContent("")
+            setAttachments([])
             if (textareaRef.current) {
                 textareaRef.current.style.height = "auto"
             }
@@ -198,10 +226,14 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
                 await dispatch(
                     createMessage({
                         channelId,
-                        data: { content: content.trim() },
+                        data: {
+                            content: content.trim(),
+                            attachments: attachmentsToJson() || undefined
+                        },
                     })
                 ).unwrap()
                 setContent("")
+                setAttachments([])
                 if (textareaRef.current) {
                     textareaRef.current.style.height = "auto"
                 }
@@ -218,7 +250,7 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
         if (mentionStartIndex !== null && mentionSuggestions.length > 0) {
             if (e.key === "ArrowDown") {
                 e.preventDefault()
-                setSelectedMentionIndex((prev) => 
+                setSelectedMentionIndex((prev) =>
                     prev < mentionSuggestions.length - 1 ? prev + 1 : prev
                 )
                 return
@@ -251,6 +283,14 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
     return (
         <div className="px-4 py-4 border-t border-border">
             <form onSubmit={handleSubmit} className="flex items-center gap-2">
+                {/* File Upload Button */}
+                <FileUploadButton
+                    onUploadComplete={handleUploadComplete}
+                    onUploadRemove={handleUploadRemove}
+                    attachments={attachments}
+                    disabled={isSending}
+                />
+
                 <div className="flex-1 relative flex items-center">
                     <textarea
                         ref={textareaRef}
@@ -262,7 +302,7 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
                         rows={1}
                         disabled={isSending}
                     />
-                    
+
                     {/* Mention Autocomplete */}
                     {mentionStartIndex !== null && mentionSuggestions.length > 0 && (
                         <div
@@ -299,7 +339,7 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
                 <Button
                     type="submit"
                     size="icon"
-                    disabled={!content.trim() || isSending}
+                    disabled={(!content.trim() && attachments.length === 0) || isSending}
                     className="flex-shrink-0 h-[36px] w-[36px]"
                 >
                     <Send className="h-4 w-4" />

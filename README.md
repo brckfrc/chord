@@ -7,6 +7,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **Real-Time Messaging**: Instant messaging with SignalR WebSockets
 - **Guilds & Channels**: Create and manage Discord-like servers with text and voice channels
 - **Voice Channel Presence**: See who's in voice channels (WebRTC streaming coming soon)
+- **File Upload & Attachments**: Upload images, videos, and documents (25MB limit)
 - **Message Reactions**: React to messages with emojis
 - **Pinned Messages**: Pin important messages to the top
 - **Unread Tracking**: Track unread messages per channel
@@ -16,6 +17,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **Typing Indicators**: See when someone is typing
 - **Message Editing & Deletion**: Edit or delete your messages with instant updates
 - **Message Grouping**: Discord-like message grouping for better readability
+- **@Mentions**: Mention users with autocomplete and notification
 
 ## 🛠️ Tech Stack
 
@@ -25,6 +27,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **Entity Framework Core 9** - ORM
 - **SQL Server** - Primary database
 - **Redis** - Caching & SignalR backplane
+- **MinIO** - Object storage for file uploads
 - **SignalR** - Real-time WebSocket communication
 - **JWT** - Authentication
 - **BCrypt** - Password hashing
@@ -71,7 +74,7 @@ cp .env.example .env
 # Edit .env with your values (see Configuration section)
 nano .env
 
-# Start SQL Server and Redis
+# Start SQL Server, Redis, and MinIO
 docker compose -f docker-compose.dev.yml up -d
 
 # Apply database migrations
@@ -124,6 +127,13 @@ CORS_ORIGINS=http://localhost:5173,http://localhost:3000
 
 # Redis (optional, defaults shown)
 REDIS_CONNECTION_STRING=localhost:6379
+
+# MinIO (optional, defaults shown)
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET_NAME=chord-uploads
+MINIO_USE_SSL=false
 ```
 
 ⚠️ **Never commit `.env` files to git** - they're already in `.gitignore`
@@ -154,12 +164,21 @@ VITE_SIGNALR_BASE_URL=http://localhost:5049
 ### Development
 
 ```bash
-# Start services
+# Start services (SQL Server, Redis, MinIO)
 docker compose -f backend/docker-compose.dev.yml up -d
 
 # Stop services
 docker compose -f backend/docker-compose.dev.yml down
 ```
+
+**Services:**
+
+| Service       | Port | Description                    |
+| ------------- | ---- | ------------------------------ |
+| SQL Server    | 1433 | Primary database               |
+| Redis         | 6379 | Cache & SignalR                |
+| MinIO API     | 9000 | Object storage                 |
+| MinIO Console | 9001 | Web UI (minioadmin/minioadmin) |
 
 ### Production Deployment
 

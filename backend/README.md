@@ -10,12 +10,14 @@ ASP.NET Core backend for Chord, a Discord-like real-time chat application.
 - **Entity Framework Core 9** - ORM
 - **SQL Server** - Database
 - **Redis** - Caching & SignalR backplane
+- **MinIO** - Object storage for file uploads
 - **SignalR** - Real-time communication
 - **JWT 8.2** - Authentication
 - **BCrypt** - Password hashing
 - **Serilog 9** - Logging
 - **AutoMapper 12** - Object mapping
 - **FluentValidation 11** - Input validation
+- **Minio SDK 6.0.3** - MinIO client
 
 ## Prerequisites
 
@@ -42,6 +44,8 @@ This will start:
 
 - SQL Server on `localhost:1433`
 - Redis on `localhost:6379`
+- MinIO API on `localhost:9000`
+- MinIO Console on `localhost:9001` (login: minioadmin/minioadmin)
 
 ### 3. Apply Migrations
 
@@ -68,14 +72,19 @@ The API will be available at:
 ```
 backend/
 ├── Controllers/       # API endpoints
-├── Hubs/             # SignalR hubs
+│   └── UploadController.cs  # File upload endpoint
+├── Hubs/             # SignalR hubs (ChatHub, PresenceHub)
 ├── Models/
 │   ├── Entities/     # Database entities
 │   └── DTOs/         # Data transfer objects
+│       ├── UploadResponseDto.cs  # Upload response
+│       └── AttachmentDto.cs      # Message attachment
 ├── Data/             # DbContext
 ├── Services/         # Business logic
+│   ├── IStorageService.cs  # Storage interface
+│   └── StorageService.cs   # MinIO implementation
 ├── Middleware/       # Custom middleware
-├── Extensions/       # Extension methods
+├── Migrations/       # EF Core migrations
 ├── appsettings.json  # Configuration
 └── Program.cs        # Application entry point
 ```
@@ -96,6 +105,15 @@ cp .env.example .env
 - `JWT_SECRET` - JWT signing key (min 32 chars)
 - `DATABASE_NAME` - Database name (default: ChordDB)
 - `CORS_ORIGINS` - Allowed frontend URLs (comma-separated)
+
+**Optional variables (with defaults):**
+
+- `MINIO_ENDPOINT` - MinIO endpoint (default: localhost:9000)
+- `MINIO_ACCESS_KEY` - MinIO access key (default: minioadmin)
+- `MINIO_SECRET_KEY` - MinIO secret key (default: minioadmin)
+- `MINIO_BUCKET_NAME` - Bucket name (default: chord-uploads)
+- `MINIO_USE_SSL` - Use SSL (default: false)
+- `MINIO_PUBLIC_ENDPOINT` - Public URL for file access (default: http://localhost:9000)
 
 ⚠️ **Never commit `.env` to git** - already in `.gitignore`
 
@@ -254,7 +272,24 @@ docker exec chord-sqlserver /opt/mssql-tools/bin/sqlcmd \
 
 # Restart specific service
 docker compose -f docker-compose.prod.yml restart api
+
+# MinIO console (web UI for file management)
+# Access: http://localhost:9001 (login: minioadmin/minioadmin)
 ```
+
+### MinIO Configuration (Production)
+
+For production, update MinIO credentials in `.env`:
+
+```env
+MINIO_ROOT_USER=your-secure-access-key
+MINIO_ROOT_PASSWORD=your-secure-secret-key
+MINIO_ACCESS_KEY=your-secure-access-key
+MINIO_SECRET_KEY=your-secure-secret-key
+MINIO_PUBLIC_ENDPOINT=https://files.yourdomain.com
+```
+
+**Important:** In production, use a reverse proxy (Nginx/Caddy) to serve MinIO files over HTTPS.
 
 ## Development
 
@@ -262,9 +297,12 @@ docker compose -f docker-compose.prod.yml restart api
 - Hot reload is enabled by default
 - Check `Logs/` directory for application logs
 
+## Completed Features
+
+- ✅ **File Upload & Video Support**: MinIO object storage, 25MB limit, image/video/document support, drag-drop upload, progress tracking
+
 ## Upcoming Features
 
-- File upload & video support (MinIO/Azure Blob, presigned URLs, attachment handling)
 - WebRTC voice channels (STUN/TURN server, RTC signaling hub, P2P audio streaming)
 - Permissions & roles (role-based authorization, channel permissions, admin panel)
 - Direct Messages & Friends (friendship system, DM channels, friend-only messaging)
@@ -286,7 +324,22 @@ docker compose -f docker-compose.prod.yml restart api
 | GET    | `/api/Auth/me`       | Get current user profile | Yes           |
 | POST   | `/api/Auth/logout`   | Logout user              | Yes           |
 
-### Guilds 🔜
+### File Upload ✅
+
+| Method | Endpoint      | Description                  | Auth Required |
+| ------ | ------------- | ---------------------------- | ------------- |
+| POST   | `/api/Upload` | Upload file (max 25MB)       | Yes           |
+| DELETE | `/api/Upload` | Delete file (query: fileUrl) | Yes           |
+
+**Supported file types:**
+
+| Type     | Formats                             | Max Size |
+| -------- | ----------------------------------- | -------- |
+| Image    | jpg, png, gif, webp                 | 25MB     |
+| Video    | mp4, webm, quicktime                | 25MB     |
+| Document | pdf, docx, xlsx, txt, csv, zip, rar | 25MB     |
+
+### Guilds ✅
 
 | Method | Endpoint                            | Description        | Auth Required |
 | ------ | ----------------------------------- | ------------------ | ------------- |

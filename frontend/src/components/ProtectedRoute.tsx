@@ -14,8 +14,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/" replace />
   }
 
-  // Wait while loading
-  if (isLoading) {
+  // Wait while loading OR while user is being fetched (token exists but user not loaded yet)
+  if (isLoading || (token && !user)) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
@@ -23,8 +23,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  // Redirect to login if token exists but user is missing or not authenticated
-  if (!isAuthenticated || !user) {
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
     return <Navigate to="/" replace />
   }
 
