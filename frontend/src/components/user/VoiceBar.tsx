@@ -1,18 +1,30 @@
-import { useEffect } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { setActiveVoiceChannel, removeVoiceChannelUser } from "@/store/slices/channelsSlice"
+import { leaveVoiceChannel } from "@/store/slices/voiceSlice"
 import { useSignalR } from "@/hooks/useSignalR"
+import { useLiveKit } from "@/hooks/useLiveKit"
 import { Button } from "@/components/ui/button"
-import { PhoneOff, Signal, Wifi, WifiOff } from "lucide-react"
+import { PhoneOff, Signal, Wifi, WifiOff, Mic, MicOff, Video, VideoOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function VoiceBar() {
   const dispatch = useAppDispatch()
   const { activeVoiceChannelId, channels } = useAppSelector((state) => state.channels)
   const { user: currentUser } = useAppSelector((state) => state.auth)
+  const { connectionState, speakingParticipants } = useAppSelector((state) => state.voice)
 
   // SignalR connection for ChatHub
   const { invoke: chatInvoke, isConnected: isChatConnected } = useSignalR("/hubs/chat")
+  
+  // LiveKit connection
+  const { 
+    disconnect: liveKitDisconnect, 
+    isMicrophoneEnabled, 
+    isCameraEnabled,
+    toggleMicrophone,
+    toggleCamera,
+    isSpeaking 
+  } = useLiveKit()
 
   // Don't show if not in a voice channel
   if (!activeVoiceChannelId) {
@@ -32,15 +44,19 @@ export function VoiceBar() {
     if (!currentUser) return
 
     try {
+      // Disconnect from LiveKit
+      await liveKitDisconnect()
+      
       // Call SignalR LeaveVoiceChannel
       if (isChatConnected) {
         await chatInvoke("LeaveVoiceChannel", activeVoiceChannelId)
       }
     } catch (error) {
-      console.error("Failed to leave voice channel via SignalR:", error)
+      console.error("Failed to leave voice channel:", error)
     } finally {
       // Update Redux state
       dispatch(setActiveVoiceChannel(null))
+      dispatch(leaveVoiceChannel())
       dispatch(
         removeVoiceChannelUser({
           channelId: activeVoiceChannelId,
@@ -50,20 +66,24 @@ export function VoiceBar() {
     }
   }
 
-  // Connection status (mock for now, will be real when SignalR is implemented)
-  const connectionStatus = "connected" // connected, connecting, disconnected
-  const connectionQuality = "good" // good, medium, poor
+  // Get connection status text
+  const getConnectionStatusText = () => {
+    switch (connectionState) {
+      case "connected":
+        return "Voice Connected"
+      case "connecting":
+        return "Connecting..."
+      case "reconnecting":
+        return "Reconnecting..."
+      default:
+        return "Disconnected"
+    }
+  }
 
   const getConnectionIcon = () => {
-    if (connectionStatus === "connected") {
-      if (connectionQuality === "good") {
-        return <Signal className="h-4 w-4 text-green-500" />
-      } else if (connectionQuality === "medium") {
-        return <Wifi className="h-4 w-4 text-yellow-500" />
-      } else {
-        return <WifiOff className="h-4 w-4 text-red-500" />
-      }
-    } else if (connectionStatus === "connecting") {
+    if (connectionState === "connected") {
+      return <Signal className={cn("h-4 w-4", isSpeaking ? "text-green-500 animate-pulse" : "text-green-500")} />
+    } else if (connectionState === "connecting" || connectionState === "reconnecting") {
       return <Wifi className="h-4 w-4 text-yellow-500 animate-pulse" />
     } else {
       return <WifiOff className="h-4 w-4 text-red-500" />
@@ -71,8 +91,11 @@ export function VoiceBar() {
   }
 
   return (
-    <div className="h-12 bg-[#2f3136] border-t border-border flex items-center justify-between px-4">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+    <div className={cn(
+      "bg-[#2f3136] border-t border-border flex items-center justify-between px-3 py-2",
+      isSpeaking && "bg-green-500/10"
+    )}>
+      <div className="flex items-center gap-2 flex-1 min-w-0">
         {/* Connection Status Icon */}
         <div className="flex-shrink-0">{getConnectionIcon()}</div>
 
@@ -80,29 +103,60 @@ export function VoiceBar() {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{activeVoiceChannel.name}</p>
           <p className="text-xs text-muted-foreground truncate">
-            {connectionStatus === "connected"
-              ? connectionQuality === "good"
-                ? "Connected"
-                : connectionQuality === "medium"
-                ? "Connecting..."
-                : "Poor connection"
-              : connectionStatus === "connecting"
-              ? "Connecting..."
-              : "Disconnected"}
+            {getConnectionStatusText()}
           </p>
         </div>
       </div>
 
-      {/* Disconnect Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-        onClick={handleDisconnect}
-        title="Disconnect"
-      >
-        <PhoneOff className="h-4 w-4" />
-      </Button>
+      {/* Control Buttons */}
+      <div className="flex items-center gap-1">
+        {/* Microphone Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "h-8 w-8",
+            !isMicrophoneEnabled && "text-destructive hover:text-destructive"
+          )}
+          onClick={toggleMicrophone}
+          title={isMicrophoneEnabled ? "Mute" : "Unmute"}
+        >
+          {isMicrophoneEnabled ? (
+            <Mic className="h-4 w-4" />
+          ) : (
+            <MicOff className="h-4 w-4" />
+          )}
+        </Button>
+
+        {/* Camera Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "h-8 w-8",
+            isCameraEnabled && "text-green-500"
+          )}
+          onClick={toggleCamera}
+          title={isCameraEnabled ? "Turn off camera" : "Turn on camera"}
+        >
+          {isCameraEnabled ? (
+            <Video className="h-4 w-4" />
+          ) : (
+            <VideoOff className="h-4 w-4" />
+          )}
+        </Button>
+
+        {/* Disconnect Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={handleDisconnect}
+          title="Disconnect"
+        >
+          <PhoneOff className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   )
 }

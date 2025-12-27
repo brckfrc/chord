@@ -4,7 +4,7 @@ import { addVoiceChannelUser, removeVoiceChannelUser } from "@/store/slices/chan
 import type { VoiceChannelUser } from "@/store/slices/channelsSlice"
 import { useSignalR } from "@/hooks/useSignalR"
 import { Button } from "@/components/ui/button"
-import { Mic, MicOff, Headphones, HeadphoneOff } from "lucide-react"
+import { Mic, MicOff, Headphones, HeadphoneOff, Volume2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { UserVoiceModal } from "@/components/modals/UserVoiceModal"
 
@@ -21,9 +21,10 @@ interface VoiceUserItemProps {
   user: VoiceChannelUser
   channelId: string
   isCurrentUser: boolean
+  isSpeaking?: boolean
 }
 
-function VoiceUserItem({ user, channelId, isCurrentUser }: VoiceUserItemProps) {
+function VoiceUserItem({ user, channelId, isCurrentUser, isSpeaking = false }: VoiceUserItemProps) {
   const dispatch = useAppDispatch()
   const { invoke: chatInvoke, isConnected: isChatConnected } = useSignalR("/hubs/chat")
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -140,12 +141,16 @@ function VoiceUserItem({ user, channelId, isCurrentUser }: VoiceUserItemProps) {
         ref={userItemRef}
         className={cn(
           "px-2 py-1 flex items-center gap-1.5 group hover:bg-[#3f4147] rounded transition-colors",
-          !isCurrentUser && "cursor-pointer"
+          !isCurrentUser && "cursor-pointer",
+          isSpeaking && "bg-green-500/10"
         )}
         onClick={handleUserClick}
       >
       <div className="relative flex-shrink-0">
-        <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-xs">
+        <div className={cn(
+          "w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-xs transition-all",
+          isSpeaking && "ring-2 ring-green-500 ring-offset-1 ring-offset-background"
+        )}>
           {user.displayName.charAt(0).toUpperCase()}
         </div>
         <div
@@ -154,13 +159,25 @@ function VoiceUserItem({ user, channelId, isCurrentUser }: VoiceUserItemProps) {
             getStatusColor(displayStatus)
           )}
         />
+        {/* Speaking indicator animation */}
+        {isSpeaking && (
+          <div className="absolute -top-0.5 -right-0.5">
+            <Volume2 className="h-3 w-3 text-green-500 animate-pulse" />
+          </div>
+        )}
       </div>
       <div className="flex-1 text-left min-w-0">
-        <p className="text-xs font-medium truncate">{user.displayName}</p>
-        {user.isMuted && !user.isDeafened && (
+        <p className={cn(
+          "text-xs font-medium truncate",
+          isSpeaking && "text-green-400"
+        )}>{user.displayName}</p>
+        {isSpeaking && (
+          <p className="text-[10px] text-green-500 truncate">Speaking</p>
+        )}
+        {!isSpeaking && user.isMuted && !user.isDeafened && (
           <p className="text-[10px] text-muted-foreground truncate">Muted</p>
         )}
-        {user.isDeafened && (
+        {!isSpeaking && user.isDeafened && (
           <p className="text-[10px] text-muted-foreground truncate">Deafened</p>
         )}
       </div>
@@ -232,11 +249,17 @@ export function VoiceChannelUsers({ channelId }: VoiceChannelUsersProps) {
   const dispatch = useAppDispatch()
   const { voiceChannelUsers } = useAppSelector((state) => state.channels)
   const { user: currentUser } = useAppSelector((state) => state.auth)
+  const { speakingParticipants, currentChannelId: voiceChannelId } = useAppSelector((state) => state.voice)
 
   // SignalR connection for ChatHub
   const { on: chatOn, isConnected: isChatConnected } = useSignalR("/hubs/chat")
 
   const users = voiceChannelUsers[channelId] || []
+  
+  // Check if a user is currently speaking
+  const isUserSpeaking = (userId: string) => {
+    return channelId === voiceChannelId && speakingParticipants.includes(userId)
+  }
 
   // SignalR event listeners for voice channel events
   useEffect(() => {
@@ -328,6 +351,7 @@ export function VoiceChannelUsers({ channelId }: VoiceChannelUsersProps) {
           user={user}
           channelId={channelId}
           isCurrentUser={user.userId === currentUser?.id}
+          isSpeaking={isUserSpeaking(user.userId)}
         />
       ))}
     </div>

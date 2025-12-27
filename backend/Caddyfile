@@ -1,0 +1,46 @@
+# Chord Caddy Configuration
+# Replace {$DOMAIN} with your domain or use environment variable
+
+{$DOMAIN:localhost} {
+    # API endpoints
+    handle /api/* {
+        reverse_proxy api:80
+    }
+
+    # SignalR WebSocket hubs
+    handle /hubs/* {
+        reverse_proxy api:80
+    }
+
+    # Health check
+    handle /health {
+        reverse_proxy api:80
+    }
+
+    # LiveKit WebSocket (for direct connection if needed)
+    handle /livekit/* {
+        reverse_proxy livekit:7880
+    }
+
+    # MinIO file uploads
+    handle /uploads/* {
+        uri strip_prefix /uploads
+        reverse_proxy minio:9000
+    }
+
+    # MinIO Console (optional, for admin access)
+    handle /minio-console/* {
+        uri strip_prefix /minio-console
+        reverse_proxy minio:9001
+    }
+
+    # Frontend (catch-all)
+    handle /* {
+        # If you have a frontend container:
+        # reverse_proxy frontend:3000
+        
+        # For now, serve a placeholder or static files
+        respond "Chord API is running. Frontend not configured in standalone mode."
+    }
+}
+

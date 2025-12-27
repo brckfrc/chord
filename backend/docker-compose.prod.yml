@@ -23,14 +23,19 @@ services:
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
       - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-chord-uploads}
       - MINIO_USE_SSL=false
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - LIVEKIT_URL=${LIVEKIT_URL:-ws://livekit:7880}
     ports:
-      - "5000:80"
+      - "${API_PORT:-5000}:80"
     depends_on:
       sqlserver:
         condition: service_healthy
       redis:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      livekit:
         condition: service_healthy
     networks:
       - chord-network
@@ -50,7 +55,7 @@ services:
       SA_PASSWORD: "${SQL_SA_PASSWORD}"
       MSSQL_PID: "Developer"
     ports:
-      - "1433:1433"
+      - "${SQL_PORT:-1433}:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
     networks:
@@ -67,7 +72,7 @@ services:
     image: redis:7-alpine
     container_name: chord-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -87,8 +92,8 @@ services:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-minioadmin}"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio_data:/data
     networks:
@@ -102,6 +107,43 @@ services:
       retries: 5
       start_period: 10s
 
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: chord-livekit
+    environment:
+      - LIVEKIT_KEYS=${LIVEKIT_API_KEY:-devkey}:${LIVEKIT_API_SECRET}
+    ports:
+      - "${LIVEKIT_WS_PORT:-7880}:7880"
+      - "${LIVEKIT_RTC_PORT:-7881}:7881/udp"
+      - "${LIVEKIT_RTC_PORT:-7881}:7881/tcp"
+    volumes:
+      - ./livekit.yaml:/livekit.yaml:ro
+    command: --config /livekit.yaml
+    networks:
+      - chord-network
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7880"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  coturn:
+    image: coturn/coturn:latest
+    container_name: chord-coturn
+    ports:
+      - "${TURN_PORT:-3478}:3478/udp"
+      - "${TURN_PORT:-3478}:3478/tcp"
+    volumes:
+      - ./turnserver.conf:/etc/turnserver.conf:ro
+    command: -c /etc/turnserver.conf
+    network_mode: "${TURN_NETWORK_MODE:-bridge}"
+    restart: unless-stopped
+
 volumes:
   sqlserver_data:
   redis_data:
@@ -110,4 +152,3 @@ volumes:
 networks:
   chord-network:
     driver: bridge
-

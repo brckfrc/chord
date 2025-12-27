@@ -6,7 +6,8 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 
 - **Real-Time Messaging**: Instant messaging with SignalR WebSockets
 - **Guilds & Channels**: Create and manage Discord-like servers with text and voice channels
-- **Voice Channel Presence**: See who's in voice channels (WebRTC streaming coming soon)
+- **Voice & Video Chat**: Real-time voice/video communication with LiveKit SFU (10+ users)
+- **Speaking Indicators**: See who's talking with animated green rings
 - **File Upload & Attachments**: Upload images, videos, and documents (25MB limit)
 - **Message Reactions**: React to messages with emojis
 - **Pinned Messages**: Pin important messages to the top
@@ -18,6 +19,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **Message Editing & Deletion**: Edit or delete your messages with instant updates
 - **Message Grouping**: Discord-like message grouping for better readability
 - **@Mentions**: Mention users with autocomplete and notification
+- **Plug-and-Play Deployment**: Easy setup with Docker and optional Caddy reverse proxy
 
 ## 🛠️ Tech Stack
 
@@ -28,6 +30,8 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **SQL Server** - Primary database
 - **Redis** - Caching & SignalR backplane
 - **MinIO** - Object storage for file uploads
+- **LiveKit** - WebRTC SFU for voice/video
+- **Coturn** - STUN/TURN server for NAT traversal
 - **SignalR** - Real-time WebSocket communication
 - **JWT** - Authentication
 - **BCrypt** - Password hashing
@@ -45,6 +49,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **Tailwind CSS** - Styling
 - **shadcn/ui** - UI components
 - **SignalR Client** - Real-time communication
+- **LiveKit Client** - WebRTC voice/video
 - **React Hook Form + Zod** - Form validation
 
 ## 📋 Prerequisites

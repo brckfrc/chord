@@ -9,6 +9,7 @@ import {
     removeVoiceChannelUser,
     setGuildChannels,
 } from "@/store/slices/channelsSlice"
+import { joinVoiceChannel, leaveVoiceChannel } from "@/store/slices/voiceSlice"
 import { useSignalR } from "@/hooks/useSignalR"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -69,6 +70,9 @@ export function ChannelSidebar() {
 
                     // Leave previous voice channel if exists
                     if (previousChannelId && currentUser) {
+                        // Clear voiceSlice state first
+                        dispatch(leaveVoiceChannel())
+                        
                         // Call SignalR LeaveVoiceChannel for previous channel
                         if (isChatConnected) {
                             chatInvoke("LeaveVoiceChannel", previousChannelId).catch((error) => {
@@ -102,11 +106,31 @@ export function ChannelSidebar() {
                             })
                         )
                     }
-                    // Call SignalR JoinVoiceChannel
+                    // Call SignalR JoinVoiceChannel and handle response
                     if (isChatConnected) {
-                        chatInvoke("JoinVoiceChannel", channel.id).catch((error) => {
-                            console.error("Failed to join voice channel via SignalR:", error)
-                        })
+                        chatInvoke("JoinVoiceChannel", channel.id)
+                            .then((response: { 
+                                success: boolean; 
+                                liveKitToken?: string; 
+                                liveKitUrl?: string;
+                                roomName?: string;
+                            }) => {
+                                console.log("JoinVoiceChannel response:", response)
+                                if (response.success && response.liveKitToken && response.liveKitUrl) {
+                                    dispatch(joinVoiceChannel({
+                                        channelId: channel.id,
+                                        guildId: activeGuildId!,
+                                        liveKitToken: response.liveKitToken,
+                                        liveKitUrl: response.liveKitUrl,
+                                        roomName: response.roomName || `voice_${channel.id}`,
+                                    }))
+                                } else {
+                                    console.error("Failed to get LiveKit token:", response)
+                                }
+                            })
+                            .catch((error) => {
+                                console.error("Failed to join voice channel via SignalR:", error)
+                            })
                     }
                 }
             }

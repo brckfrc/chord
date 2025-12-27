@@ -44,8 +44,8 @@ services:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
       MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-minioadmin}"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio_data:/data
     networks:
@@ -58,6 +58,38 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: chord-livekit
+    environment:
+      # Format must be "key: secret" with a space after colon
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-7b5a93c4f51fadd897fb0307833236f9}"
+    ports:
+      - "${LIVEKIT_WS_PORT:-7880}:7880"
+      - "${LIVEKIT_RTC_PORT:-7881}:7881/udp"
+      - "${LIVEKIT_RTC_PORT:-7881}:7881/tcp"
+    volumes:
+      - ./livekit.yaml:/livekit.yaml:ro
+    command: --config /livekit.yaml
+    networks:
+      - chord-network
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  coturn:
+    image: coturn/coturn:latest
+    container_name: chord-coturn
+    ports:
+      - "${TURN_PORT:-3478}:3478/udp"
+      - "${TURN_PORT:-3478}:3478/tcp"
+    volumes:
+      - ./turnserver.conf:/etc/turnserver.conf:ro
+    command: -c /etc/turnserver.conf
+    networks:
+      - chord-network
+    restart: unless-stopped
 
 volumes:
   sqlserver_data:

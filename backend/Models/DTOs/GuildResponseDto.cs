@@ -13,10 +13,10 @@ public class GuildResponseDto
     // Owner bilgisi
     public UserDto? Owner { get; set; }
 
-    // Üye sayısı
+    // Member count
     public int MemberCount { get; set; }
 
-    // Kanal sayısı
+    // Channel count
     public int ChannelCount { get; set; }
 }
 

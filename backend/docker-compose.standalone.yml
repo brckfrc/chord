@@ -1,0 +1,35 @@
+# Standalone deployment with Caddy reverse proxy
+# Use this when you don't have an external reverse proxy (like YunoHost, Traefik, etc.)
+#
+# Usage:
+#   docker compose -f docker-compose.standalone.yml up -d
+#
+# Or use the setup script:
+#   ./setup.sh
+
+include:
+  - docker-compose.prod.yml
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: chord-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - chord-network
+    depends_on:
+      - api
+      - livekit
+      - minio
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+

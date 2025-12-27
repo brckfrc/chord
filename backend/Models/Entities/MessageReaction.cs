@@ -15,7 +15,7 @@ public class MessageReaction
     public Guid UserId { get; set; }
 
     [Required]
-    [MaxLength(50)] // Emoji veya custom emoji ID (örn: "👍", "custom:123")
+    [MaxLength(50)] // Emoji or custom emoji ID (e.g., "👍", "custom:123")
     public string Emoji { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; }

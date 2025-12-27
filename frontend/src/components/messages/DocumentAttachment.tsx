@@ -44,12 +44,12 @@ function getFileTypeLabel(name: string): string {
 }
 
 export function DocumentAttachment({ attachment, className }: DocumentAttachmentProps) {
-    // Dosya kartına tıklayınca yeni sekmede aç
+    // Open in new tab when clicking on file card
     const handleOpenInNewTab = () => {
         window.open(attachment.url, "_blank")
     }
 
-    // İndir butonuna tıklayınca doğrudan indir (yönlendirmeden)
+    // Download directly when clicking download button (no navigation)
     const handleDownload = async (e: React.MouseEvent) => {
         e.stopPropagation()
 
@@ -67,7 +67,7 @@ export function DocumentAttachment({ attachment, className }: DocumentAttachment
 
             window.URL.revokeObjectURL(url)
         } catch (error) {
-            // Fallback: yeni sekmede aç
+            // Fallback: open in new tab
             console.error("Download failed, opening in new tab:", error)
             window.open(attachment.url, "_blank")
         }

@@ -19,7 +19,7 @@ const statusOptions = [
   { value: UserStatus.Idle, label: "Idle", color: "bg-yellow-500" },
   { value: UserStatus.DoNotDisturb, label: "Do Not Disturb", color: "bg-red-500" },
   { value: UserStatus.Invisible, label: "Invisible", color: "bg-gray-500" },
-  // Offline kaldırıldı - Invisible zaten diğerlerine offline gibi görünüyor
+  // Offline removed - Invisible already appears as offline to others
 ]
 
 interface StatusUpdateModalProps {

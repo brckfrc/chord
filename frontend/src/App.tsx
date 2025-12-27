@@ -6,6 +6,7 @@ import { MainLayout } from "@/components/layouts/MainLayout"
 import { FriendsLayout } from "@/components/layouts/FriendsLayout"
 import { UserProfileBar } from "@/components/user/UserProfileBar"
 import { VoiceBar } from "@/components/user/VoiceBar"
+import { VoiceRoom } from "@/components/voice"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import { getCurrentUser, updateStatusFromSignalR } from "@/store/slices/authSlice"
 import { connectionManager } from "@/hooks/useSignalRConnectionManager"
@@ -148,6 +149,9 @@ function AppContent() {
           </div>
         </div>
       )}
+
+      {/* VoiceRoom - Handles LiveKit connection (renders null when not connected) */}
+      <VoiceRoom />
     </>
   )
 }

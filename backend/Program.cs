@@ -71,6 +71,16 @@ builder.Services.AddScoped<IReactionService, ReactionService>();
 builder.Services.AddScoped<IReadStateService, ReadStateService>();
 builder.Services.AddScoped<IMentionService, MentionService>();
 builder.Services.AddScoped<IStorageService, StorageService>();
+builder.Services.AddScoped<IVoiceService, VoiceService>();
+
+// LiveKit Configuration
+var liveKitApiKey = Environment.GetEnvironmentVariable("LIVEKIT_API_KEY") ?? "devkey";
+var liveKitApiSecret = Environment.GetEnvironmentVariable("LIVEKIT_API_SECRET") ?? "secret";
+var liveKitUrl = Environment.GetEnvironmentVariable("LIVEKIT_URL") ?? "ws://localhost:7880";
+
+builder.Configuration["LiveKit:ApiKey"] = liveKitApiKey;
+builder.Configuration["LiveKit:ApiSecret"] = liveKitApiSecret;
+builder.Configuration["LiveKit:Url"] = liveKitUrl;
 
 // MinIO Configuration
 var minioEndpoint = Environment.GetEnvironmentVariable("MINIO_ENDPOINT") ?? "localhost:9000";

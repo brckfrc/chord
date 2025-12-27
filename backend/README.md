@@ -11,6 +11,8 @@ ASP.NET Core backend for Chord, a Discord-like real-time chat application.
 - **SQL Server** - Database
 - **Redis** - Caching & SignalR backplane
 - **MinIO** - Object storage for file uploads
+- **LiveKit** - WebRTC SFU for voice/video
+- **Coturn** - STUN/TURN server for NAT traversal
 - **SignalR** - Real-time communication
 - **JWT 8.2** - Authentication
 - **BCrypt** - Password hashing
@@ -18,6 +20,7 @@ ASP.NET Core backend for Chord, a Discord-like real-time chat application.
 - **AutoMapper 12** - Object mapping
 - **FluentValidation 11** - Input validation
 - **Minio SDK 6.0.3** - MinIO client
+- **LiveKit Server SDK 1.0.8** - LiveKit token generation
 
 ## Prerequisites
 
@@ -42,10 +45,14 @@ docker compose -f docker-compose.dev.yml up -d
 
 This will start:
 
-- SQL Server on `localhost:1433`
-- Redis on `localhost:6379`
-- MinIO API on `localhost:9000`
-- MinIO Console on `localhost:9001` (login: minioadmin/minioadmin)
+| Service       | Port       | Description                    |
+| ------------- | ---------- | ------------------------------ |
+| SQL Server    | 1433       | Primary database               |
+| Redis         | 6379       | Cache & SignalR backplane      |
+| MinIO API     | 9000       | Object storage                 |
+| MinIO Console | 9001       | Web UI (minioadmin/minioadmin) |
+| LiveKit       | 7880, 7881 | WebRTC signaling & media       |
+| Coturn        | 3478       | STUN/TURN server               |
 
 ### 3. Apply Migrations
 
@@ -72,20 +79,33 @@ The API will be available at:
 ```
 backend/
 ├── Controllers/       # API endpoints
-│   └── UploadController.cs  # File upload endpoint
-├── Hubs/             # SignalR hubs (ChatHub, PresenceHub)
+│   ├── UploadController.cs   # File upload endpoint
+│   └── VoiceController.cs    # Voice channel token endpoint
+├── Hubs/             # SignalR hubs
+│   ├── ChatHub.cs    # Messaging & voice channel join
+│   └── PresenceHub.cs # User presence
 ├── Models/
 │   ├── Entities/     # Database entities
 │   └── DTOs/         # Data transfer objects
-│       ├── UploadResponseDto.cs  # Upload response
-│       └── AttachmentDto.cs      # Message attachment
+│       ├── UploadResponseDto.cs      # Upload response
+│       ├── AttachmentDto.cs          # Message attachment
+│       ├── VoiceTokenDto.cs          # Voice token request/response
+│       └── VoiceJoinResponseDto.cs   # Voice join response
 ├── Data/             # DbContext
 ├── Services/         # Business logic
-│   ├── IStorageService.cs  # Storage interface
-│   └── StorageService.cs   # MinIO implementation
+│   ├── IStorageService.cs   # Storage interface
+│   ├── StorageService.cs    # MinIO implementation
+│   ├── IVoiceService.cs     # Voice service interface
+│   └── VoiceService.cs      # LiveKit token generation
 ├── Middleware/       # Custom middleware
 ├── Migrations/       # EF Core migrations
-├── appsettings.json  # Configuration
+├── livekit.yaml      # LiveKit server config
+├── turnserver.conf   # Coturn config
+├── Caddyfile         # Caddy reverse proxy config
+├── setup.sh          # Deployment setup script
+├── docker-compose.dev.yml       # Development services
+├── docker-compose.prod.yml      # Production services
+├── docker-compose.standalone.yml # Standalone with Caddy
 └── Program.cs        # Application entry point
 ```
 
@@ -338,6 +358,31 @@ MINIO_PUBLIC_ENDPOINT=https://files.yourdomain.com
 | Image    | jpg, png, gif, webp                 | 25MB     |
 | Video    | mp4, webm, quicktime                | 25MB     |
 | Document | pdf, docx, xlsx, txt, csv, zip, rar | 25MB     |
+
+### Voice Channels ✅
+
+| Method | Endpoint               | Description             | Auth Required |
+| ------ | ---------------------- | ----------------------- | ------------- |
+| POST   | `/api/Voice/token`     | Get LiveKit room token  | Yes           |
+| GET    | `/api/Voice/room/{id}` | Get room status (debug) | Yes           |
+
+**Request body for POST `/api/Voice/token`:**
+
+```json
+{
+  "channelId": "guid-of-voice-channel"
+}
+```
+
+**Response:**
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "url": "ws://localhost:7880",
+  "roomName": "voice_channel-guid"
+}
+```
 
 ### Guilds ✅
 

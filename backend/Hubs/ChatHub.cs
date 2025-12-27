@@ -13,6 +13,7 @@ public class ChatHub : Hub
     private readonly IReactionService _reactionService;
     private readonly IReadStateService _readStateService;
     private readonly IMentionService _mentionService;
+    private readonly IVoiceService _voiceService;
     private readonly ILogger<ChatHub> _logger;
 
     public ChatHub(
@@ -20,12 +21,14 @@ public class ChatHub : Hub
         IReactionService reactionService,
         IReadStateService readStateService,
         IMentionService mentionService,
+        IVoiceService voiceService,
         ILogger<ChatHub> logger)
     {
         _messageService = messageService;
         _reactionService = reactionService;
         _readStateService = readStateService;
         _mentionService = mentionService;
+        _voiceService = voiceService;
         _logger = logger;
     }
 
@@ -297,8 +300,9 @@ public class ChatHub : Hub
 
     /// <summary>
     /// Join a voice channel (shows user as active in voice, separate from text message subscription)
+    /// Returns LiveKit token for WebRTC connection
     /// </summary>
-    public async Task JoinVoiceChannel(string channelId)
+    public async Task<VoiceJoinResponseDto> JoinVoiceChannel(string channelId)
     {
         var userId = GetUserId();
         var username = Context.User?.FindFirstValue(ClaimTypes.Name) 
@@ -308,7 +312,10 @@ public class ChatHub : Hub
 
         try
         {
-            // TODO: Verify channel exists and is voice type (can add validation later)
+            var channelGuid = Guid.Parse(channelId);
+
+            // Generate LiveKit token
+            var tokenResponse = await _voiceService.GenerateTokenAsync(userId, username, channelGuid);
 
             // Add to voice-specific SignalR group
             await Groups.AddToGroupAsync(Context.ConnectionId, $"voice_{channelId}");
@@ -326,12 +333,27 @@ public class ChatHub : Hub
                 isDeafened = false
             });
 
-            await Clients.Caller.SendAsync("JoinedVoiceChannel", channelId);
+            return new VoiceJoinResponseDto
+            {
+                Success = true,
+                ChannelId = channelId,
+                LiveKitToken = tokenResponse.Token,
+                LiveKitUrl = tokenResponse.Url,
+                RoomName = tokenResponse.RoomName,
+                VoiceUsers = new List<VoiceUserDto>() // Will be populated from frontend state
+            };
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "User {UserId} failed to join voice channel {ChannelId}", userId, channelId);
             await Clients.Caller.SendAsync("Error", $"Failed to join voice channel: {ex.Message}");
+            
+            return new VoiceJoinResponseDto
+            {
+                Success = false,
+                Error = ex.Message,
+                ChannelId = channelId
+            };
         }
     }
 

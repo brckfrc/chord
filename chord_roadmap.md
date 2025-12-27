@@ -197,7 +197,7 @@
 - ✅ **Voice presence**: Shows who's actively in voice channels (visible to all, includes mute/deafen state)
 - ✅ **Multiple simultaneous**: Users can be in one voice channel + viewing any text channel
 - ✅ **State management**: Frontend tracks voice participants via join/leave/state change events
-- 🔜 **WebRTC integration**: FAZ 8 will add actual audio streaming (STUN/TURN, P2P connections)
+- ✅ **WebRTC integration**: FAZ 8'de LiveKit SFU ile ses/video streaming eklendi
 
 ---
 
@@ -405,7 +405,7 @@
 - ✅ **Background presence**: Voice channel works in background, doesn't affect text channel viewing
 - ✅ **State management**: Redux tracks activeVoiceChannelId and voiceChannelUsers
 - ✅ **SignalR integration**: FAZ 6'da real-time updates eklendi
-- 🔜 **WebRTC streaming**: FAZ 8'de actual audio streaming eklenecek
+- ✅ **WebRTC streaming**: FAZ 8'de LiveKit SFU ile ses/video streaming eklendi
 
 ---
 
@@ -679,34 +679,93 @@ dotnet run
 
 ---
 
-## 🏗️ FAZ 8: VOICE CHANNELS & WEBRTC
+## ✅ FAZ 8: VOICE CHANNELS & WEBRTC - %100 TAMAMLANDI
 
-**Süre**: ~2 hafta
+**Süre**: ~2 hafta  
+**DURUM**: ✅ %100 TAMAMLANDI  
+**Not**: Orijinal planda P2P mesh planlanmıştı, ancak ölçeklenebilirlik için **LiveKit SFU** mimarisine geçildi.
 
-### Backend
+### Backend - Docker & Infrastructure
 
-- [ ] Coturn STUN/TURN server (Docker)
-- [ ] RtcSignalingHub: Offer, Answer, IceCandidate relay
-- [ ] VoiceSession yönetimi (kimin hangi odada olduğu)
-- [ ] Channel type'a göre VoiceChannel validasyonu
+- [x] LiveKit SFU server (Docker container)
+- [x] Coturn STUN/TURN server (Docker container)
+- [x] Environment-based port binding (esnek deployment)
+- [x] livekit.yaml ve turnserver.conf config dosyaları
+- [x] docker-compose.standalone.yml (Caddy ile opsiyonel)
+- [x] setup.sh plug-and-play deployment script
 
-### Frontend
+### Backend - API & Services
 
-- [ ] WebRTC P2P bağlantı logic (RTCPeerConnection)
-- [ ] Voice channel UI (join/leave butonları)
-- [ ] VoiceRoom component (katılımcı listesi, mute/unmute)
-- [ ] RtcSignalingHub event listeners (offer, answer, ice)
-- [ ] Mikrofon izni kontrolü
-- [ ] Audio stream yönetimi (mute/unmute, disconnect)
-- [ ] Max 5 kişi limiti kontrolü
-- [ ] Error handling (bağlantı hatası, retry)
+- [x] IVoiceService + VoiceService (LiveKit token generation)
+- [x] VoiceController (POST /api/voice/token)
+- [x] VoiceTokenDto, VoiceJoinResponseDto DTOs
+- [x] ChatHub.JoinVoiceChannel → LiveKit token döner
+- [x] Program.cs LiveKit configuration + DI
+- [x] Livekit.Server.Sdk.Dotnet NuGet paketi
+
+### Frontend - LiveKit Integration
+
+- [x] livekit-client + @livekit/components-react NPM paketleri
+- [x] useLiveKit hook (connect, disconnect, mute, video)
+- [x] voiceSlice Redux state (LiveKit connection, participants, speaking)
+- [x] VoiceRoom component (LiveKitRoom wrapper)
+- [x] ParticipantTile component (avatar, speaking indicator, video)
+- [x] MediaControls component (mute/deafen/camera/disconnect)
+- [x] AudioRenderer + VideoRenderer components
+- [x] VoiceBar speaking indicator + controls
+- [x] VoiceChannelUsers speaking animation (yeşil halka)
+
+### Error Handling
+
+- [x] Mikrofon izni reddedildi → UI feedback + retry
+- [x] Bağlantı hatası → Otomatik retry (3x, exponential backoff)
+- [x] Room full handling → Error mesajı
+- [x] Network kesintisi → Reconnect logic
+
+### Deployment
+
+- [x] docker-compose.dev.yml (development)
+- [x] docker-compose.prod.yml (production, behind proxy)
+- [x] docker-compose.standalone.yml (Caddy ile tek başına)
+- [x] Caddyfile reverse proxy config
+- [x] setup.sh interactive deployment script
 
 ### Deliverables
 
-✅ Sesli kanala katılma çalışıyor  
-✅ P2P ses iletişimi stabil (3-5 kişi)  
-✅ Mute/unmute çalışıyor  
-✅ STUN/TURN ile NAT geçişi
+✅ LiveKit SFU ile sesli kanala katılma çalışıyor  
+✅ SFU mimarisi ile 10+ kullanıcı destekli ses/video  
+✅ Mute/unmute/camera toggle çalışıyor  
+✅ Speaking indicator (yeşil halka) çalışıyor  
+✅ Coturn STUN/TURN ile NAT geçişi  
+✅ Plug-and-play deployment (setup.sh)  
+✅ Environment-based esnek port yönetimi
+
+### 📝 Notlar
+
+**Mimari Değişiklik:**  
+Orijinal plan WebRTC P2P mesh kullanıyordu (max 5 kişi). Ölçeklenebilirlik için **LiveKit SFU** mimarisine geçildi:
+
+- 10+ kullanıcı desteği
+- Daha düşük client-side bandwidth
+- Merkezi media routing
+- Built-in TURN entegrasyonu
+
+**Docker Services:**
+
+| Service | Port       | Açıklama                       |
+| ------- | ---------- | ------------------------------ |
+| LiveKit | 7880, 7881 | WebSocket signaling, RTC media |
+| Coturn  | 3478       | STUN/TURN NAT traversal        |
+
+**Environment Variables (Yeni):**
+
+```env
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=secret
+LIVEKIT_URL=ws://localhost:7880
+TURN_SECRET=turnpassword123
+TURN_REALM=chord.local
+```
 
 ---
 
@@ -931,27 +990,29 @@ dotnet run
 
 ---
 
-## 🚀 SONRAKİ ADIM: FAZ 8
+## 🚀 SONRAKİ ADIM: FAZ 9
 
 **Hemen yapılacaklar:**
 
-### FAZ 8: Voice Channels & WebRTC
+### FAZ 9: Permissions & Roles
 
-1. Coturn STUN/TURN server (Docker)
-2. RtcSignalingHub: Offer, Answer, IceCandidate relay
-3. VoiceSession yönetimi (kimin hangi odada olduğu)
-4. Channel type'a göre VoiceChannel validasyonu
-5. WebRTC P2P bağlantı logic (RTCPeerConnection)
-6. Voice channel UI (join/leave butonları - mevcut)
-7. VoiceRoom component (katılımcı listesi, mute/unmute - mevcut)
-8. RtcSignalingHub event listeners (offer, answer, ice)
-9. Mikrofon izni kontrolü
-10. Audio stream yönetimi (mute/unmute, disconnect)
-11. Max 5 kişi limiti kontrolü
-12. Error handling (bağlantı hatası, retry)
+1. GuildMember.Role field (Owner, Admin, Member)
+2. ChannelPermission entity (CanRead, CanWrite, CanSpeak)
+3. Authorization handlers (rol bazli politikalar)
+4. Permission check middleware/service
+5. Frontend: Permission-based UI (buton gizleme, disable)
+6. Admin panel UI (basit rol degistirme - opsiyonel)
 
-**Tahmini süre**: ~2 hafta  
-**Test edilebilir**: Sesli kanala katılma, P2P ses iletişimi çalışacak
+### FAZ 9.5: Direct Messages & Friends
+
+1. Friendship entity (RequesterId, AddresseeId, Status)
+2. Friend request API (send, accept, decline)
+3. DM Channel entity (private messaging)
+4. DM API + SignalR integration
+5. Frontend: Friends list, DM conversations
+
+**Tahmini sure**: ~1 hafta  
+**Test edilebilir**: Rol yonetimi, DM ve arkadaslik sistemi calisacak
 
 ---
 
