@@ -306,6 +306,7 @@ docker compose -f docker-compose.standalone.yml logs -f
 Native mobile apps (iOS/Android) connect directly to Chord without additional configuration.
 
 **Key Points:**
+
 - CORS doesn't apply to native apps (browser-only)
 - Same JWT authentication works for mobile
 - No separate domain needed

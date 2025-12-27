@@ -1,6 +1,6 @@
 # Chord API - Backend
 
-> **Purpose:** Complete backend documentation including API endpoints, SignalR events, 
+> **Purpose:** Complete backend documentation including API endpoints, SignalR events,
 > LiveKit voice/video integration, and mobile app integration guide.
 
 ASP.NET Core backend for Chord, a Discord-like real-time chat application.
