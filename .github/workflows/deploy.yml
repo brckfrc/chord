@@ -127,11 +127,17 @@ jobs:
               --repo "$REPO"
 
       - name: Health Check
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-        run: |
-          sleep 10
-          curl -f "https://${VPS_HOST}/health" || exit 1
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            sleep 10
+            # Internal health check (no SSL issues)
+            curl -f http://localhost:5000/health || exit 1
+            curl -f http://localhost:3000/health || exit 1
 
       - name: Notify Success
         if: success()

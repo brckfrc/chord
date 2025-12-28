@@ -103,7 +103,8 @@ port: 7880
 rtc:
   port_range_start: 7881
   port_range_end: 7881
-  use_external_ip: true
+  use_external_ip: false
+  node_ip: $PUBLIC_IP
 redis:
   address: redis:6379
 turn:

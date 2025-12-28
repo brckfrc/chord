@@ -378,7 +378,7 @@ configure_network() {
         TURN_ENABLED="true"
         TURN_DOMAIN="$DOMAIN"
         LIVEKIT_NODE_IP="$PUBLIC_IP"
-        RTC_CONFIG="use_external_ip: true"
+        RTC_CONFIG="use_external_ip: false\n  node_ip: $PUBLIC_IP"
     fi
     
     log_info "Host: $HOST"

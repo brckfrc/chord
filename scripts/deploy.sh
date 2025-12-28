@@ -18,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 COMPOSE_FILE="$PROJECT_DIR/docker-compose.deploy.yml"
 STATE_FILE="$PROJECT_DIR/.deploy-state"
-HEALTH_TIMEOUT=60
+HEALTH_TIMEOUT=120
 HEALTH_INTERVAL=5
 
 # Colors

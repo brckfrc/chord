@@ -21,12 +21,15 @@ services:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: "${SQL_SA_PASSWORD}"
       MSSQL_PID: "Developer"
-    ports:
-      - "${SQL_PORT:-1433}:1433"
+    # ports:  # Not exposed - behind reverse proxy
+    #   - "${SQL_PORT:-1433}:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
     networks:
-      - chord-network
+      chord-network:
+        aliases:
+          - sqlserver
+          - chord-sqlserver
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '$$SA_PASSWORD' -Q 'SELECT 1' -C || exit 1"]
@@ -39,12 +42,15 @@ services:
     image: redis:7-alpine
     container_name: chord-redis
     profiles: ["infra"]
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
+    # ports:  # Not exposed - behind reverse proxy, avoids YunoHost conflict
+    #   - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     networks:
-      - chord-network
+      chord-network:
+        aliases:
+          - redis
+          - chord-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     healthcheck:
@@ -81,7 +87,7 @@ services:
     container_name: chord-livekit
     profiles: ["infra"]
     environment:
-      - LIVEKIT_KEYS=${LIVEKIT_API_KEY:-devkey}:${LIVEKIT_API_SECRET}
+      - LIVEKIT_KEYS="${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET}"
       - LIVEKIT_NODE_IP=${LIVEKIT_NODE_IP:-}
     ports:
       - "${LIVEKIT_WS_PORT:-7880}:7880"
@@ -119,7 +125,8 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: chord-caddy
-    profiles: ["infra"]
+    # profiles: ["infra"]  # Removed - using YunoHost Nginx instead
+    profiles: []  # Keep for potential future use
     ports:
       - "80:80"
       - "443:443"
