@@ -78,6 +78,7 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IFriendshipService, FriendshipService>();
 builder.Services.AddScoped<IDMChannelService, DMChannelService>();
 builder.Services.AddScoped<IDirectMessageService, DirectMessageService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 // LiveKit Configuration
 var liveKitApiKey = Environment.GetEnvironmentVariable("LIVEKIT_API_KEY") ?? "devkey";
@@ -218,6 +219,9 @@ app.UseCors("AllowFrontend");
 
 // Global exception handler
 app.UseMiddleware<GlobalExceptionMiddleware>();
+
+// Audit log context
+app.UseMiddleware<AuditLogMiddleware>();
 
 // Rate limiting
 app.UseMiddleware<RateLimitingMiddleware>();

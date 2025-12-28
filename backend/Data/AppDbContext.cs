@@ -23,6 +23,7 @@ public class AppDbContext : DbContext
     public DbSet<Friendship> Friendships { get; set; }
     public DbSet<DirectMessageChannel> DirectMessageChannels { get; set; }
     public DbSet<DirectMessage> DirectMessages { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -305,6 +306,30 @@ public class AppDbContext : DbContext
             entity.HasIndex(dm => new { dm.ChannelId, dm.CreatedAt });
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // AuditLog configuration
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+
+            entity.HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(a => a.Guild)
+                .WithMany()
+                .HasForeignKey(a => a.GuildId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Indexes for efficient querying
+            entity.HasIndex(a => new { a.GuildId, a.Timestamp });
+            entity.HasIndex(a => new { a.UserId, a.Timestamp });
+            entity.HasIndex(a => a.Action);
+            entity.HasIndex(a => a.Timestamp);
+
+            entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
         });
     }
 }

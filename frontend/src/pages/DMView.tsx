@@ -41,7 +41,7 @@ export function DMView() {
       dispatch(setSelectedDM(channelId))
       dispatch(fetchDMs())
       dispatch(fetchDMMessages({ dmId: channelId }))
-      
+
       // Join DM SignalR group
       if (isChatConnected) {
         chatInvoke("JoinDM", channelId).catch(console.error)
@@ -77,7 +77,7 @@ export function DMView() {
     const handleDMUserTyping = (data: { userId: string; username: string; dmId: string }) => {
       if (data.dmId === channelId && data.userId !== user?.id) {
         dispatch(addDMTypingUser({ dmId: channelId, userId: data.userId, username: data.username }))
-        
+
         // Auto-remove after 3 seconds
         setTimeout(() => {
           dispatch(removeDMTypingUser({ dmId: channelId, userId: data.userId }))
@@ -124,7 +124,7 @@ export function DMView() {
     try {
       await dmsApi.sendDMMessage(channelId, messageText.trim())
       setMessageText("")
-      
+
       // Stop typing indicator
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current)
@@ -139,11 +139,11 @@ export function DMView() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessageText(e.target.value)
-    
+
     // Send typing indicator
     if (isChatConnected && channelId) {
       chatInvoke("TypingInDM", channelId).catch(console.error)
-      
+
       // Auto-stop typing after 3 seconds
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current)

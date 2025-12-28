@@ -3,6 +3,8 @@ using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
 using ChordAPI.Services;
+using ChordAPI.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -10,11 +12,12 @@ using Xunit;
 
 namespace ChordAPI.Tests.Services;
 
-public class AuthServiceTests
+public class AuthServiceTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly Mock<IJwtService> _jwtServiceMock;
     private readonly Mock<IMapper> _mapperMock;
+    private readonly Mock<IHubContext<PresenceHub>> _presenceHubMock;
     private readonly Mock<ILogger<AuthService>> _loggerMock;
     private readonly AuthService _authService;
 
@@ -29,6 +32,7 @@ public class AuthServiceTests
         // Setup mocks
         _jwtServiceMock = new Mock<IJwtService>();
         _mapperMock = new Mock<IMapper>();
+        _presenceHubMock = new Mock<IHubContext<PresenceHub>>();
         _loggerMock = new Mock<ILogger<AuthService>>();
 
         // Create service
@@ -36,8 +40,15 @@ public class AuthServiceTests
             _context,
             _jwtServiceMock.Object,
             _mapperMock.Object,
+            _presenceHubMock.Object,
             _loggerMock.Object
         );
+    }
+
+    public void Dispose()
+    {
+        _context.Database.EnsureDeleted();
+        _context.Dispose();
     }
 
     [Fact]
@@ -54,11 +65,10 @@ public class AuthServiceTests
 
         var expectedToken = "fake-jwt-token";
         var expectedRefreshToken = "fake-refresh-token";
-        var expiresAt = DateTime.UtcNow.AddMinutes(60);
 
         _jwtServiceMock
             .Setup(x => x.GenerateAccessToken(It.IsAny<User>()))
-            .Returns((expectedToken, expiresAt));
+            .Returns(expectedToken);
 
         _jwtServiceMock
             .Setup(x => x.GenerateRefreshToken())
@@ -178,11 +188,10 @@ public class AuthServiceTests
 
         var expectedToken = "fake-jwt-token";
         var expectedRefreshToken = "fake-refresh-token";
-        var expiresAt = DateTime.UtcNow.AddMinutes(60);
 
         _jwtServiceMock
             .Setup(x => x.GenerateAccessToken(It.IsAny<User>()))
-            .Returns((expectedToken, expiresAt));
+            .Returns(expectedToken);
 
         _jwtServiceMock
             .Setup(x => x.GenerateRefreshToken())
@@ -276,15 +285,12 @@ public class AuthServiceTests
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        var refreshDto = new RefreshTokenDto { RefreshToken = refreshToken };
-
         var expectedToken = "new-jwt-token";
         var expectedRefreshToken = "new-refresh-token";
-        var expiresAt = DateTime.UtcNow.AddMinutes(60);
 
         _jwtServiceMock
             .Setup(x => x.GenerateAccessToken(It.IsAny<User>()))
-            .Returns((expectedToken, expiresAt));
+            .Returns(expectedToken);
 
         _jwtServiceMock
             .Setup(x => x.GenerateRefreshToken())
@@ -302,7 +308,7 @@ public class AuthServiceTests
             });
 
         // Act
-        var result = await _authService.RefreshTokenAsync(refreshDto);
+        var result = await _authService.RefreshTokenAsync(refreshToken);
 
         // Assert
         Assert.NotNull(result);
@@ -318,11 +324,11 @@ public class AuthServiceTests
     public async Task RefreshTokenAsync_InvalidToken_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        var refreshDto = new RefreshTokenDto { RefreshToken = "invalid-token" };
+        var invalidToken = "invalid-token";
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => _authService.RefreshTokenAsync(refreshDto)
+            () => _authService.RefreshTokenAsync(invalidToken)
         );
     }
 
@@ -345,11 +351,9 @@ public class AuthServiceTests
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        var refreshDto = new RefreshTokenDto { RefreshToken = refreshToken };
-
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => _authService.RefreshTokenAsync(refreshDto)
+            () => _authService.RefreshTokenAsync(refreshToken)
         );
     }
 
@@ -398,19 +402,20 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task GetCurrentUserAsync_InvalidUserId_ThrowsKeyNotFoundException()
+    public async Task GetCurrentUserAsync_InvalidUserId_ReturnsNull()
     {
         // Arrange
         var nonExistentUserId = Guid.NewGuid();
 
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => _authService.GetCurrentUserAsync(nonExistentUserId)
-        );
+        // Act
+        var result = await _authService.GetCurrentUserAsync(nonExistentUserId);
+
+        // Assert
+        Assert.Null(result);
     }
 
     [Fact]
-    public async Task LogoutAsync_ValidUserId_ClearsRefreshToken()
+    public async Task UpdateStatusAsync_ValidUpdate_ReturnsUpdatedUserDto()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -421,26 +426,67 @@ public class AuthServiceTests
             Email = "test@example.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("password"),
             DisplayName = "Test User",
-            RefreshToken = "some-refresh-token",
-            RefreshTokenExpiresAt = DateTime.UtcNow.AddDays(7),
+            Status = UserStatus.Offline,
             CreatedAt = DateTime.UtcNow
         };
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
+        var updateDto = new UpdateStatusDto
+        {
+            Status = UserStatus.Online,
+            CustomStatus = "Working on tests"
+        };
+
+        // Mock SignalR hub clients
+        var mockClients = new Mock<IHubClients>();
+        var mockClientProxy = new Mock<IClientProxy>();
+        mockClients.Setup(c => c.All).Returns(mockClientProxy.Object);
+        _presenceHubMock.Setup(h => h.Clients).Returns(mockClients.Object);
+
+        _mapperMock
+            .Setup(x => x.Map<UserDto>(It.IsAny<User>()))
+            .Returns(new UserDto
+            {
+                Id = userId,
+                Username = user.Username,
+                Email = user.Email,
+                DisplayName = user.DisplayName,
+                Status = updateDto.Status,
+                CustomStatus = updateDto.CustomStatus,
+                CreatedAt = user.CreatedAt
+            });
+
         // Act
-        await _authService.LogoutAsync(userId);
+        var result = await _authService.UpdateStatusAsync(userId, updateDto);
 
         // Assert
+        Assert.NotNull(result);
+        Assert.Equal(updateDto.Status, result.Status);
+        Assert.Equal(updateDto.CustomStatus, result.CustomStatus);
+
+        // Verify database was updated
         var updatedUser = await _context.Users.FindAsync(userId);
-        Assert.Null(updatedUser!.RefreshToken);
-        Assert.Null(updatedUser.RefreshTokenExpiresAt);
+        Assert.Equal(updateDto.Status, updatedUser!.Status);
+        Assert.Equal(updateDto.CustomStatus, updatedUser.CustomStatus);
     }
 
-    public void Dispose()
+    [Fact]
+    public async Task UpdateStatusAsync_InvalidUserId_ThrowsKeyNotFoundException()
     {
-        _context.Database.EnsureDeleted();
-        _context.Dispose();
+        // Arrange
+        var nonExistentUserId = Guid.NewGuid();
+        var updateDto = new UpdateStatusDto
+        {
+            Status = UserStatus.Online,
+            CustomStatus = "Test"
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _authService.UpdateStatusAsync(nonExistentUserId, updateDto)
+        );
     }
+
 }
 
