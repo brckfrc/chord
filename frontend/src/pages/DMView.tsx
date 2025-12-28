@@ -28,7 +28,7 @@ export function DMView() {
   const [messageText, setMessageText] = useState("")
   const [isSending, setIsSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const typingTimeoutRef = useRef<number>()
+  const typingTimeoutRef = useRef<number | undefined>(undefined)
 
   // SignalR connection for ChatHub
   const { invoke: chatInvoke, on: chatOn, isConnected: isChatConnected } = useSignalR(
