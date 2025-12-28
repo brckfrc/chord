@@ -25,7 +25,7 @@ const statusOptions = [
 interface StatusUpdateModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  anchorRef?: React.RefObject<HTMLElement>
+  anchorRef?: React.RefObject<HTMLElement | null>
 }
 
 export function StatusUpdateModal({ open, onOpenChange, anchorRef }: StatusUpdateModalProps) {

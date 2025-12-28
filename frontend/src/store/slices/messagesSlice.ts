@@ -8,7 +8,6 @@ import {
   type MessageDto,
   type CreateMessageDto,
   type UpdateMessageDto,
-  type PaginatedMessagesDto,
 } from "@/lib/api/messages";
 
 interface TypingUser {
@@ -292,9 +291,8 @@ const messagesSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(updateMessage.fulfilled, (state, action) => {
+      .addCase(updateMessage.fulfilled, (state) => {
         state.isLoading = false;
-        const message = action.payload;
         // Message will be updated via SignalR MessageEdited event
       })
       .addCase(updateMessage.rejected, (state, action) => {
@@ -306,9 +304,8 @@ const messagesSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(deleteMessage.fulfilled, (state, action) => {
+      .addCase(deleteMessage.fulfilled, (state) => {
         state.isLoading = false;
-        const { channelId, messageId } = action.payload;
         // Message will be removed via SignalR MessageDeleted event
       })
       .addCase(deleteMessage.rejected, (state, action) => {

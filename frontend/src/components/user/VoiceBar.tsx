@@ -11,7 +11,7 @@ export function VoiceBar() {
   const dispatch = useAppDispatch()
   const { activeVoiceChannelId, channels } = useAppSelector((state) => state.channels)
   const { user: currentUser } = useAppSelector((state) => state.auth)
-  const { connectionState, speakingParticipants } = useAppSelector((state) => state.voice)
+  const { connectionState } = useAppSelector((state) => state.voice)
 
   // SignalR connection for ChatHub
   const { invoke: chatInvoke, isConnected: isChatConnected } = useSignalR("/hubs/chat")

@@ -22,7 +22,7 @@ import { InviteAcceptPage } from "@/pages/InviteAcceptPage"
 function AppContent() {
   const location = useLocation()
   const dispatch = useAppDispatch()
-  const { isAuthenticated, user, isLoading } = useAppSelector((state) => state.auth)
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth)
   const { activeVoiceChannelId } = useAppSelector((state) => state.channels)
   const hasInitialized = useRef(false)
 
@@ -38,7 +38,7 @@ function AppContent() {
   // Load user info on app start if token exists (only once)
   useEffect(() => {
     if (hasInitialized.current) return
-    
+
     const token = localStorage.getItem("accessToken")
     if (token && !user) {
       hasInitialized.current = true
@@ -78,56 +78,56 @@ function AppContent() {
 
   return (
     <>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route
-            path="/me"
-            element={
-              <ProtectedRoute>
-                <FriendsLayout>
-                  <FriendsHome />
-                </FriendsLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/me/dm/:channelId"
-            element={
-              <ProtectedRoute>
-                <FriendsLayout>
-                  <DMView />
-                </FriendsLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/guilds/:guildId"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <GuildView />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/channels/:guildId/:channelId"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <ChannelView />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/invite/:code"
-            element={<InviteAcceptPage />}
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/me"
+          element={
+            <ProtectedRoute>
+              <FriendsLayout>
+                <FriendsHome />
+              </FriendsLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/me/dm/:channelId"
+          element={
+            <ProtectedRoute>
+              <FriendsLayout>
+                <DMView />
+              </FriendsLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/guilds/:guildId"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <GuildView />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/channels/:guildId/:channelId"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ChannelView />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/invite/:code"
+          element={<InviteAcceptPage />}
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
 
       {/* Voice Bar - Above UserProfileBar when in voice channel */}
       {showUserProfileBar && activeVoiceChannelId && (

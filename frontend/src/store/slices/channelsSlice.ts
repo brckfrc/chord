@@ -4,7 +4,6 @@ import {
   type ChannelDto,
   type CreateChannelDto,
 } from "@/lib/api/channels"
-import type { UserDto } from "@/lib/api/auth"
 
 // Voice channel user with voice state
 export interface VoiceChannelUser {

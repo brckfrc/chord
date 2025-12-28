@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react"
 import { useAppSelector } from "@/store/hooks"
 import type { VoiceChannelUser } from "@/store/slices/channelsSlice"
 import { Button } from "@/components/ui/button"
-import { Mic, MicOff, Headphones, HeadphoneOff, User, Volume2, VolumeX } from "lucide-react"
+import { Headphones, HeadphoneOff, User, Volume2, VolumeX } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // UserStatus enum values
@@ -51,7 +51,7 @@ interface UserVoiceModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   user: VoiceChannelUser | null
-  anchorRef?: React.RefObject<HTMLElement>
+  anchorRef?: React.RefObject<HTMLElement | null>
 }
 
 export function UserVoiceModal({

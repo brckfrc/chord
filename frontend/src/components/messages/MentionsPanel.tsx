@@ -18,7 +18,7 @@ export function MentionsPanel({ open, onClose }: MentionsPanelProps) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const { guildId } = useParams<{ guildId?: string }>()
-  const { guilds, selectedGuildId } = useAppSelector((state) => state.guilds)
+  const { selectedGuildId } = useAppSelector((state) => state.guilds)
   const { mentions, isLoading } = useAppSelector(
     (state) => state.mentions
   )

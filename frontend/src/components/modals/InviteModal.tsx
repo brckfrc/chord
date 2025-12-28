@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogClose,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -72,19 +71,19 @@ export function InviteModal({ open, onOpenChange, guildId, onInviteCreated }: In
     setIsLoading(true)
     try {
       const dto: CreateInviteDto = {}
-      
+
       if (data.expiresAt) {
         dto.expiresAt = new Date(data.expiresAt).toISOString()
       }
-      
-      if (data.maxUses && data.maxUses !== "") {
+
+      if (data.maxUses && String(data.maxUses) !== "") {
         dto.maxUses = Number(data.maxUses)
       }
 
       const invite = await invitesApi.createInvite(guildId, dto)
-      
+
       setCreatedInviteCode(invite.code)
-      
+
       toast({
         title: "Success",
         description: "Invite created successfully",
@@ -108,7 +107,7 @@ export function InviteModal({ open, onOpenChange, guildId, onInviteCreated }: In
     if (!createdInviteCode) return
 
     const inviteLink = `${window.location.origin}/invite/${createdInviteCode}`
-    
+
     try {
       await navigator.clipboard.writeText(inviteLink)
       toast({

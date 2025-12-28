@@ -18,7 +18,7 @@ export function VideoRenderer({ participant, className }: VideoRendererProps) {
     if (!videoElement) return
 
     // Find video track
-    const videoPublication = Array.from(participant.videoTrackPublications.values()).find(
+    const videoPublication = [...participant.videoTrackPublications.values()].find(
       (pub) => pub.track && pub.track.source === Track.Source.Camera
     )
 
@@ -30,8 +30,8 @@ export function VideoRenderer({ participant, className }: VideoRendererProps) {
 
     // Subscribe to track changes
     const handleTrackSubscribed = () => {
-      const pub = Array.from(participant.videoTrackPublications.values()).find(
-        (pub) => pub.track && pub.track.source === Track.Source.Camera
+      const pub = [...participant.videoTrackPublications.values()].find(
+        (p) => p.track && p.track.source === Track.Source.Camera
       )
       if (pub?.track && videoElement) {
         const mediaStream = new MediaStream([pub.track.mediaStreamTrack])

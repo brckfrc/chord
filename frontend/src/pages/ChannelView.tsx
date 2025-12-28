@@ -11,7 +11,7 @@ import {
   clearMessages,
   clearTypingUsers,
 } from "@/store/slices/messagesSlice"
-import { addMention, fetchUnreadMentionCount } from "@/store/slices/mentionsSlice"
+import { fetchUnreadMentionCount } from "@/store/slices/mentionsSlice"
 import { MessageList } from "@/components/messages/MessageList"
 import { MessageComposer } from "@/components/messages/MessageComposer"
 import { TypingIndicator } from "@/components/messages/TypingIndicator"

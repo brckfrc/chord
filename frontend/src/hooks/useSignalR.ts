@@ -59,7 +59,7 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
       // Connection is already being created, wait for it
       connectionManager
         .createConnection(hubUrl, getAccessToken)
-        .then((conn) => {
+        .then(() => {
           if (isMounted) {
             connectionStateRef.current = "Connected";
             setConnectionState("Connected");
@@ -82,7 +82,7 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
       // Create new connection
       connectionManager
         .createConnection(hubUrl, getAccessToken)
-        .then((conn) => {
+        .then(() => {
           if (isMounted) {
             connectionStateRef.current = "Connected";
             setConnectionState("Connected");

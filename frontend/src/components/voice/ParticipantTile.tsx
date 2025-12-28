@@ -12,7 +12,6 @@ interface ParticipantTileProps {
 }
 
 export function ParticipantTile({
-  identity,
   name,
   isSpeaking,
   isMuted,
