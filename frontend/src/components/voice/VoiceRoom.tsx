@@ -37,6 +37,14 @@ export function VoiceRoom() {
     }
   }, [])
 
+  // Reset connection attempt state when token changes (new join attempt)
+  useEffect(() => {
+    if (liveKitToken) {
+      hasAttemptedConnectRef.current = false
+      setRetryCount(0)
+    }
+  }, [liveKitToken])
+
   // Check microphone permission
   useEffect(() => {
     const checkPermission = async () => {

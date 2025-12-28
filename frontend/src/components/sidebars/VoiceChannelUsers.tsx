@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { addVoiceChannelUser, removeVoiceChannelUser } from "@/store/slices/channelsSlice"
 import type { VoiceChannelUser } from "@/store/slices/channelsSlice"
@@ -256,74 +256,79 @@ export function VoiceChannelUsers({ channelId }: VoiceChannelUsersProps) {
 
   const users = voiceChannelUsers[channelId] || []
   
+  // Use ref to access latest voiceChannelUsers in event handlers without causing re-renders
+  const voiceChannelUsersRef = useRef(voiceChannelUsers)
+  useEffect(() => {
+    voiceChannelUsersRef.current = voiceChannelUsers
+  }, [voiceChannelUsers])
+  
   // Check if a user is currently speaking
   const isUserSpeaking = (userId: string) => {
     return channelId === voiceChannelId && speakingParticipants.includes(userId)
   }
 
-  // SignalR event listeners for voice channel events
-  useEffect(() => {
-    if (!isChatConnected) {
-      return
+  // Memoized event handlers to prevent re-registering on every render
+  const handleUserJoined = useCallback((data: {
+    userId: string
+    username: string
+    displayName: string
+    channelId: string
+    isMuted: boolean
+    isDeafened: boolean
+    status: number
+  }) => {
+    if (data.channelId === channelId) {
+      dispatch(
+        addVoiceChannelUser({
+          channelId: data.channelId,
+          user: {
+            userId: data.userId,
+            username: data.username,
+            displayName: data.displayName,
+            isMuted: data.isMuted,
+            isDeafened: data.isDeafened,
+            status: data.status,
+          },
+        })
+      )
     }
+  }, [channelId, dispatch])
 
-    // UserJoinedVoiceChannel event
-    const handleUserJoined = (data: {
-      userId: string
-      username: string
-      displayName: string
-      channelId: string
-      isMuted: boolean
-      isDeafened: boolean
-      status: number
-    }) => {
-      if (data.channelId === channelId) {
+  const handleUserLeft = useCallback((data: { userId: string; channelId: string }) => {
+    if (data.channelId === channelId) {
+      dispatch(removeVoiceChannelUser({ channelId: data.channelId, userId: data.userId }))
+    }
+  }, [channelId, dispatch])
+
+  const handleVoiceStateChanged = useCallback((data: {
+    userId: string
+    channelId: string
+    isMuted: boolean
+    isDeafened: boolean
+  }) => {
+    if (data.channelId === channelId) {
+      // Use ref to get the latest users without adding to dependency array
+      const currentUsers = voiceChannelUsersRef.current[channelId] || []
+      const existingUser = currentUsers.find((u) => u.userId === data.userId)
+      if (existingUser) {
         dispatch(
           addVoiceChannelUser({
             channelId: data.channelId,
             user: {
-              userId: data.userId,
-              username: data.username,
-              displayName: data.displayName,
+              ...existingUser,
               isMuted: data.isMuted,
               isDeafened: data.isDeafened,
-              status: data.status,
             },
           })
         )
       }
     }
+  }, [channelId, dispatch])
 
-    // UserLeftVoiceChannel event
-    const handleUserLeft = (data: { userId: string; channelId: string }) => {
-      if (data.channelId === channelId) {
-        dispatch(removeVoiceChannelUser({ channelId: data.channelId, userId: data.userId }))
-      }
-    }
-
-    // UserVoiceStateChanged event
-    const handleVoiceStateChanged = (data: {
-      userId: string
-      channelId: string
-      isMuted: boolean
-      isDeafened: boolean
-    }) => {
-      if (data.channelId === channelId) {
-        // Find existing user and update
-        const existingUser = users.find((u) => u.userId === data.userId)
-        if (existingUser) {
-          dispatch(
-            addVoiceChannelUser({
-              channelId: data.channelId,
-              user: {
-                ...existingUser,
-                isMuted: data.isMuted,
-                isDeafened: data.isDeafened,
-              },
-            })
-          )
-        }
-      }
+  // SignalR event listeners for voice channel events
+  useEffect(() => {
+    if (!isChatConnected) {
+      return
     }
 
     // Register event listeners
@@ -337,7 +342,7 @@ export function VoiceChannelUsers({ channelId }: VoiceChannelUsersProps) {
       cleanupUserLeft()
       cleanupVoiceStateChanged()
     }
-  }, [channelId, isChatConnected, chatOn, dispatch, users])
+  }, [isChatConnected, chatOn, handleUserJoined, handleUserLeft, handleVoiceStateChanged])
 
   if (users.length === 0) {
     return null

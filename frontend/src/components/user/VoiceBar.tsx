@@ -1,30 +1,56 @@
+import { useEffect, useRef, useState } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { setActiveVoiceChannel, removeVoiceChannelUser } from "@/store/slices/channelsSlice"
-import { leaveVoiceChannel } from "@/store/slices/voiceSlice"
+import { leaveVoiceChannel, setVoiceError } from "@/store/slices/voiceSlice"
 import { useSignalR } from "@/hooks/useSignalR"
 import { useLiveKit } from "@/hooks/useLiveKit"
 import { Button } from "@/components/ui/button"
-import { PhoneOff, Signal, Wifi, WifiOff, Mic, MicOff, Video, VideoOff } from "lucide-react"
+import { PhoneOff, Signal, Wifi, WifiOff, Video, VideoOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function VoiceBar() {
   const dispatch = useAppDispatch()
   const { activeVoiceChannelId, channels } = useAppSelector((state) => state.channels)
   const { user: currentUser } = useAppSelector((state) => state.auth)
-  const { connectionState } = useAppSelector((state) => state.voice)
+  const { connectionState, liveKitToken } = useAppSelector((state) => state.voice)
+
+  // Refs for auto-connect logic
+  const hasAttemptedConnectRef = useRef(false)
+  const [permissionDenied, setPermissionDenied] = useState(false)
 
   // SignalR connection for ChatHub
   const { invoke: chatInvoke, isConnected: isChatConnected } = useSignalR("/hubs/chat")
   
   // LiveKit connection
   const { 
+    connect,
     disconnect: liveKitDisconnect, 
-    isMicrophoneEnabled, 
     isCameraEnabled,
-    toggleMicrophone,
     toggleCamera,
     isSpeaking 
   } = useLiveKit()
+
+  // Reset connection attempt state when token changes
+  useEffect(() => {
+    if (liveKitToken) {
+      hasAttemptedConnectRef.current = false
+    }
+  }, [liveKitToken])
+
+  // Auto-connect when token is available
+  useEffect(() => {
+    if (liveKitToken && connectionState === "connecting" && !permissionDenied && !hasAttemptedConnectRef.current) {
+      hasAttemptedConnectRef.current = true
+      connect().catch((err) => {
+        console.error('Failed to connect:', err)
+        if (err.message?.includes('Permission denied') || err.message?.includes('NotAllowedError')) {
+          setPermissionDenied(true)
+          dispatch(setVoiceError('Microphone permission denied'))
+        }
+        hasAttemptedConnectRef.current = false
+      })
+    }
+  }, [liveKitToken, connectionState, connect, permissionDenied, dispatch])
 
   // Don't show if not in a voice channel
   if (!activeVoiceChannelId) {
@@ -110,24 +136,6 @@ export function VoiceBar() {
 
       {/* Control Buttons */}
       <div className="flex items-center gap-1">
-        {/* Microphone Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-8 w-8",
-            !isMicrophoneEnabled && "text-destructive hover:text-destructive"
-          )}
-          onClick={toggleMicrophone}
-          title={isMicrophoneEnabled ? "Mute" : "Unmute"}
-        >
-          {isMicrophoneEnabled ? (
-            <Mic className="h-4 w-4" />
-          ) : (
-            <MicOff className="h-4 w-4" />
-          )}
-        </Button>
-
         {/* Camera Toggle */}
         <Button
           variant="ghost"

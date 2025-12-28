@@ -66,16 +66,17 @@ export function ChannelSidebar() {
                 dispatch(setSelectedChannel(channel.id))
                 navigate(`/channels/${activeGuildId}/${channel.id}`)
             } else if (channel.type === ChannelType.Voice) {
-                // Voice channel: join and navigate to show VoiceRoom
+                // Voice channel behavior:
+                // - First click: Join voice (audio) but keep current text channel in view
+                // - Second click (same channel): Navigate to show VoiceRoom UI
                 // Leave can only be done via VoiceBar disconnect button
-                // Only one voice channel can be active at a time
                 if (activeVoiceChannelId === channel.id) {
-                    // Already in this voice channel - just navigate to show VoiceRoom
+                    // Already in this voice channel - second click, now navigate to show VoiceRoom
                     dispatch(setSelectedChannel(channel.id))
                     navigate(`/channels/${activeGuildId}/${channel.id}`)
                     return
                 } else {
-                    // Join new voice channel (leave previous one if exists)
+                    // First click - join voice but DON'T navigate (keep text channel in view)
                     const previousChannelId = activeVoiceChannelId
 
                     // Leave previous voice channel if exists
@@ -97,9 +98,8 @@ export function ChannelSidebar() {
                         )
                     }
 
-                    // Navigate to voice channel route to show VoiceRoom
-                    dispatch(setSelectedChannel(channel.id))
-                    navigate(`/channels/${activeGuildId}/${channel.id}`)
+                    // NOTE: Don't navigate here - first click only joins voice audio
+                    // User must click again to see VoiceRoom UI
 
                     // Join new voice channel
                     dispatch(setActiveVoiceChannel(channel.id))

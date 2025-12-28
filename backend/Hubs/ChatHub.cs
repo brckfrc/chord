@@ -1,3 +1,4 @@
+using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -9,26 +10,32 @@ namespace ChordAPI.Hubs;
 [Authorize]
 public class ChatHub : Hub
 {
+    private readonly AppDbContext _context;
     private readonly IMessageService _messageService;
     private readonly IReactionService _reactionService;
     private readonly IReadStateService _readStateService;
     private readonly IMentionService _mentionService;
     private readonly IVoiceService _voiceService;
+    private readonly IChannelService _channelService;
     private readonly ILogger<ChatHub> _logger;
 
     public ChatHub(
+        AppDbContext context,
         IMessageService messageService,
         IReactionService reactionService,
         IReadStateService readStateService,
         IMentionService mentionService,
         IVoiceService voiceService,
+        IChannelService channelService,
         ILogger<ChatHub> logger)
     {
+        _context = context;
         _messageService = messageService;
         _reactionService = reactionService;
         _readStateService = readStateService;
         _mentionService = mentionService;
         _voiceService = voiceService;
+        _channelService = channelService;
         _logger = logger;
     }
 
@@ -64,8 +71,17 @@ public class ChatHub : Hub
             // Verify user has access to the channel
             await _messageService.GetChannelMessagesAsync(Guid.Parse(channelId), userId, 1, 1);
 
-            // Add to SignalR group
+            // Get channel to find guild ID
+            var channel = await _channelService.GetChannelByIdAsync(Guid.Parse(channelId), userId);
+
+            // Add to channel SignalR group
             await Groups.AddToGroupAsync(Context.ConnectionId, channelId);
+
+            // Also add to guild group for voice channel updates
+            if (channel != null)
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, $"guild_{channel.GuildId}");
+            }
 
             _logger.LogInformation("User {UserId} joined channel {ChannelId}", userId, channelId);
 
@@ -314,24 +330,41 @@ public class ChatHub : Hub
         {
             var channelGuid = Guid.Parse(channelId);
 
+            // Get user's status from database
+            var user = await _context.Users.FindAsync(userId);
+            var status = user?.Status ?? Models.Entities.UserStatus.Online;
+
+            // Get channel to find guild ID for broadcasting
+            var channel = await _channelService.GetChannelByIdAsync(channelGuid, userId);
+            if (channel == null)
+            {
+                throw new Exception("Channel not found");
+            }
+
             // Generate LiveKit token
             var tokenResponse = await _voiceService.GenerateTokenAsync(userId, username, channelGuid);
 
             // Add to voice-specific SignalR group
             await Groups.AddToGroupAsync(Context.ConnectionId, $"voice_{channelId}");
 
-            _logger.LogInformation("User {UserId} joined voice channel {ChannelId}", userId, channelId);
+            _logger.LogInformation("User {UserId} joined voice channel {ChannelId} in guild {GuildId}", 
+                userId, channelId, channel.GuildId);
 
-            // Notify all users viewing this voice channel
-            await Clients.Group($"voice_{channelId}").SendAsync("UserJoinedVoiceChannel", new
+            // Prepare broadcast data with status field
+            var joinData = new
             {
                 userId = userId.ToString(),
                 username,
                 displayName,
                 channelId,
                 isMuted = false,
-                isDeafened = false
-            });
+                isDeafened = false,
+                status = (int)status
+            };
+
+            // Broadcast to voice group AND guild group so all guild members viewing sidebar receive the update
+            await Clients.Group($"voice_{channelId}").SendAsync("UserJoinedVoiceChannel", joinData);
+            await Clients.Group($"guild_{channel.GuildId}").SendAsync("UserJoinedVoiceChannel", joinData);
 
             return new VoiceJoinResponseDto
             {
@@ -364,18 +397,38 @@ public class ChatHub : Hub
     {
         var userId = GetUserId();
 
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"voice_{channelId}");
-
-        _logger.LogInformation("User {UserId} left voice channel {ChannelId}", userId, channelId);
-
-        // Notify all users viewing this voice channel
-        await Clients.Group($"voice_{channelId}").SendAsync("UserLeftVoiceChannel", new
+        try
         {
-            userId = userId.ToString(),
-            channelId
-        });
+            // Get channel to find guild ID for broadcasting
+            var channel = await _channelService.GetChannelByIdAsync(Guid.Parse(channelId), userId);
 
-        await Clients.Caller.SendAsync("LeftVoiceChannel", channelId);
+            _logger.LogInformation("User {UserId} left voice channel {ChannelId}", userId, channelId);
+
+            var leaveData = new
+            {
+                userId = userId.ToString(),
+                channelId
+            };
+
+            // Broadcast to voice group AND guild group so all guild members see the update
+            // Note: Broadcast BEFORE removing from group so the leaving user also gets notified
+            await Clients.Group($"voice_{channelId}").SendAsync("UserLeftVoiceChannel", leaveData);
+            if (channel != null)
+            {
+                await Clients.Group($"guild_{channel.GuildId}").SendAsync("UserLeftVoiceChannel", leaveData);
+            }
+
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"voice_{channelId}");
+
+            await Clients.Caller.SendAsync("LeftVoiceChannel", channelId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error leaving voice channel {ChannelId}: {Error}", channelId, ex.Message);
+            // Still try to remove from group even if there's an error
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"voice_{channelId}");
+            await Clients.Caller.SendAsync("LeftVoiceChannel", channelId);
+        }
     }
 
     /// <summary>
@@ -388,14 +441,23 @@ public class ChatHub : Hub
         _logger.LogDebug("User {UserId} updated voice state in channel {ChannelId}: Muted={IsMuted}, Deafened={IsDeafened}",
             userId, channelId, isMuted, isDeafened);
 
-        // Broadcast to all users viewing this voice channel
-        await Clients.Group($"voice_{channelId}").SendAsync("UserVoiceStateChanged", new
+        var stateData = new
         {
             userId = userId.ToString(),
             channelId,
             isMuted,
             isDeafened
-        });
+        };
+
+        // Get channel to find guild ID for broadcasting
+        var channel = await _channelService.GetChannelByIdAsync(Guid.Parse(channelId), userId);
+
+        // Broadcast to voice group AND guild group so all guild members see the update
+        await Clients.Group($"voice_{channelId}").SendAsync("UserVoiceStateChanged", stateData);
+        if (channel != null)
+        {
+            await Clients.Group($"guild_{channel.GuildId}").SendAsync("UserVoiceStateChanged", stateData);
+        }
     }
 
     /// <summary>

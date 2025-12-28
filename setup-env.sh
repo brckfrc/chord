@@ -93,6 +93,18 @@ check_docker() {
     if ! docker info &> /dev/null; then
         log_warn "Docker not running, attempting to start..."
         
+        # Check if using Docker Desktop context
+        DOCKER_CONTEXT=$(docker context show 2>/dev/null || echo "default")
+        
+        if [[ "$DOCKER_CONTEXT" == "desktop-linux" ]]; then
+            log_error "Docker Desktop context detected but Docker Desktop is not running"
+            log_error "Please either:"
+            log_error "  1) Start Docker Desktop application"
+            log_error "  2) Switch to Docker Engine: docker context use default"
+            exit 1
+        fi
+        
+        # Only try to start Docker Engine if using default context
         if [[ "$OS" == "linux" ]]; then
             if [ "$HAVE_SUDO" = true ]; then
                 sudo systemctl start docker 2>/dev/null || sudo service docker start 2>/dev/null || true
@@ -328,12 +340,20 @@ configure_network() {
         CORS_ORIGINS="http://localhost:5173,http://$HOST:5173"
         DOMAIN="localhost"
         
-        # Dev mode LiveKit settings
-        USE_EXTERNAL_IP="false"
-        ENABLE_LOOPBACK="true"
-        TURN_ENABLED="false"
-        TURN_DOMAIN="$HOST"
-        LIVEKIT_NODE_IP="$HOST"
+        # Dev mode LiveKit settings - different for localhost vs LAN
+        if [ "$HOST" == "localhost" ]; then
+            # Localhost-only mode - use loopback candidate for local testing
+            TURN_ENABLED="false"
+            TURN_DOMAIN="localhost"
+            LIVEKIT_NODE_IP=""
+            RTC_CONFIG="use_external_ip: false\n  enable_loopback_candidate: true"
+        else
+            # LAN mode - use explicit node_ip for WebRTC to work across devices
+            TURN_ENABLED="false"
+            TURN_DOMAIN="$HOST"
+            LIVEKIT_NODE_IP="$HOST"
+            RTC_CONFIG="use_external_ip: false\n  node_ip: $HOST"
+        fi
         
     else
         read -p "Enter domain (e.g., chord.example.com): " DOMAIN
@@ -354,12 +374,11 @@ configure_network() {
         # Get public IP for production
         read -p "Enter public IP (for LiveKit/TURN): " PUBLIC_IP
         
-        # Prod mode LiveKit settings
-        USE_EXTERNAL_IP="true"
-        ENABLE_LOOPBACK="false"
+        # Prod mode LiveKit settings - use STUN to discover public IP
         TURN_ENABLED="true"
         TURN_DOMAIN="$DOMAIN"
         LIVEKIT_NODE_IP="$PUBLIC_IP"
+        RTC_CONFIG="use_external_ip: true"
     fi
     
     log_info "Host: $HOST"
@@ -504,8 +523,7 @@ generate_configs() {
     
     # LiveKit config
     cp "$SCRIPT_DIR/backend/livekit.yaml.template" "$SCRIPT_DIR/backend/livekit.yaml"
-    replace_placeholder "$SCRIPT_DIR/backend/livekit.yaml" "USE_EXTERNAL_IP" "$USE_EXTERNAL_IP"
-    replace_placeholder "$SCRIPT_DIR/backend/livekit.yaml" "ENABLE_LOOPBACK" "$ENABLE_LOOPBACK"
+    replace_placeholder "$SCRIPT_DIR/backend/livekit.yaml" "RTC_CONFIG" "$RTC_CONFIG"
     replace_placeholder "$SCRIPT_DIR/backend/livekit.yaml" "TURN_ENABLED" "$TURN_ENABLED"
     replace_placeholder "$SCRIPT_DIR/backend/livekit.yaml" "TURN_DOMAIN" "$TURN_DOMAIN"
     log_info "Generated backend/livekit.yaml"
@@ -680,15 +698,45 @@ if [ -s "\$HOME/.nvm/nvm.sh" ]; then
     [ -f ".nvmrc" ] && nvm use 2>/dev/null
 fi
 
+# Load .env file for environment variables
+if [ -f "backend/.env" ]; then
+    set -a
+    source backend/.env
+    set +a
+else
+    echo "ERROR: backend/.env not found. Run ./setup-env.sh first."
+    exit 1
+fi
+
 # Start Docker services
 echo "Starting Docker services..."
 cd backend
 docker compose -f docker-compose.dev.yml up -d
 cd ..
 
-# Wait for services
-echo "Waiting for services to be ready..."
-sleep 5
+# Wait for SQL Server to be healthy
+echo "Waiting for SQL Server to be ready..."
+MAX_RETRIES=30
+RETRY_COUNT=0
+while [ \$RETRY_COUNT -lt \$MAX_RETRIES ]; do
+    if docker exec chord-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "\${SQL_SA_PASSWORD}" -Q "SELECT 1" -C -b > /dev/null 2>&1; then
+        echo "SQL Server is ready!"
+        break
+    fi
+    RETRY_COUNT=\$((RETRY_COUNT + 1))
+    echo "Waiting for SQL Server... (\$RETRY_COUNT/\$MAX_RETRIES)"
+    sleep 2
+done
+
+if [ \$RETRY_COUNT -eq \$MAX_RETRIES ]; then
+    echo "ERROR: SQL Server did not become ready in time"
+    echo "Check logs with: docker logs chord-sqlserver"
+    exit 1
+fi
+
+# Wait for other services
+echo "Waiting for other services..."
+sleep 3
 
 # Start backend
 echo "Starting backend..."

@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { addVoiceChannelUser } from "@/store/slices/channelsSlice"
 import { useSignalR } from "@/hooks/useSignalR"
+import { useLiveKit } from "@/hooks/useLiveKit"
 import { Button } from "@/components/ui/button"
 import { Mic, MicOff, Headphones, HeadphoneOff, Settings } from "lucide-react"
 import { UserSettingsModal } from "@/components/modals/UserSettingsModal"
@@ -57,7 +58,6 @@ export function UserProfileBar({ compact = false }: UserProfileBarProps) {
     const dispatch = useAppDispatch()
     const { user } = useAppSelector((state) => state.auth)
     const { activeVoiceChannelId, voiceChannelUsers } = useAppSelector((state) => state.channels)
-    const [isMicMuted, setIsMicMuted] = useState(false)
     const [isHeadphonesMuted, setIsHeadphonesMuted] = useState(false)
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false)
@@ -66,24 +66,17 @@ export function UserProfileBar({ compact = false }: UserProfileBarProps) {
     // SignalR connection for ChatHub
     const { invoke: chatInvoke, isConnected: isChatConnected } = useSignalR("/hubs/chat")
 
-    // Sync mute/deafen state with voice channel user state
-    useEffect(() => {
-        if (activeVoiceChannelId && user) {
-            const voiceUser = voiceChannelUsers[activeVoiceChannelId]?.find(
-                (u) => u.userId === user.id
-            )
-            if (voiceUser) {
-                setIsMicMuted(voiceUser.isMuted)
-                setIsHeadphonesMuted(voiceUser.isDeafened)
-            }
-        }
-    }, [activeVoiceChannelId, voiceChannelUsers, user])
+    // LiveKit for real microphone control
+    const { toggleMicrophone, isMicrophoneEnabled } = useLiveKit()
+
+    // Derive mute state from actual microphone state
+    const isMicMuted = !isMicrophoneEnabled
 
     if (compact) {
         // Compact version for narrow sidebars (like GuildSidebar)
         return (
             <div className="h-14 bg-[#232428] px-2 py-1.5 flex items-center justify-between border-t border-border flex-shrink-0">
-                <div 
+                <div
                     ref={userInfoRef}
                     className="relative flex-shrink-0 cursor-pointer px-2 py-1.5 rounded-md transition-colors hover:bg-[#2f3136]"
                     onClick={() => setIsStatusModalOpen(true)}
@@ -109,15 +102,19 @@ export function UserProfileBar({ compact = false }: UserProfileBarProps) {
                             isMicMuted && "text-destructive hover:text-destructive"
                         )}
                         onClick={async () => {
-                            const newMuted = !isMicMuted
-                            setIsMicMuted(newMuted)
+                            // Toggle the actual microphone via LiveKit
+                            await toggleMicrophone()
+
+                            // The new muted state will be the opposite of current enabled state
+                            const newMuted = isMicrophoneEnabled
+
                             // Update voice channel state if in voice channel
                             if (activeVoiceChannelId && user) {
                                 const voiceUser = voiceChannelUsers[activeVoiceChannelId]?.find(
                                     (u) => u.userId === user.id
                                 )
                                 if (voiceUser) {
-                                    // Optimistic update
+                                    // Update Redux state
                                     dispatch(
                                         addVoiceChannelUser({
                                             channelId: activeVoiceChannelId,
@@ -138,17 +135,6 @@ export function UserProfileBar({ compact = false }: UserProfileBarProps) {
                                             )
                                         } catch (error) {
                                             console.error("Failed to update voice state via SignalR:", error)
-                                            // Revert optimistic update on error
-                                            dispatch(
-                                                addVoiceChannelUser({
-                                                    channelId: activeVoiceChannelId,
-                                                    user: {
-                                                        ...voiceUser,
-                                                        isMuted: voiceUser.isMuted,
-                                                    },
-                                                })
-                                            )
-                                            setIsMicMuted(voiceUser.isMuted)
                                         }
                                     }
                                 }
@@ -172,14 +158,20 @@ export function UserProfileBar({ compact = false }: UserProfileBarProps) {
                         onClick={async () => {
                             const newDeafened = !isHeadphonesMuted
                             setIsHeadphonesMuted(newDeafened)
+
+                            // If deafening, also mute the microphone
+                            if (newDeafened && isMicrophoneEnabled) {
+                                await toggleMicrophone()
+                            }
+
                             // Update voice channel state if in voice channel
                             if (activeVoiceChannelId && user) {
                                 const voiceUser = voiceChannelUsers[activeVoiceChannelId]?.find(
                                     (u) => u.userId === user.id
                                 )
                                 if (voiceUser) {
-                                    const newMuted = newDeafened ? true : voiceUser.isMuted // Deafen also mutes
-                                    // Optimistic update
+                                    const newMuted = newDeafened ? true : !isMicrophoneEnabled
+                                    // Update Redux state
                                     dispatch(
                                         addVoiceChannelUser({
                                             channelId: activeVoiceChannelId,
@@ -201,24 +193,12 @@ export function UserProfileBar({ compact = false }: UserProfileBarProps) {
                                             )
                                         } catch (error) {
                                             console.error("Failed to update voice state via SignalR:", error)
-                                            // Revert optimistic update on error
-                                            dispatch(
-                                                addVoiceChannelUser({
-                                                    channelId: activeVoiceChannelId,
-                                                    user: {
-                                                        ...voiceUser,
-                                                        isDeafened: voiceUser.isDeafened,
-                                                        isMuted: voiceUser.isMuted,
-                                                    },
-                                                })
-                                            )
-                                            setIsHeadphonesMuted(voiceUser.isDeafened)
                                         }
                                     }
                                 }
                             }
                         }}
-                        title={isHeadphonesMuted ? "Deafen" : "Undeafen"}
+                        title={isHeadphonesMuted ? "Undeafen" : "Deafen"}
                     >
                         {isHeadphonesMuted ? (
                             <HeadphoneOff className="h-4 w-4" />
@@ -253,7 +233,7 @@ export function UserProfileBar({ compact = false }: UserProfileBarProps) {
     // Full version for wider sidebars (like FriendsSidebar)
     return (
         <div className="h-14 bg-[#232428] pl-2 pr-2 py-1.5 flex items-center justify-between border-t border-border">
-            <div 
+            <div
                 ref={userInfoRef}
                 className="flex items-center gap-2 flex-1 min-w-0 px-2 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-[#2f3136]"
                 onClick={() => setIsStatusModalOpen(true)}
@@ -295,51 +275,44 @@ export function UserProfileBar({ compact = false }: UserProfileBarProps) {
                         isMicMuted && "text-destructive hover:text-destructive"
                     )}
                     onClick={async () => {
-                            const newMuted = !isMicMuted
-                            setIsMicMuted(newMuted)
-                            // Update voice channel state if in voice channel
-                            if (activeVoiceChannelId && user) {
-                                const voiceUser = voiceChannelUsers[activeVoiceChannelId]?.find(
-                                    (u) => u.userId === user.id
+                        // Toggle the actual microphone via LiveKit
+                        await toggleMicrophone()
+
+                        // The new muted state will be the opposite of current enabled state
+                        const newMuted = isMicrophoneEnabled
+
+                        // Update voice channel state if in voice channel
+                        if (activeVoiceChannelId && user) {
+                            const voiceUser = voiceChannelUsers[activeVoiceChannelId]?.find(
+                                (u) => u.userId === user.id
+                            )
+                            if (voiceUser) {
+                                // Update Redux state
+                                dispatch(
+                                    addVoiceChannelUser({
+                                        channelId: activeVoiceChannelId,
+                                        user: {
+                                            ...voiceUser,
+                                            isMuted: newMuted,
+                                        },
+                                    })
                                 )
-                                if (voiceUser) {
-                                    // Optimistic update
-                                    dispatch(
-                                        addVoiceChannelUser({
-                                            channelId: activeVoiceChannelId,
-                                            user: {
-                                                ...voiceUser,
-                                                isMuted: newMuted,
-                                            },
-                                        })
-                                    )
-                                    // Call SignalR UpdateVoiceState
-                                    if (isChatConnected) {
-                                        try {
-                                            await chatInvoke(
-                                                "UpdateVoiceState",
-                                                activeVoiceChannelId,
-                                                newMuted,
-                                                voiceUser.isDeafened
-                                            )
-                                        } catch (error) {
-                                            console.error("Failed to update voice state via SignalR:", error)
-                                            // Revert optimistic update on error
-                                            dispatch(
-                                                addVoiceChannelUser({
-                                                    channelId: activeVoiceChannelId,
-                                                    user: {
-                                                        ...voiceUser,
-                                                        isMuted: voiceUser.isMuted,
-                                                    },
-                                                })
-                                            )
-                                            setIsMicMuted(voiceUser.isMuted)
-                                        }
+                                // Call SignalR UpdateVoiceState
+                                if (isChatConnected) {
+                                    try {
+                                        await chatInvoke(
+                                            "UpdateVoiceState",
+                                            activeVoiceChannelId,
+                                            newMuted,
+                                            voiceUser.isDeafened
+                                        )
+                                    } catch (error) {
+                                        console.error("Failed to update voice state via SignalR:", error)
                                     }
                                 }
                             }
-                        }}
+                        }
+                    }}
                     title={isMicMuted ? "Unmute" : "Mute"}
                 >
                     {isMicMuted ? (
@@ -355,56 +328,50 @@ export function UserProfileBar({ compact = false }: UserProfileBarProps) {
                         "h-8 w-8",
                         isHeadphonesMuted && "text-destructive hover:text-destructive"
                     )}
-                        onClick={async () => {
-                            const newDeafened = !isHeadphonesMuted
-                            setIsHeadphonesMuted(newDeafened)
-                            // Update voice channel state if in voice channel
-                            if (activeVoiceChannelId && user) {
-                                const voiceUser = voiceChannelUsers[activeVoiceChannelId]?.find(
-                                    (u) => u.userId === user.id
+                    onClick={async () => {
+                        const newDeafened = !isHeadphonesMuted
+                        setIsHeadphonesMuted(newDeafened)
+
+                        // If deafening, also mute the microphone
+                        if (newDeafened && isMicrophoneEnabled) {
+                            await toggleMicrophone()
+                        }
+
+                        // Update voice channel state if in voice channel
+                        if (activeVoiceChannelId && user) {
+                            const voiceUser = voiceChannelUsers[activeVoiceChannelId]?.find(
+                                (u) => u.userId === user.id
+                            )
+                            if (voiceUser) {
+                                const newMuted = newDeafened ? true : !isMicrophoneEnabled
+                                // Update Redux state
+                                dispatch(
+                                    addVoiceChannelUser({
+                                        channelId: activeVoiceChannelId,
+                                        user: {
+                                            ...voiceUser,
+                                            isDeafened: newDeafened,
+                                            isMuted: newMuted,
+                                        },
+                                    })
                                 )
-                                if (voiceUser) {
-                                    const newMuted = newDeafened ? true : voiceUser.isMuted // Deafen also mutes
-                                    // Optimistic update
-                                    dispatch(
-                                        addVoiceChannelUser({
-                                            channelId: activeVoiceChannelId,
-                                            user: {
-                                                ...voiceUser,
-                                                isDeafened: newDeafened,
-                                                isMuted: newMuted,
-                                            },
-                                        })
-                                    )
-                                    // Call SignalR UpdateVoiceState
-                                    if (isChatConnected) {
-                                        try {
-                                            await chatInvoke(
-                                                "UpdateVoiceState",
-                                                activeVoiceChannelId,
-                                                newMuted,
-                                                newDeafened
-                                            )
-                                        } catch (error) {
-                                            console.error("Failed to update voice state via SignalR:", error)
-                                            // Revert optimistic update on error
-                                            dispatch(
-                                                addVoiceChannelUser({
-                                                    channelId: activeVoiceChannelId,
-                                                    user: {
-                                                        ...voiceUser,
-                                                        isDeafened: voiceUser.isDeafened,
-                                                        isMuted: voiceUser.isMuted,
-                                                    },
-                                                })
-                                            )
-                                            setIsHeadphonesMuted(voiceUser.isDeafened)
-                                        }
+                                // Call SignalR UpdateVoiceState
+                                if (isChatConnected) {
+                                    try {
+                                        await chatInvoke(
+                                            "UpdateVoiceState",
+                                            activeVoiceChannelId,
+                                            newMuted,
+                                            newDeafened
+                                        )
+                                    } catch (error) {
+                                        console.error("Failed to update voice state via SignalR:", error)
                                     }
                                 }
                             }
-                        }}
-                    title={isHeadphonesMuted ? "Deafen" : "Undeafen"}
+                        }
+                    }}
+                    title={isHeadphonesMuted ? "Undeafen" : "Deafen"}
                 >
                     {isHeadphonesMuted ? (
                         <HeadphoneOff className="h-4 w-4" />

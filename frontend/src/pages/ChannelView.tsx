@@ -19,7 +19,8 @@ import { MentionsPanel } from "@/components/messages/MentionsPanel"
 import { Hash, Mic, Megaphone, Bell } from "lucide-react"
 import { ChannelType } from "@/lib/api/channels"
 import { Button } from "@/components/ui/button"
-import { VoiceRoom } from "@/components/voice"
+// TODO: Re-enable VoiceRoom after fixing bugs
+// import { VoiceRoom } from "@/components/voice"
 
 export function ChannelView() {
   const { channelId } = useParams<{
@@ -31,6 +32,7 @@ export function ChannelView() {
   const { user } = useAppSelector((state) => state.auth)
   const { unreadCount } = useAppSelector((state) => state.mentions)
   const previousChannelIdRef = useRef<string | undefined>(undefined)
+  const previousChannelWasTextRef = useRef<boolean>(false)
   const chatInvokeRef = useRef<typeof chatInvoke | null>(null)
   const [showMentionsPanel, setShowMentionsPanel] = useState(false)
 
@@ -74,8 +76,14 @@ export function ChannelView() {
   }, [chatInvoke])
 
   // Join/Leave channel on route change
+  // This ensures users are added to the guild SignalR group for voice events
   useEffect(() => {
-    if (!channelId || !isChatConnected || !isTextChannel || !chatInvokeRef.current) {
+    if (!channelId || !isChatConnected || !chatInvokeRef.current) {
+      return
+    }
+
+    // Skip if we're already joined to this channel
+    if (previousChannelIdRef.current === channelId) {
       return
     }
 
@@ -84,14 +92,20 @@ export function ChannelView() {
         // Leave previous channel
         if (previousChannelIdRef.current && chatInvokeRef.current) {
           await chatInvokeRef.current("LeaveChannel", previousChannelIdRef.current)
-          dispatch(clearMessages(previousChannelIdRef.current))
-          dispatch(clearTypingUsers(previousChannelIdRef.current))
+          // Only clear messages if previous channel was a text channel
+          if (previousChannelWasTextRef.current) {
+            dispatch(clearMessages(previousChannelIdRef.current))
+            dispatch(clearTypingUsers(previousChannelIdRef.current))
+          }
         }
 
-        // Join new channel
+        // Join new channel (also adds user to guild group for voice events)
         if (chatInvokeRef.current) {
           await chatInvokeRef.current("JoinChannel", channelId)
           previousChannelIdRef.current = channelId
+          // Store whether this channel is a text channel for future cleanup
+          const channel = channels.find((c) => c.id === channelId)
+          previousChannelWasTextRef.current = channel?.type === ChannelType.Text || channel?.type === ChannelType.Announcement
         }
       } catch (error) {
         console.error("Failed to join channel:", error)
@@ -106,7 +120,7 @@ export function ChannelView() {
         chatInvokeRef.current("LeaveChannel", channelId).catch(console.error)
       }
     }
-  }, [channelId, isChatConnected, isTextChannel, dispatch]) // Removed chatInvoke from dependencies
+  }, [channelId, isChatConnected, channels, dispatch])
 
   // SignalR event listeners
   useEffect(() => {
@@ -211,6 +225,8 @@ export function ChannelView() {
   }, [channelId, isChatConnected, chatOn, dispatch])
 
   // Show VoiceRoom for voice channels
+  // TODO: VoiceRoom UI is temporarily disabled due to bugs
+  // Re-enable after fixing LiveKit connection issues
   if (!isTextChannel) {
     return (
       <div className="flex h-full flex-col bg-background">
@@ -222,9 +238,11 @@ export function ChannelView() {
           </h2>
         </div>
         
-        {/* VoiceRoom fills the content area */}
-        <div className="flex-1 flex items-center justify-center p-4">
-          <VoiceRoom />
+        {/* VoiceRoom temporarily disabled - placeholder */}
+        <div className="flex-1 flex flex-col items-center justify-center p-4 text-muted-foreground">
+          <Mic className="h-12 w-12 mb-4 opacity-50" />
+          <p className="text-lg font-medium">Voice Room</p>
+          <p className="text-sm mt-1">Connected via VoiceBar below</p>
         </div>
       </div>
     )

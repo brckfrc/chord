@@ -186,6 +186,20 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Auto-apply pending database migrations
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var pendingMigrations = db.Database.GetPendingMigrations().ToList();
+    if (pendingMigrations.Any())
+    {
+        Log.Information("Applying {Count} pending migrations: {Migrations}",
+            pendingMigrations.Count, string.Join(", ", pendingMigrations));
+        db.Database.Migrate();
+        Log.Information("Database migrations applied successfully");
+    }
+}
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {

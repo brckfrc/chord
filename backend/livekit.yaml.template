@@ -9,8 +9,7 @@ bind_addresses:
 rtc:
   port_range_start: 7881
   port_range_end: 7881
-  use_external_ip: {{USE_EXTERNAL_IP}}
-  enable_loopback_candidate: {{ENABLE_LOOPBACK}}
+  {{RTC_CONFIG}}
 
 redis:
   address: redis:6379

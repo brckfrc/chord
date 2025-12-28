@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import {
   Room,
   RoomEvent,
@@ -36,29 +36,62 @@ interface UseLiveKitReturn {
   isCameraEnabled: boolean;
 }
 
+// Singleton state for shared room instance across all components
+interface LiveKitState {
+  room: Room | null;
+  localParticipant: LocalParticipant | null;
+  remoteParticipants: RemoteParticipant[];
+  isSpeaking: boolean;
+  isMicrophoneEnabled: boolean;
+  isCameraEnabled: boolean;
+  isConnected: boolean;
+  isConnecting: boolean;
+}
+
+let sharedState: LiveKitState = {
+  room: null,
+  localParticipant: null,
+  remoteParticipants: [],
+  isSpeaking: false,
+  isMicrophoneEnabled: false,
+  isCameraEnabled: false,
+  isConnected: false,
+  isConnecting: false,
+};
+
+// Subscribers for state changes
+const listeners = new Set<() => void>();
+
+function notifyListeners() {
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function getSnapshot() {
+  return sharedState;
+}
+
+function updateState(updates: Partial<LiveKitState>) {
+  sharedState = { ...sharedState, ...updates };
+  notifyListeners();
+}
+
 export function useLiveKit(): UseLiveKitReturn {
   const dispatch = useAppDispatch();
   const { liveKitToken, liveKitUrl, connectionState } = useAppSelector(
     (state) => state.voice
   );
 
-  const [room, setRoom] = useState<Room | null>(null);
-  const [localParticipant, setLocalParticipant] =
-    useState<LocalParticipant | null>(null);
-  const [remoteParticipants, setRemoteParticipants] = useState<
-    RemoteParticipant[]
-  >([]);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isMicrophoneEnabled, setIsMicrophoneEnabled] = useState(false);
-  const [isCameraEnabled, setIsCameraEnabled] = useState(false);
-
-  const roomRef = useRef<Room | null>(null);
-  const isConnectedRef = useRef(false);
-  const isConnectingRef = useRef(false);
+  // Use shared state across all components
+  const state = useSyncExternalStore(subscribe, getSnapshot);
 
   // Map ConnectionState to our VoiceConnectionState
-  const mapConnectionState = (state: ConnectionState): VoiceConnectionState => {
-    switch (state) {
+  const mapConnectionState = (connState: ConnectionState): VoiceConnectionState => {
+    switch (connState) {
       case ConnectionState.Connected:
         return "connected";
       case ConnectionState.Connecting:
@@ -72,10 +105,10 @@ export function useLiveKit(): UseLiveKitReturn {
 
   // Update participants list
   const updateParticipants = useCallback(() => {
-    if (!roomRef.current) return;
+    if (!sharedState.room) return;
 
     const participants: LiveKitParticipant[] = [];
-    roomRef.current.remoteParticipants.forEach((participant) => {
+    sharedState.room.remoteParticipants.forEach((participant) => {
       participants.push({
         identity: participant.identity,
         name: participant.name || participant.identity,
@@ -93,9 +126,9 @@ export function useLiveKit(): UseLiveKitReturn {
       });
     });
 
-    setRemoteParticipants(
-      Array.from(roomRef.current.remoteParticipants.values())
-    );
+    updateState({
+      remoteParticipants: Array.from(sharedState.room.remoteParticipants.values())
+    });
     dispatch(setParticipants(participants));
   }, [dispatch]);
 
@@ -107,13 +140,32 @@ export function useLiveKit(): UseLiveKitReturn {
     }
 
     // Prevent multiple simultaneous connection attempts
-    if (isConnectingRef.current) {
+    if (sharedState.isConnecting) {
       console.log("Already connecting, skipping...");
       return;
     }
 
     try {
-      isConnectingRef.current = true;
+      // Clean up any existing room first to prevent orphan connections
+      if (sharedState.room) {
+        try {
+          sharedState.room.removeAllListeners();
+          await sharedState.room.disconnect();
+        } catch (e) {
+          console.warn("Error disconnecting old room:", e);
+        }
+        updateState({
+          room: null,
+          localParticipant: null,
+          remoteParticipants: [],
+          isSpeaking: false,
+          isMicrophoneEnabled: false,
+          isCameraEnabled: false,
+          isConnected: false,
+        });
+      }
+
+      updateState({ isConnecting: true });
       dispatch(setConnectionState("connecting"));
 
       const newRoom = new Room({
@@ -127,12 +179,11 @@ export function useLiveKit(): UseLiveKitReturn {
         },
       });
 
-      roomRef.current = newRoom;
-      setRoom(newRoom);
+      updateState({ room: newRoom });
 
       // Set up event listeners
-      newRoom.on(RoomEvent.ConnectionStateChanged, (state) => {
-        dispatch(setConnectionState(mapConnectionState(state)));
+      newRoom.on(RoomEvent.ConnectionStateChanged, (connState) => {
+        dispatch(setConnectionState(mapConnectionState(connState)));
       });
 
       newRoom.on(RoomEvent.ParticipantConnected, () => {
@@ -158,37 +209,44 @@ export function useLiveKit(): UseLiveKitReturn {
       });
 
       newRoom.on(RoomEvent.LocalTrackPublished, () => {
-        setIsMicrophoneEnabled(newRoom.localParticipant.isMicrophoneEnabled);
-        setIsCameraEnabled(newRoom.localParticipant.isCameraEnabled);
+        updateState({
+          isMicrophoneEnabled: newRoom.localParticipant.isMicrophoneEnabled,
+          isCameraEnabled: newRoom.localParticipant.isCameraEnabled
+        });
       });
 
       newRoom.on(RoomEvent.LocalTrackUnpublished, () => {
-        setIsMicrophoneEnabled(newRoom.localParticipant.isMicrophoneEnabled);
-        setIsCameraEnabled(newRoom.localParticipant.isCameraEnabled);
+        updateState({
+          isMicrophoneEnabled: newRoom.localParticipant.isMicrophoneEnabled,
+          isCameraEnabled: newRoom.localParticipant.isCameraEnabled
+        });
       });
 
       // Local participant speaking state is handled via ActiveSpeakersChanged
       newRoom.localParticipant.on("isSpeakingChanged", (speaking: boolean) => {
-        setIsSpeaking(speaking);
+        updateState({ isSpeaking: speaking });
       });
 
       newRoom.on(RoomEvent.Disconnected, () => {
         dispatch(setConnectionState("disconnected"));
+        updateState({ isConnected: false });
       });
 
       // Connect to the room
       await newRoom.connect(liveKitUrl, liveKitToken);
 
-      isConnectedRef.current = true;
-      isConnectingRef.current = false;
-      setLocalParticipant(newRoom.localParticipant);
+      updateState({
+        isConnected: true,
+        isConnecting: false,
+        localParticipant: newRoom.localParticipant
+      });
       dispatch(setConnectionState("connected"));
 
       // Enable microphone by default
       try {
         const audioTrack = await createLocalAudioTrack();
         await newRoom.localParticipant.publishTrack(audioTrack);
-        setIsMicrophoneEnabled(true);
+        updateState({ isMicrophoneEnabled: true });
       } catch (err) {
         console.error("Failed to enable microphone:", err);
         dispatch(setVoiceError("Microphone access denied"));
@@ -197,8 +255,7 @@ export function useLiveKit(): UseLiveKitReturn {
       updateParticipants();
     } catch (error) {
       console.error("Failed to connect to LiveKit:", error);
-      isConnectingRef.current = false;
-      isConnectedRef.current = false;
+      updateState({ isConnecting: false, isConnected: false });
       dispatch(
         setVoiceError(
           error instanceof Error ? error.message : "Failed to connect"
@@ -210,26 +267,27 @@ export function useLiveKit(): UseLiveKitReturn {
 
   // Disconnect from room
   const disconnect = useCallback(async () => {
-    isConnectedRef.current = false;
-    isConnectingRef.current = false;
-    if (roomRef.current) {
-      await roomRef.current.disconnect();
-      roomRef.current = null;
-      setRoom(null);
-      setLocalParticipant(null);
-      setRemoteParticipants([]);
-      setIsSpeaking(false);
-      setIsMicrophoneEnabled(false);
-      setIsCameraEnabled(false);
+    if (sharedState.room) {
+      await sharedState.room.disconnect();
+      updateState({
+        room: null,
+        localParticipant: null,
+        remoteParticipants: [],
+        isSpeaking: false,
+        isMicrophoneEnabled: false,
+        isCameraEnabled: false,
+        isConnected: false,
+        isConnecting: false
+      });
     }
     dispatch(leaveVoiceChannel());
   }, [dispatch]);
 
   // Toggle microphone
   const toggleMicrophone = useCallback(async () => {
-    if (!roomRef.current?.localParticipant) return;
+    if (!sharedState.room?.localParticipant) return;
 
-    const participant = roomRef.current.localParticipant;
+    const participant = sharedState.room.localParticipant;
     const enabled = participant.isMicrophoneEnabled;
 
     if (enabled) {
@@ -240,13 +298,13 @@ export function useLiveKit(): UseLiveKitReturn {
           participant.unpublishTrack(publication.track as LocalTrack);
         }
       });
-      setIsMicrophoneEnabled(false);
+      updateState({ isMicrophoneEnabled: false });
     } else {
       // Enable microphone
       try {
         const audioTrack = await createLocalAudioTrack();
         await participant.publishTrack(audioTrack);
-        setIsMicrophoneEnabled(true);
+        updateState({ isMicrophoneEnabled: true });
       } catch (err) {
         console.error("Failed to enable microphone:", err);
         dispatch(setVoiceError("Failed to enable microphone"));
@@ -256,9 +314,9 @@ export function useLiveKit(): UseLiveKitReturn {
 
   // Toggle camera
   const toggleCamera = useCallback(async () => {
-    if (!roomRef.current?.localParticipant) return;
+    if (!sharedState.room?.localParticipant) return;
 
-    const participant = roomRef.current.localParticipant;
+    const participant = sharedState.room.localParticipant;
     const enabled = participant.isCameraEnabled;
 
     if (enabled) {
@@ -272,13 +330,13 @@ export function useLiveKit(): UseLiveKitReturn {
           participant.unpublishTrack(publication.track as LocalTrack);
         }
       });
-      setIsCameraEnabled(false);
+      updateState({ isCameraEnabled: false });
     } else {
       // Enable camera
       try {
         const videoTrack = await createLocalVideoTrack();
         await participant.publishTrack(videoTrack);
-        setIsCameraEnabled(true);
+        updateState({ isCameraEnabled: true });
       } catch (err) {
         console.error("Failed to enable camera:", err);
         dispatch(setVoiceError("Failed to enable camera"));
@@ -286,28 +344,20 @@ export function useLiveKit(): UseLiveKitReturn {
     }
   }, [dispatch]);
 
-  // Cleanup on unmount - only disconnect if truly connected
-  useEffect(() => {
-    return () => {
-      if (isConnectedRef.current && roomRef.current) {
-        isConnectedRef.current = false;
-        isConnectingRef.current = false;
-        roomRef.current.disconnect();
-      }
-    };
-  }, []);
+  // Cleanup on unmount - don't disconnect on component unmount anymore
+  // since the room is shared. Only disconnect explicitly via disconnect()
 
   return {
-    room,
+    room: state.room,
     connectionState,
-    localParticipant,
-    remoteParticipants,
-    isSpeaking,
+    localParticipant: state.localParticipant,
+    remoteParticipants: state.remoteParticipants,
+    isSpeaking: state.isSpeaking,
     connect,
     disconnect,
     toggleMicrophone,
     toggleCamera,
-    isMicrophoneEnabled,
-    isCameraEnabled,
+    isMicrophoneEnabled: state.isMicrophoneEnabled,
+    isCameraEnabled: state.isCameraEnabled,
   };
 }

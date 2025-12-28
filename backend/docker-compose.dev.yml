@@ -14,11 +14,11 @@ services:
       - chord-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '$$SA_PASSWORD' -Q 'SELECT 1' -C || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$SA_PASSWORD\" -Q 'SELECT 1' -C -l 5 || exit 1"]
       interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
