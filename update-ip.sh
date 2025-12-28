@@ -143,3 +143,4 @@ echo "  Backend:  cd backend && dotnet run"
 echo "  Frontend: cd frontend && npm run dev"
 echo ""
 
+
