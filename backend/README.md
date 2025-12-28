@@ -90,7 +90,9 @@ backend/
 │   ├── RolesController.cs
 │   ├── InvitesController.cs
 │   ├── MentionsController.cs
-│   └── ReactionsController.cs
+│   ├── ReactionsController.cs
+│   ├── FriendsController.cs
+│   └── DMController.cs
 ├── Hubs/                  # SignalR hubs
 │   ├── ChatHub.cs
 │   └── PresenceHub.cs
@@ -209,6 +211,32 @@ cp .env.example .env
 | PUT    | `/api/guilds/{guildId}/roles/{id}` | Update role | Yes (ManageRoles) |
 | DELETE | `/api/guilds/{guildId}/roles/{id}` | Delete role | Yes (ManageRoles) |
 
+### Friends
+
+| Method | Endpoint                        | Description           | Auth |
+| ------ | ------------------------------- | --------------------- | ---- |
+| POST   | `/api/Friends/request`          | Send friend request   | Yes  |
+| POST   | `/api/Friends/{id}/accept`      | Accept friend request | Yes  |
+| POST   | `/api/Friends/{id}/decline`     | Decline request       | Yes  |
+| DELETE | `/api/Friends/{id}`             | Remove friend         | Yes  |
+| POST   | `/api/Friends/block/{userId}`   | Block user            | Yes  |
+| DELETE | `/api/Friends/block/{userId}`   | Unblock user          | Yes  |
+| GET    | `/api/Friends`                  | List friends          | Yes  |
+| GET    | `/api/Friends/pending`          | List pending requests | Yes  |
+| GET    | `/api/Friends/blocked`          | List blocked users    | Yes  |
+
+### Direct Messages
+
+| Method | Endpoint                              | Description             | Auth |
+| ------ | ------------------------------------- | ----------------------- | ---- |
+| POST   | `/api/DMs/{userId}`                   | Create/get DM channel   | Yes  |
+| GET    | `/api/DMs`                            | List DM channels        | Yes  |
+| GET    | `/api/DMs/{dmId}/messages`            | Get DM messages         | Yes  |
+| POST   | `/api/DMs/{dmId}/messages`            | Send DM message         | Yes  |
+| PUT    | `/api/DMs/{dmId}/messages/{id}`       | Edit DM message         | Yes  |
+| DELETE | `/api/DMs/{dmId}/messages/{id}`       | Delete DM message       | Yes  |
+| POST   | `/api/DMs/{dmId}/mark-read`           | Mark DM as read         | Yes  |
+
 ---
 
 ## SignalR Hubs
@@ -248,6 +276,12 @@ const connection = new HubConnectionBuilder()
 | `JoinVoiceChannel`  | `channelId`                         | Join voice channel (visible to others) |
 | `LeaveVoiceChannel` | `channelId`                         | Leave voice channel                    |
 | `UpdateVoiceState`  | `channelId, isMuted, isDeafened`    | Update mute/deafen status              |
+| `JoinDM`            | `dmChannelId`                       | Join DM channel                        |
+| `LeaveDM`           | `dmChannelId`                       | Leave DM channel                       |
+| `SendDMMessage`     | `dmChannelId, {content}`            | Send DM message                        |
+| `TypingInDM`        | `dmChannelId`                       | Broadcast typing in DM                 |
+| `StopTypingInDM`    | `dmChannelId`                       | Stop typing in DM                      |
+| `MarkDMAsRead`      | `dmChannelId, lastReadMessageId`    | Mark DM as read                        |
 
 #### Client Events (Server → Client)
 
@@ -262,6 +296,12 @@ const connection = new HubConnectionBuilder()
 | `UserVoiceStateChanged`  | `{userId, channelId, isMuted, isDeafened}`                        | Voice state changed          |
 | `JoinedChannel`          | `channelId`                                                       | Confirmation of channel join |
 | `JoinedVoiceChannel`     | `channelId`                                                       | Confirmation of voice join   |
+| `DMReceiveMessage`       | `DirectMessageDto`                                                | New DM received              |
+| `DMMessageEdited`        | `DirectMessageDto`                                                | DM message edited            |
+| `DMMessageDeleted`       | `messageId`                                                       | DM message deleted           |
+| `DMUserTyping`           | `{userId, username, dmChannelId}`                                 | User typing in DM            |
+| `DMUserStoppedTyping`    | `{userId, dmChannelId}`                                           | User stopped typing in DM    |
+| `DMMarkAsRead`           | `{dmChannelId, lastReadMessageId}`                                | DM marked as read            |
 | `Error`                  | `message`                                                         | Error message                |
 
 ---
@@ -544,9 +584,13 @@ room.addListener(roomListener)
 | `GuildMember`      | Guild membership (user, guild, nickname)                  |
 | `GuildMemberRole`  | Member role assignments                                   |
 | `Role`             | Guild roles with permissions                              |
-| `MessageReaction`  | Emoji reactions on messages                               |
-| `ChannelReadState` | Unread message tracking                                   |
-| `GuildInvite`      | Invite links                                              |
+| `MessageReaction`     | Emoji reactions on messages                               |
+| `MessageMention`      | @mentions tracking with read status                       |
+| `ChannelReadState`    | Unread message tracking                                   |
+| `GuildInvite`         | Invite links                                              |
+| `Friendship`          | Friend relationships (Pending, Accepted, Blocked)         |
+| `DirectMessageChannel`| DM channels between users (User1Id < User2Id constraint)  |
+| `DirectMessage`       | DM messages with soft delete                              |
 
 ### Permission Bitfield
 
@@ -662,15 +706,18 @@ await connection.invoke("JoinChannel", "channel-guid");
 - ✅ Profile photos (auto-resize to 256x256 WebP)
 - ✅ Role-based permissions (custom roles, owner/general defaults)
 - ✅ Message reactions and pinning
+- ✅ @Mentions with unread tracking
 - ✅ Typing indicators
-- ✅ User presence (online/offline/idle/dnd)
+- ✅ User presence (online/offline/idle/dnd/invisible)
 - ✅ Guild invites
 - ✅ Unread message tracking
+- ✅ Direct Messages (1-1 private messaging)
+- ✅ Friends System (add, accept, decline, block)
 - ✅ CI/CD with Blue-Green deployment
 
 ## Upcoming Features
 
-- Direct Messages & Friends
+- Audit logs
+- Notification settings
 - Push notifications
 - Message search
-- Audit logs

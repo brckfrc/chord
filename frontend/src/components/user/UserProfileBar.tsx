@@ -251,20 +251,16 @@ export function UserProfileBar({ compact = false }: UserProfileBarProps) {
                         />
                     )}
                 </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                        {user?.displayName || "User"}
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                    {user?.username || "User"}
+                </p>
+                {user?.customStatus && (
+                    <p className="text-xs text-muted-foreground truncate">
+                        {user.customStatus}
                     </p>
-                    {user?.customStatus ? (
-                        <p className="text-xs text-muted-foreground truncate">
-                            {user.customStatus}
-                        </p>
-                    ) : user?.status !== undefined ? (
-                        <p className="text-xs text-muted-foreground truncate">
-                            {getStatusText(user.status)}
-                        </p>
-                    ) : null}
-                </div>
+                )}
+            </div>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
                 <Button

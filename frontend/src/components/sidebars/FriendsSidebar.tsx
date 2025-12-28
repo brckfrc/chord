@@ -74,7 +74,7 @@ function DMItem({ dm }: { dm: DMDto }) {
         >
             <div className="relative flex-shrink-0">
                 <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-                    {otherUser.displayName.charAt(0).toUpperCase()}
+                    {otherUser.username.charAt(0).toUpperCase()}
                 </div>
                 <div
                     className={cn(
@@ -85,7 +85,7 @@ function DMItem({ dm }: { dm: DMDto }) {
             </div>
             <div className="flex-1 text-left min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium truncate">{otherUser.displayName}</p>
+                    <p className="text-sm font-medium truncate">{otherUser.username}</p>
                     {dm.lastMessage && (
                         <span className="text-xs text-muted-foreground flex-shrink-0">
                             {formatTime(dm.lastMessage.createdAt)}

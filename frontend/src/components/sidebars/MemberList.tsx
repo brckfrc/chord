@@ -56,7 +56,7 @@ interface MemberItemProps {
 function MemberItem({ member, isCurrentUser }: MemberItemProps) {
   if (!member.user) return null
 
-  const displayName = member.nickname || member.user.displayName || member.user.username
+  const displayName = member.nickname || member.user.username
   const status = member.user.status ?? UserStatus.Offline
   
   // For display purposes: if status is Invisible and not current user, show as Offline
@@ -132,7 +132,8 @@ export function MemberList() {
         dispatch(fetchGuildMembers(guildId))
       }
     }
-  }, [guildId, dispatch]) // Only depend on guildId and dispatch
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guildId, dispatch])
 
   // PresenceHub event listeners for online/offline status
   useEffect(() => {

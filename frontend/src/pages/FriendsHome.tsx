@@ -4,6 +4,8 @@ import {
   fetchFriends,
   fetchOnlineFriends,
   fetchPendingRequests,
+  acceptFriendRequest,
+  declineFriendRequest,
   setActiveTab,
 } from "@/store/slices/friendsSlice"
 import { Button } from "@/components/ui/button"
@@ -11,6 +13,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Plus, User } from "lucide-react"
 import { AddFriendModal } from "@/components/modals/AddFriendModal"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 import type { FriendDto, FriendRequestDto } from "@/lib/api/friends"
 
 // UserStatus enum values
@@ -46,7 +49,7 @@ function FriendItem({ friend }: { friend: FriendDto }) {
     >
       <div className="relative flex-shrink-0">
         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-          {friend.displayName.charAt(0).toUpperCase()}
+          {friend.username.charAt(0).toUpperCase()}
         </div>
         <div
           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-secondary ${getStatusColor(
@@ -55,38 +58,66 @@ function FriendItem({ friend }: { friend: FriendDto }) {
         />
       </div>
       <div className="flex-1 text-left min-w-0">
-        <p className="text-sm font-medium truncate">{friend.displayName}</p>
-        <p className="text-xs text-muted-foreground truncate">
-          {friend.customStatus || friend.username}
-        </p>
+        <p className="text-sm font-medium truncate">{friend.username}</p>
+        {friend.customStatus && (
+          <p className="text-xs text-muted-foreground truncate">
+            {friend.customStatus}
+          </p>
+        )}
       </div>
     </button>
   )
 }
 
 function PendingRequestItem({ request }: { request: FriendRequestDto }) {
+  const dispatch = useAppDispatch()
+  const { toast } = useToast()
   const requester = request.requester
-  const displayName = requester?.displayName || "Unknown User"
+  const username = requester?.username || "Unknown User"
 
-  const handleAccept = () => {
-    // TODO: Implement when backend is ready
-    console.log("Accept request", request.id)
+  const handleAccept = async () => {
+    try {
+      await dispatch(acceptFriendRequest(request.id)).unwrap()
+      toast({
+        title: "Friend request accepted",
+        description: `You are now friends with ${username}`,
+      })
+      // Refresh friends list
+      dispatch(fetchFriends())
+      dispatch(fetchOnlineFriends())
+    } catch (error: any) {
+      toast({
+        title: "Failed to accept request",
+        description: error || "An error occurred",
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleDecline = () => {
-    // TODO: Implement when backend is ready
-    console.log("Decline request", request.id)
+  const handleDecline = async () => {
+    try {
+      await dispatch(declineFriendRequest(request.id)).unwrap()
+      toast({
+        title: "Friend request declined",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Failed to decline request",
+        description: error || "An error occurred",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
     <div className="w-full px-4 py-2 flex items-center gap-3 hover:bg-accent transition-colors rounded group">
       <div className="relative flex-shrink-0">
         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-          {displayName.charAt(0).toUpperCase()}
+          {username.charAt(0).toUpperCase()}
         </div>
       </div>
       <div className="flex-1 text-left min-w-0">
-        <p className="text-sm font-medium truncate">{displayName}</p>
+        <p className="text-sm font-medium truncate">{username}</p>
         <p className="text-xs text-muted-foreground">Pending request</p>
       </div>
       <div className="flex gap-2 flex-shrink-0">

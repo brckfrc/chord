@@ -833,61 +833,69 @@ TURN_REALM=chord.local
 ## 🏗️ FAZ 9.5: DIRECT MESSAGES & FRIENDS ⭐ YENİ
 
 **Süre**: ~3-4 gün  
-**DURUM**: ⏳ Başlanmadı  
+**DURUM**: ✅ %100 TAMAMLANDI  
 **Neden bu aşamada**: Permissions hazır, private messaging için rol sistemi gerekli
 
 ### Backend Görevler
 
 #### 1. Friend System
 
-- [ ] Friendship entity (Id, RequesterId, AddresseeId, Status, CreatedAt, AcceptedAt)
-- [ ] FriendshipStatus enum (Pending, Accepted, Blocked)
-- [ ] Unique index: (RequesterId, AddresseeId)
-- [ ] API: POST /friends/request
-- [ ] POST /friends/{id}/accept, /decline, /block
-- [ ] DELETE /friends/{id} (unfriend)
-- [ ] GET /friends, /friends/pending, /friends/blocked
-- [ ] Migration: CreateFriendshipsTable
+- [x] Friendship entity (Id, RequesterId, AddresseeId, Status, CreatedAt, AcceptedAt) ✅
+- [x] FriendshipStatus enum (Pending, Accepted, Blocked) ✅
+- [x] Unique index: (RequesterId, AddresseeId) ✅
+- [x] API: POST /friends/request ✅
+- [x] POST /friends/{id}/accept, /decline, /block ✅
+- [x] DELETE /friends/{id} (unfriend) ✅
+- [x] GET /friends, /friends/pending, /friends/blocked ✅
+- [x] Migration: CreateFriendshipsTable ✅
+- [x] IFriendshipService + FriendshipService implementation ✅
+- [x] FriendsController (9 endpoints) ✅
 
 #### 2. Direct Messages
 
-- [ ] ChannelType.DirectMessage ekle
-- [ ] DirectMessageChannel entity (ChannelId, User1Id, User2Id)
-- [ ] Unique index: (User1Id, User2Id) where User1Id < User2Id
-- [ ] API: POST /users/{userId}/dm (create/get DM channel)
-- [ ] GET /users/me/dms (list all DM channels)
-- [ ] Permission check: Sadece friends DM gönderebilir
-- [ ] ChatHub: DM channel'lar için aynı message logic
-- [ ] Migration: AddDirectMessageSupport
+- [x] DirectMessageChannel entity (Id, User1Id, User2Id) ✅
+- [x] DirectMessage entity (Id, ChannelId, SenderId, Content, soft delete) ✅
+- [x] Unique index: (User1Id, User2Id) where User1Id < User2Id ✅
+- [x] API: POST /dms/{userId} (create/get DM channel) ✅
+- [x] GET /dms (list all DM channels) ✅
+- [x] GET /dms/{dmId}/messages (paginated) ✅
+- [x] POST /dms/{dmId}/messages (send DM) ✅
+- [x] PUT/DELETE /dms/{dmId}/messages/{id} (edit/delete) ✅
+- [x] POST /dms/{dmId}/mark-read (unread tracking) ✅
+- [x] Block check: Blocked users can't send DMs ✅
+- [x] ChatHub: DM SignalR events (JoinDM, SendDMMessage, TypingInDM, MarkDMAsRead) ✅
+- [x] Migration: CreateDirectMessagesAndFriendshipsTable ✅
+- [x] IDMChannelService + DMChannelService ✅
+- [x] IDirectMessageService + DirectMessageService ✅
+- [x] DMController (7 endpoints) ✅
 
 ### Frontend Görevler
 
 - [x] FriendsLayout component (GuildSidebar + FriendsSidebar + Content) ✅
-- [x] FriendsSidebar component (Online/All/Pending tabs, friend list) ✅
+- [x] FriendsSidebar component (Online/All/Pending tabs, friend list, DM list) ✅
 - [x] FriendsHome component (welcome screen + online friends grid) ✅
 - [x] AddFriendModal (username ile ekleme) ✅
 - [x] Online status indicator (friend list) ✅
-- [x] Redux slice ve API client (mock data ile, backend hazır olunca değiştirilecek) ✅
+- [x] Redux slices: friendsSlice, dmsSlice ✅
+- [x] API clients: friends.ts, dms.ts (full integration) ✅
 - [x] DM item hover effects ✅
-- [ ] DMChannelList (DM listesi, son mesaj önizlemesi) - Backend hazır olunca
-- [ ] DMChannel route (/dm/:channelId) - Backend hazır olunca
-- [ ] Accept/decline friend request butonları - Backend hazır olunca (UI hazır)
-
-### 📝 Backend Integration TODO'lar
-
-**Friends API (Backend hazır olunca):**
-
-- [ ] Replace mock data with real API calls in `frontend/src/lib/api/friends.ts`
-- [ ] Replace mock data with real API calls in `frontend/src/lib/api/dms.ts`
-- [ ] Implement friend request accept/decline handlers
-- [ ] Implement DM navigation handlers
+- [x] DMView component (DM conversation UI) ✅
+- [x] DMChannel route (/me/dm/:dmId) ✅
+- [x] Accept/decline friend request handlers ✅
+- [x] Username display (displayName → username globally) ✅
+- [x] Toast notifications (friend actions) ✅
 
 ### Deliverables
 
-✅ Arkadaş ekleme/kabul etme çalışıyor  
-✅ DM channel oluşturma çalışıyor  
-✅ Friend-only DM kontrolü çalışıyor  
-✅ Frontend'de DM UI tamamlandı
+✅ Arkadaş ekleme/kabul etme/reddetme çalışıyor  
+✅ Arkadaş engelleme/kaldırma çalışıyor  
+✅ DM channel oluşturma/listeleme çalışıyor  
+✅ DM mesajlaşma (send, edit, delete) çalışıyor  
+✅ DM unread tracking çalışıyor  
+✅ Block check: Blocked users can't DM ✅  
+✅ SignalR real-time DM events çalışıyor  
+✅ Frontend tam entegre (API + UI)  
+✅ Username görünümü uygulandı (guild'lerde nickname priority)
 
 ---
 
@@ -1029,48 +1037,66 @@ TURN_REALM=chord.local
 10. **Faz 7** ✅ File Upload & Video Support
 11. **Faz 8** ✅ Voice Channels (WebRTC + LiveKit)
 12. **Faz 9** ✅ Permissions & Roles + Guild Settings + Profile Photos
-13. **Faz 9.5** 🟡 **SONRAKİ ADIM** → DMs + Friends
-14. **Faz 10-11** → Testing, audit log, notifications, security
-15. **Faz 12** → Production deployment
+13. **Faz 9.5** ✅ DMs + Friends (Tamamlandı!)
+14. **Faz 10** 🟡 **SONRAKİ ADIM** → Testing + Audit Log
+15. **Faz 11** → Security + Notification Settings
+16. **Faz 12** → Production deployment
 
 ---
 
-## 🚀 SONRAKİ ADIM: FAZ 9.5
+## 🚀 SONRAKİ ADIM: FAZ 10
 
 **Hemen yapılacaklar:**
 
-### FAZ 9.5: Direct Messages & Friends
+### FAZ 10: Testing & Observability
 
-1. Friendship entity (RequesterId, AddresseeId, Status)
-2. Friend request API (send, accept, decline)
-3. DM Channel entity (private messaging)
-4. DM API + SignalR integration
-5. Frontend: Friends list, DM conversations
+1. **Unit testler düzelt ve genişlet** (AuthService, GuildService, ChannelService)
+2. **Integration testler** (WebApplicationFactory)
+3. **Audit Log sistemi**:
+   - AuditLog entity (kim ne yaptı, ne zaman)
+   - AuditAction enum (member join/kick, channel create, message delete, etc.)
+   - Middleware: Önemli işlemleri otomatik logla
+   - API: GET /guilds/{id}/audit-logs
+   - Frontend: AuditLogPanel (guild settings)
+4. **OpenTelemetry** kurulumu (traces, metrics)
+5. **Health checks** genişletme (Redis, MinIO)
 
-**Tahmini süre**: ~3-4 gün  
-**Test edilebilir**: DM ve arkadaşlık sistemi çalışacak
+**Tahmini süre**: ~4-5 gün  
+**Test edilebilir**: Audit log görüntüleme, coverage raporları
 
 ---
 
-## ✅ SON TAMAMLANAN: FAZ 9
+## ✅ SON TAMAMLANAN: FAZ 9.5
 
-### Permissions & Roles
+### Direct Messages & Friends
 
-- Bitfield-based GuildPermission (19 permission flags)
-- Role entity with position hierarchy
-- System roles: owner (full access), general (basic permissions)
-- RolesController with full CRUD API
-- Frontend: Role management UI with drag-drop reorder
-- Guild Settings modal (Overview, Roles, Members tabs)
+**Friend System:**
+- Friendship entity (RequesterId, AddresseeId, Status)
+- FriendshipStatus enum (Pending, Accepted, Blocked)
+- FriendsController: 9 endpoints (send, accept, decline, block, unfriend, list)
+- IFriendshipService + FriendshipService (business logic)
 
-### Profile Photos
+**Direct Messages:**
+- DirectMessageChannel entity (User1Id, User2Id)
+- DirectMessage entity (content, soft delete)
+- DMController: 7 endpoints (create/get DM, list DMs, send/edit/delete messages, mark read)
+- IDMChannelService + IDirectMessageService
+- Block check: Blocked users cannot send DMs
+- Unread tracking per DM channel
 
-- User avatar upload (POST /api/upload/avatar)
-- Guild icon upload (POST /api/upload/guild/{id}/icon)
-- Server-side image processing (ImageSharp)
-- Auto-resize to 256x256, convert to WebP
-- Frontend: AvatarUpload component
-- Integration in User Settings and Guild Settings
+**SignalR Events:**
+- JoinDM, LeaveDM
+- SendDMMessage, TypingInDM, StopTypingInDM, MarkDMAsRead
+- Server → Client: DMReceiveMessage, DMMessageEdited, DMMessageDeleted, DMUserTyping, DMUserStoppedTyping, DMMarkAsRead
+
+**Frontend:**
+- FriendsHome: Online/All/Pending tabs
+- FriendsSidebar: Friends + DM list
+- DMView: Full conversation UI
+- Accept/decline friend requests with toast notifications
+- Username display globally (displayName replaced)
+- Redux: friendsSlice, dmsSlice
+- API clients: Full backend integration
 
 ---
 
@@ -1090,8 +1116,9 @@ TURN_REALM=chord.local
 | Permissions & Roles        | 9   | Orta      | Evet (Guild UI)      | ✅    |
 | Guild Settings Modal       | 9   | Kolay     | Evet (Permissions)   | ✅    |
 | Profile Photos             | 9   | Kolay     | Evet (MinIO)         | ✅    |
-| DMs                        | 9.5 | Orta      | Evet (Permissions)   | ⏳    |
-| Friends                    | 9.5 | Orta      | Evet (Permissions)   | ⏳    |
+| DMs                        | 9.5 | Orta      | Evet (Permissions)   | ✅    |
+| Friends                    | 9.5 | Orta      | Evet (Permissions)   | ✅    |
+| Username Display Fix       | 9.5 | Çok Kolay | Evet (Full UI)       | ✅    |
 | Audit Log                  | 10  | Kolay     | Hayır                | ⏳    |
 | Notification Settings      | 11  | Orta      | Evet (Full UI)       | ⏳    |
 

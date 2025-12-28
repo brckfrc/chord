@@ -75,6 +75,9 @@ builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IVoiceService, VoiceService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IFriendshipService, FriendshipService>();
+builder.Services.AddScoped<IDMChannelService, DMChannelService>();
+builder.Services.AddScoped<IDirectMessageService, DirectMessageService>();
 
 // LiveKit Configuration
 var liveKitApiKey = Environment.GetEnvironmentVariable("LIVEKIT_API_KEY") ?? "devkey";

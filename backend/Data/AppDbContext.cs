@@ -20,6 +20,9 @@ public class AppDbContext : DbContext
     public DbSet<ChannelReadState> ChannelReadStates { get; set; }
     public DbSet<Role> Roles { get; set; }
     public DbSet<GuildMemberRole> GuildMemberRoles { get; set; }
+    public DbSet<Friendship> Friendships { get; set; }
+    public DbSet<DirectMessageChannel> DirectMessageChannels { get; set; }
+    public DbSet<DirectMessage> DirectMessages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -234,6 +237,74 @@ public class AppDbContext : DbContext
             entity.HasIndex(gmr => new { gmr.GuildId, gmr.UserId });
 
             entity.Property(e => e.AssignedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // Friendship configuration
+        modelBuilder.Entity<Friendship>(entity =>
+        {
+            entity.HasOne(f => f.Requester)
+                .WithMany()
+                .HasForeignKey(f => f.RequesterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(f => f.Addressee)
+                .WithMany()
+                .HasForeignKey(f => f.AddresseeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Unique index: Only one friendship record per user pair (regardless of direction)
+            entity.HasIndex(f => new { f.RequesterId, f.AddresseeId }).IsUnique();
+
+            entity.HasIndex(f => f.RequesterId);
+            entity.HasIndex(f => f.AddresseeId);
+            entity.HasIndex(f => new { f.RequesterId, f.Status });
+            entity.HasIndex(f => new { f.AddresseeId, f.Status });
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // DirectMessageChannel configuration
+        modelBuilder.Entity<DirectMessageChannel>(entity =>
+        {
+            entity.HasOne(dmc => dmc.User1)
+                .WithMany()
+                .HasForeignKey(dmc => dmc.User1Id)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(dmc => dmc.User2)
+                .WithMany()
+                .HasForeignKey(dmc => dmc.User2Id)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Unique constraint: Only one DM channel per user pair (User1Id < User2Id)
+            entity.HasIndex(dmc => new { dmc.User1Id, dmc.User2Id }).IsUnique();
+
+            entity.HasIndex(dmc => dmc.User1Id);
+            entity.HasIndex(dmc => dmc.User2Id);
+            entity.HasIndex(dmc => dmc.LastMessageAt);
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // DirectMessage configuration
+        modelBuilder.Entity<DirectMessage>(entity =>
+        {
+            entity.HasOne(dm => dm.Channel)
+                .WithMany(dmc => dmc.Messages)
+                .HasForeignKey(dm => dm.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(dm => dm.Sender)
+                .WithMany()
+                .HasForeignKey(dm => dm.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(dm => dm.ChannelId);
+            entity.HasIndex(dm => dm.SenderId);
+            entity.HasIndex(dm => dm.CreatedAt);
+            entity.HasIndex(dm => new { dm.ChannelId, dm.CreatedAt });
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
     }
 }

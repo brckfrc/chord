@@ -21,6 +21,8 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **Real-Time Messaging** - Instant messaging with SignalR WebSockets
 - **Guilds & Channels** - Discord-like servers with text and voice channels
 - **Voice & Video Chat** - LiveKit SFU for 10+ users with speaking indicators
+- **Direct Messages** - 1-1 private messaging with unread tracking
+- **Friends System** - Add friends, accept/decline requests, block users
 - **File Upload** - Images, videos, documents (25MB limit)
 - **Profile Photos** - Avatars and guild icons (auto-resized to 256x256 WebP)
 - **Role-Based Permissions** - Custom roles with granular permissions
@@ -28,7 +30,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **User Presence** - Online, Idle, DND, Invisible, Offline statuses
 - **Guild Invites** - Shareable invite links
 - **Typing Indicators** - See who's typing
-- **Unread Tracking** - Per-channel unread counts
+- **Unread Tracking** - Per-channel and per-DM unread counts
 
 ---
 

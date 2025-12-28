@@ -64,6 +64,7 @@ export function MentionsPanel({ open, onClose }: MentionsPanelProps) {
         }
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isLoading, mentions.length, channels, dispatch])
 
   const handleMentionClick = async (mention: MessageMentionDto) => {

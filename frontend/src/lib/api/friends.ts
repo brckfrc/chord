@@ -1,4 +1,4 @@
-// import { api } from "../api" // TODO: Uncomment when backend is ready
+import { api } from "../api"
 import { type UserDto } from "./auth"
 
 export interface FriendDto {
@@ -10,91 +10,96 @@ export interface FriendDto {
   avatarUrl?: string
 }
 
-export interface FriendRequestDto {
+export interface FriendshipResponseDto {
   id: string
   requesterId: string
   addresseeId: string
-  status: "Pending" | "Accepted" | "Blocked"
+  status: number // FriendshipStatus: 0 = Pending, 1 = Accepted, 2 = Blocked
   createdAt: string
-  requester?: UserDto
-  addressee?: UserDto
+  acceptedAt?: string
+  otherUser: UserDto
 }
 
-// Mock data for now - will be replaced with real API calls when backend is ready
-const mockFriends: FriendDto[] = [
-  {
-    id: "mock-1",
-    username: "johndoe",
-    displayName: "John Doe",
-    status: 0, // Online
-    customStatus: "Playing games",
-  },
-  {
-    id: "mock-2",
-    username: "janedoe",
-    displayName: "Jane Doe",
-    status: 1, // Idle
-  },
-  {
-    id: "mock-3",
-    username: "bobsmith",
-    displayName: "Bob Smith",
-    status: 4, // Offline
-  },
-]
-
-const mockPendingRequests: FriendRequestDto[] = []
+export interface FriendRequestDto {
+  username: string
+}
 
 export const friendsApi = {
-  // Mock functions - will be replaced with real API calls
-  getFriends: async (): Promise<FriendDto[]> => {
-    // TODO: Replace with: const response = await api.get<FriendDto[]>("/friends")
-    // return response.data
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(mockFriends), 500)
-    })
+  /**
+   * Get all accepted friends
+   */
+  getFriends: async (): Promise<FriendshipResponseDto[]> => {
+    const response = await api.get<FriendshipResponseDto[]>("/friends")
+    return response.data
   },
 
-  getOnlineFriends: async (): Promise<FriendDto[]> => {
-    // TODO: Replace with real API call
+  /**
+   * Get online friends only (status = 0)
+   */
+  getOnlineFriends: async (): Promise<FriendshipResponseDto[]> => {
     const friends = await friendsApi.getFriends()
-    return friends.filter((f) => f.status === 0) // Online status
+    return friends.filter((f) => f.otherUser.status === 0)
   },
 
-  getPendingRequests: async (): Promise<FriendRequestDto[]> => {
-    // TODO: Replace with: const response = await api.get<FriendRequestDto[]>("/friends/pending")
-    // return response.data
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(mockPendingRequests), 500)
-    })
+  /**
+   * Get all pending friend requests (both sent and received)
+   */
+  getPendingRequests: async (): Promise<FriendshipResponseDto[]> => {
+    const response = await api.get<FriendshipResponseDto[]>("/friends/pending")
+    return response.data
   },
 
-  sendFriendRequest: async (_username: string): Promise<void> => {
-    // TODO: Replace with: await api.post("/friends/request", { username })
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(), 500)
-    })
+  /**
+   * Get all blocked users
+   */
+  getBlockedUsers: async (): Promise<FriendshipResponseDto[]> => {
+    const response = await api.get<FriendshipResponseDto[]>("/friends/blocked")
+    return response.data
   },
 
-  acceptFriendRequest: async (_requestId: string): Promise<void> => {
-    // TODO: Replace with: await api.post(`/friends/${requestId}/accept`)
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(), 500)
-    })
+  /**
+   * Send a friend request by username
+   */
+  sendFriendRequest: async (username: string): Promise<FriendshipResponseDto> => {
+    const response = await api.post<FriendshipResponseDto>("/friends/request", { username })
+    return response.data
   },
 
-  declineFriendRequest: async (_requestId: string): Promise<void> => {
-    // TODO: Replace with: await api.post(`/friends/${requestId}/decline`)
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(), 500)
-    })
+  /**
+   * Accept a pending friend request
+   */
+  acceptFriendRequest: async (requestId: string): Promise<FriendshipResponseDto> => {
+    const response = await api.post<FriendshipResponseDto>(`/friends/${requestId}/accept`)
+    return response.data
   },
 
-  removeFriend: async (_friendId: string): Promise<void> => {
-    // TODO: Replace with: await api.delete(`/friends/${friendId}`)
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(), 500)
-    })
+  /**
+   * Decline a pending friend request
+   */
+  declineFriendRequest: async (requestId: string): Promise<void> => {
+    await api.post(`/friends/${requestId}/decline`)
+  },
+
+  /**
+   * Remove a friend
+   */
+  removeFriend: async (friendId: string): Promise<void> => {
+    await api.delete(`/friends/${friendId}`)
+  },
+
+  /**
+   * Block a user
+   */
+  blockUser: async (userId: string): Promise<FriendshipResponseDto> => {
+    const response = await api.post<FriendshipResponseDto>(`/friends/${userId}/block`)
+    return response.data
+  },
+
+  /**
+   * Unblock a user
+   */
+  unblockUser: async (userId: string): Promise<void> => {
+    await api.delete(`/friends/${userId}/block`)
   },
 }
 

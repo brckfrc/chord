@@ -194,7 +194,7 @@ export function MessageItem({
                 <div className="flex-shrink-0 w-10">
                     {showAvatar ? (
                         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
-                            {message.author.displayName.charAt(0).toUpperCase()}
+                            {message.author.username.charAt(0).toUpperCase()}
                         </div>
                     ) : null}
                 </div>
@@ -205,7 +205,7 @@ export function MessageItem({
                     {showAuthor && (
                         <div className="flex items-baseline gap-2 mb-1">
                             <span className="text-sm font-semibold text-foreground">
-                                {message.author.displayName}
+                                {message.author.username}
                             </span>
                             <span className="text-xs text-muted-foreground">
                                 {formatTime(message.createdAt)}

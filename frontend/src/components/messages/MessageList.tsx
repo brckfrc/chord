@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useMemo } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import { fetchMessages } from "@/store/slices/messagesSlice"
@@ -19,7 +19,7 @@ export function MessageList({ channelId }: MessageListProps) {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const isLoadingMoreRef = useRef(false)
 
-  const messages = messagesByChannel[channelId] || []
+  const messages = useMemo(() => messagesByChannel[channelId] || [], [messagesByChannel, channelId])
   const hasMore = hasMoreByChannel[channelId] ?? false
   const nextCursor = nextCursorByChannel[channelId]
   const hasFetchedRef = useRef<string | null>(null)
@@ -30,7 +30,8 @@ export function MessageList({ channelId }: MessageListProps) {
       hasFetchedRef.current = channelId
       dispatch(fetchMessages({ channelId, limit: 50 }))
     }
-  }, [channelId, dispatch]) // Removed messagesByChannel from dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channelId, dispatch])
 
   // Reset fetch flag when channel changes
   useEffect(() => {

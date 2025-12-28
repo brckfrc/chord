@@ -151,7 +151,7 @@ function VoiceUserItem({ user, channelId, isCurrentUser, isSpeaking = false }: V
           "w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-xs transition-all",
           isSpeaking && "ring-2 ring-green-500 ring-offset-1 ring-offset-background"
         )}>
-          {user.displayName.charAt(0).toUpperCase()}
+          {user.username.charAt(0).toUpperCase()}
         </div>
         <div
           className={cn(
@@ -170,7 +170,7 @@ function VoiceUserItem({ user, channelId, isCurrentUser, isSpeaking = false }: V
         <p className={cn(
           "text-xs font-medium truncate",
           isSpeaking && "text-green-400"
-        )}>{user.displayName}</p>
+        )}>{user.username}</p>
         {isSpeaking && (
           <p className="text-[10px] text-green-500 truncate">Speaking</p>
         )}

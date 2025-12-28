@@ -3,6 +3,7 @@ import {
   friendsApi,
   type FriendDto,
   type FriendRequestDto,
+  type FriendshipResponseDto,
 } from "@/lib/api/friends"
 
 interface FriendsState {
@@ -76,6 +77,34 @@ export const sendFriendRequest = createAsyncThunk(
   }
 )
 
+export const acceptFriendRequest = createAsyncThunk(
+  "friends/acceptFriendRequest",
+  async (requestId: string, { rejectWithValue }) => {
+    try {
+      await friendsApi.acceptFriendRequest(requestId)
+      return requestId
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to accept friend request"
+      )
+    }
+  }
+)
+
+export const declineFriendRequest = createAsyncThunk(
+  "friends/declineFriendRequest",
+  async (requestId: string, { rejectWithValue }) => {
+    try {
+      await friendsApi.declineFriendRequest(requestId)
+      return requestId
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to decline friend request"
+      )
+    }
+  }
+)
+
 const friendsSlice = createSlice({
   name: "friends",
   initialState,
@@ -140,6 +169,38 @@ const friendsSlice = createSlice({
         state.isLoading = false
       })
       .addCase(sendFriendRequest.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload as string
+      })
+      // Accept Friend Request
+      .addCase(acceptFriendRequest.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(acceptFriendRequest.fulfilled, (state, action) => {
+        state.isLoading = false
+        // Remove from pending requests
+        state.pendingRequests = state.pendingRequests.filter(
+          (req) => req.id !== action.payload
+        )
+      })
+      .addCase(acceptFriendRequest.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload as string
+      })
+      // Decline Friend Request
+      .addCase(declineFriendRequest.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(declineFriendRequest.fulfilled, (state, action) => {
+        state.isLoading = false
+        // Remove from pending requests
+        state.pendingRequests = state.pendingRequests.filter(
+          (req) => req.id !== action.payload
+        )
+      })
+      .addCase(declineFriendRequest.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload as string
       })

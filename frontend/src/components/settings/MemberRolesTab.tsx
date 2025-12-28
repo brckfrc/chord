@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { fetchGuildRoles, assignRoleToMember, removeRoleFromMember } from "@/store/slices/rolesSlice"
 import { usePermission, GuildPermission } from "@/hooks/usePermission"
@@ -30,14 +30,7 @@ export function MemberRolesTab({ guildId }: MemberRolesTabProps) {
   const allRoles = rolesByGuild[guildId] || []
   const canManageRoles = hasPermission(GuildPermission.ManageRoles)
 
-  useEffect(() => {
-    if (guildId) {
-      dispatch(fetchGuildRoles(guildId))
-      loadMembers()
-    }
-  }, [guildId, dispatch])
-
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     setIsLoading(true)
     try {
       const memberList = await guildsApi.getGuildMembers(guildId)
@@ -60,7 +53,14 @@ export function MemberRolesTab({ guildId }: MemberRolesTabProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [guildId])
+
+  useEffect(() => {
+    if (guildId) {
+      dispatch(fetchGuildRoles(guildId))
+      loadMembers()
+    }
+  }, [guildId, dispatch, loadMembers])
 
   const handleAssignRole = async (userId: string, roleId: string) => {
     try {

@@ -18,6 +18,7 @@ public class ChatHub : Hub
     private readonly IVoiceService _voiceService;
     private readonly IChannelService _channelService;
     private readonly ILogger<ChatHub> _logger;
+    private readonly IDMChannelService _dmChannelService;
 
     public ChatHub(
         AppDbContext context,
@@ -27,6 +28,7 @@ public class ChatHub : Hub
         IMentionService mentionService,
         IVoiceService voiceService,
         IChannelService channelService,
+        IDMChannelService dmChannelService,
         ILogger<ChatHub> logger)
     {
         _context = context;
@@ -36,6 +38,7 @@ public class ChatHub : Hub
         _mentionService = mentionService;
         _voiceService = voiceService;
         _channelService = channelService;
+        _dmChannelService = dmChannelService;
         _logger = logger;
     }
 
@@ -473,6 +476,77 @@ public class ChatHub : Hub
         // For now, this returns empty - frontend will track based on join/leave events
 
         return Task.FromResult(new List<object>());
+    }
+
+    // ==================== DIRECT MESSAGE METHODS ====================
+
+    /// <summary>
+    /// Join a DM channel to receive messages
+    /// </summary>
+    public async Task JoinDM(string dmId)
+    {
+        var userId = GetUserId();
+
+        try
+        {
+            // Verify user has access to the DM channel
+            await _dmChannelService.GetDMByIdAsync(userId, Guid.Parse(dmId));
+
+            // Add to DM SignalR group
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"dm_{dmId}");
+
+            _logger.LogInformation("User {UserId} joined DM {DmId}", userId, dmId);
+
+            await Clients.Caller.SendAsync("JoinedDM", dmId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "User {UserId} failed to join DM {DmId}", userId, dmId);
+            await Clients.Caller.SendAsync("Error", $"Failed to join DM: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Leave a DM channel
+    /// </summary>
+    public async Task LeaveDM(string dmId)
+    {
+        var userId = GetUserId();
+
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"dm_{dmId}");
+
+        _logger.LogInformation("User {UserId} left DM {DmId}", userId, dmId);
+
+        await Clients.Caller.SendAsync("LeftDM", dmId);
+    }
+
+    /// <summary>
+    /// Send typing indicator to a DM channel
+    /// </summary>
+    public async Task TypingInDM(string dmId)
+    {
+        var userId = GetUserId();
+        var username = Context.User?.FindFirstValue(ClaimTypes.Name) 
+            ?? Context.User?.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName) 
+            ?? "Unknown";
+
+        // Broadcast to the other user in the DM (not to self)
+        await Clients.OthersInGroup($"dm_{dmId}").SendAsync("DMUserTyping", new { userId, username, dmId });
+
+        _logger.LogDebug("User {UserId} is typing in DM {DmId}", userId, dmId);
+    }
+
+    /// <summary>
+    /// Stop typing indicator for a DM channel
+    /// </summary>
+    public async Task StopTypingInDM(string dmId)
+    {
+        var userId = GetUserId();
+
+        // Broadcast to the other user in the DM (not to self)
+        await Clients.OthersInGroup($"dm_{dmId}").SendAsync("DMUserStoppedTyping", new { userId, dmId });
+
+        _logger.LogDebug("User {UserId} stopped typing in DM {DmId}", userId, dmId);
     }
 
     // ==================== PIN METHODS ====================
