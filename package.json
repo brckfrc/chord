@@ -1,0 +1,14 @@
+{
+  "name": "chord",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "lint:frontend": "cd frontend && npm run lint",
+    "build:frontend": "cd frontend && npm run build",
+    "lint:backend": "cd backend && dotnet build --no-restore"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3"
+  }
+}

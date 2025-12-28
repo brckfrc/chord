@@ -122,6 +122,28 @@ chord/
 
 ## Development
 
+### Initial Setup
+
+```bash
+git clone https://github.com/brckfrc/chord.git
+cd chord
+npm install      # Installs husky (pre-commit hooks)
+```
+
+### Pre-commit Hooks
+
+This project uses **Husky** + **lint-staged** for automatic code quality checks:
+
+```
+git commit → pre-commit hook → ESLint on staged files
+                                    ↓
+                          Error? → Commit blocked ❌
+                          Only warnings? → Commit OK ✅
+```
+
+- **Errors** block the commit (must be fixed)
+- **Warnings** are allowed (fix later)
+
 ### Backend
 
 ```bash
@@ -135,6 +157,7 @@ dotnet ef database update     # Apply migrations
 
 ```bash
 cd frontend
+npm install      # Install dependencies
 npm run dev      # Development server
 npm run build    # Production build
 npm run lint     # ESLint

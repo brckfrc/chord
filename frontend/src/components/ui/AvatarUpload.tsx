@@ -73,7 +73,7 @@ export function AvatarUpload({
     setIsUploading(true)
     try {
       await onUpload(file)
-    } catch (err) {
+    } catch {
       setError("Upload failed. Please try again.")
       setPreviewUrl(null)
     } finally {

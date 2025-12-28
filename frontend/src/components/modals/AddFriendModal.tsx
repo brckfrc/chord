@@ -63,7 +63,7 @@ export function AddFriendModal({ open, onOpenChange }: AddFriendModalProps) {
           variant: "destructive",
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to send friend request",

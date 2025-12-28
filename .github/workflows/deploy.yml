@@ -1,11 +1,14 @@
 # Chord CD Pipeline
-# Builds and deploys to production on push to main
+# Builds and deploys to production after CI passes on main
 # Uses Blue-Green deployment strategy
 
 name: Deploy
 
 on:
-  push:
+  # Trigger after CI workflow completes on main
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
   workflow_dispatch: # Manual trigger
 
@@ -19,6 +22,8 @@ jobs:
   build-and-push:
     name: Build & Push Images
     runs-on: ubuntu-latest
+    # Only run if CI passed (or manually triggered)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
       packages: write

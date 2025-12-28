@@ -149,7 +149,7 @@ export function UserSettingsModal({ open, onOpenChange }: UserSettingsModalProps
           variant: "destructive",
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update settings",
@@ -169,7 +169,7 @@ export function UserSettingsModal({ open, onOpenChange }: UserSettingsModalProps
         title: "Logged Out",
         description: "You have been logged out successfully.",
       })
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to logout",

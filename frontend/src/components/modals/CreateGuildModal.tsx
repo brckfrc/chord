@@ -94,7 +94,7 @@ export function CreateGuildModal({ open, onOpenChange }: CreateGuildModalProps) 
           variant: "destructive",
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to create guild",
@@ -127,10 +127,11 @@ export function CreateGuildModal({ open, onOpenChange }: CreateGuildModalProps) 
 
       // Navigate to the guild
       navigate(`/channels/${guild.id}/${guild.channels[0]?.id || ""}`)
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to join guild",
+        description: err.response?.data?.message || "Failed to join guild",
         variant: "destructive",
       })
     } finally {

@@ -92,10 +92,11 @@ export function InviteModal({ open, onOpenChange, guildId, onInviteCreated }: In
       if (onInviteCreated) {
         onInviteCreated(invite.code)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to create invite",
+        description: err.response?.data?.message || "Failed to create invite",
         variant: "destructive",
       })
     } finally {
@@ -114,7 +115,7 @@ export function InviteModal({ open, onOpenChange, guildId, onInviteCreated }: In
         title: "Copied!",
         description: "Invite link copied to clipboard",
       })
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to copy invite link",
@@ -132,7 +133,7 @@ export function InviteModal({ open, onOpenChange, guildId, onInviteCreated }: In
         title: "Copied!",
         description: "Invite code copied to clipboard",
       })
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to copy invite code",

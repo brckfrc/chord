@@ -83,3 +83,5 @@ backend/Caddyfile
 
 # Blue-Green Deployment State
 .deploy-state
+node_modules/
+package-lock.json

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useLayoutEffect } from "react"
 import { useAppSelector } from "@/store/hooks"
 import type { VoiceChannelUser } from "@/store/slices/channelsSlice"
 import { Button } from "@/components/ui/button"
@@ -64,8 +64,8 @@ export function UserVoiceModal({
   const modalRef = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState({ top: 0, left: 0 })
 
-  // Position modal above anchor element
-  useEffect(() => {
+  // Position modal above anchor element - useLayoutEffect prevents flickering
+  useLayoutEffect(() => {
     if (open && anchorRef?.current) {
       const anchorRect = anchorRef.current.getBoundingClientRect()
       const modalHeight = 280 // Approximate modal height

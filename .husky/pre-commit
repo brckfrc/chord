@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Run lint on staged frontend files
+cd frontend && npx lint-staged

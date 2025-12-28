@@ -110,7 +110,7 @@ export function StatusUpdateModal({ open, onOpenChange, anchorRef }: StatusUpdat
           })
         }
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update status",

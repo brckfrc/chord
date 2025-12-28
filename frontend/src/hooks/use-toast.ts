@@ -17,6 +17,12 @@ function genId() {
 export function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([])
 
+  const dismiss = useCallback((toastId?: string) => {
+    setToasts((prev) =>
+      prev.filter((t) => t.id !== toastId)
+    )
+  }, [])
+
   const toast = useCallback(
     ({ ...props }: Omit<Toast, "id">) => {
       const id = genId()
@@ -32,14 +38,8 @@ export function useToast() {
         dismiss: () => dismiss(id),
       }
     },
-    []
+    [dismiss]
   )
-
-  const dismiss = useCallback((toastId?: string) => {
-    setToasts((prev) =>
-      prev.filter((t) => t.id !== toastId)
-    )
-  }, [])
 
   return {
     toast,

@@ -99,7 +99,7 @@ export function CreateChannelModal({
           variant: "destructive",
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to create channel",
