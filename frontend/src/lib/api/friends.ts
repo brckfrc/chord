@@ -24,6 +24,11 @@ export interface FriendRequestDto {
   username: string
 }
 
+export interface PendingFriendRequestDto extends FriendshipResponseDto {
+  requester: UserDto
+  addressee: UserDto
+}
+
 export const friendsApi = {
   /**
    * Get all accepted friends
