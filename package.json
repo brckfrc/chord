@@ -7,6 +7,11 @@
     "build:frontend": "cd frontend && npm run build",
     "lint:backend": "cd backend && dotnet build --no-restore"
   },
+  "lint-staged": {
+    "frontend/src/**/*.{ts,tsx}": [
+      "cd frontend && npm run lint"
+    ]
+  },
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^15.4.3"
