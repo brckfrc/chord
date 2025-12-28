@@ -125,8 +125,8 @@ export function CreateGuildModal({ open, onOpenChange }: CreateGuildModalProps) 
       resetJoin()
       onOpenChange(false)
 
-      // Navigate to the guild
-      navigate(`/channels/${guild.id}/${guild.channels[0]?.id || ""}`)
+      // Navigate to the guild (channels will be loaded automatically)
+      navigate(`/channels/${guild.id}`)
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } }
       toast({

@@ -38,9 +38,10 @@ export const register = createAsyncThunk(
       localStorage.setItem("refreshToken", response.refreshToken);
       const user = await authApi.getCurrentUser();
       return user;
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
       return rejectWithValue(
-        error.response?.data?.message || "Registration failed"
+        err.response?.data?.message || "Registration failed"
       );
     }
   }
@@ -55,8 +56,9 @@ export const login = createAsyncThunk(
       localStorage.setItem("refreshToken", response.refreshToken);
       const user = await authApi.getCurrentUser();
       return user;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Login failed");
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
+      return rejectWithValue(err.response?.data?.message || "Login failed");
     }
   }
 );
@@ -67,9 +69,10 @@ export const getCurrentUser = createAsyncThunk(
     try {
       const user = await authApi.getCurrentUser();
       return user;
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to get user"
+        err.response?.data?.message || "Failed to get user"
       );
     }
   }
@@ -78,7 +81,7 @@ export const getCurrentUser = createAsyncThunk(
 export const logout = createAsyncThunk("auth/logout", async () => {
   try {
     await authApi.logout();
-  } catch (error) {
+  } catch (_error) {
     // Ignore logout errors
   } finally {
     localStorage.removeItem("accessToken");
@@ -92,9 +95,10 @@ export const updateStatus = createAsyncThunk(
     try {
       const user = await authApi.updateStatus(data);
       return user;
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to update status"
+        err.response?.data?.message || "Failed to update status"
       );
     }
   }

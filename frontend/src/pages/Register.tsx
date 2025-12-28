@@ -76,7 +76,7 @@ export function Register() {
   }, [error, toast, dispatch])
 
   const onSubmit = async (data: RegisterFormData) => {
-    const { confirmPassword, ...registerData } = data
+    const { confirmPassword: _confirmPassword, ...registerData } = data
     const result = await dispatch(registerUser(registerData))
     if (registerUser.fulfilled.match(result)) {
       toast({
