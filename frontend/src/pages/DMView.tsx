@@ -13,7 +13,7 @@ import {
   clearDMMessages,
 } from "@/store/slices/dmsSlice"
 import { useSignalR } from "@/hooks/useSignalR"
-import { dmsApi } from "@/lib/api/dms"
+import { dmsApi, type DirectMessageDto } from "@/lib/api/dms"
 import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,7 +28,7 @@ export function DMView() {
   const [messageText, setMessageText] = useState("")
   const [isSending, setIsSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const typingTimeoutRef = useRef<NodeJS.Timeout>()
+  const typingTimeoutRef = useRef<number>()
 
   // SignalR connection for ChatHub
   const { invoke: chatInvoke, on: chatOn, isConnected: isChatConnected } = useSignalR(
@@ -60,11 +60,11 @@ export function DMView() {
   useEffect(() => {
     if (!channelId || !isChatConnected) return
 
-    const handleDMReceiveMessage = (message: any) => {
+    const handleDMReceiveMessage = (message: DirectMessageDto) => {
       dispatch(addDMMessage({ dmId: channelId, message }))
     }
 
-    const handleDMMessageEdited = (message: any) => {
+    const handleDMMessageEdited = (message: DirectMessageDto) => {
       dispatch(updateDMMessage({ dmId: channelId, message }))
     }
 
@@ -107,9 +107,10 @@ export function DMView() {
   }, [channelId, isChatConnected, chatOn, dispatch, user?.id])
 
   // Auto-scroll to bottom when new messages arrive
+  const currentMessages = messages[channelId || ""]
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages[channelId || ""]])
+  }, [currentMessages])
 
   const currentDM = dms.find((dm) => dm.id === channelId)
   const otherUser = currentDM?.otherUser

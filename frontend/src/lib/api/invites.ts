@@ -1,5 +1,6 @@
 import { api } from "../api"
 import type { CreateInviteDto, InviteResponseDto, InviteInfoDto } from "./invites.types"
+import type { GuildDto } from "./guilds"
 
 export type { CreateInviteDto, InviteResponseDto, InviteInfoDto }
 
@@ -14,8 +15,8 @@ export const invitesApi = {
     return response.data
   },
 
-  acceptInvite: async (code: string): Promise<{ guildId: string }> => {
-    const response = await api.post<{ guildId: string }>(`/invites/${code}/accept`)
+  acceptInvite: async (code: string): Promise<GuildDto> => {
+    const response = await api.post<GuildDto>(`/invites/${code}/accept`)
     return response.data
   },
 

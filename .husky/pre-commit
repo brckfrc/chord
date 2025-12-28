@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-# Run lint on staged frontend files
-cd frontend && npx lint-staged
+npx lint-staged

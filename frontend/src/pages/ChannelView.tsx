@@ -19,7 +19,7 @@ import { MentionsPanel } from "@/components/messages/MentionsPanel"
 import { Hash, Mic, Megaphone, Bell } from "lucide-react"
 import { ChannelType } from "@/lib/api/channels"
 import { Button } from "@/components/ui/button"
-import type { MessageResponseDto } from "@/lib/api/messages"
+import type { MessageDto } from "@/lib/api/messages"
 // TODO: Re-enable VoiceRoom after fixing bugs
 // import { VoiceRoom } from "@/components/voice"
 
@@ -130,13 +130,13 @@ export function ChannelView() {
     }
 
     // ReceiveMessage event
-    const handleReceiveMessage = (message: MessageResponseDto) => {
+    const handleReceiveMessage = (message: MessageDto) => {
       // SignalR group ensures we only receive messages for channels we've joined
       dispatch(addMessage({ channelId, message }))
     }
 
     // MessageEdited event
-    const handleMessageEdited = (message: MessageResponseDto) => {
+    const handleMessageEdited = (message: MessageDto) => {
       if (message.channelId === channelId) {
         dispatch(
           updateMessageState({

@@ -86,10 +86,10 @@ function PendingRequestItem({ request }: { request: FriendshipResponseDto }) {
       // Refresh friends list
       dispatch(fetchFriends())
       dispatch(fetchOnlineFriends())
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Failed to accept request",
-        description: error || "An error occurred",
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       })
     }
@@ -101,10 +101,10 @@ function PendingRequestItem({ request }: { request: FriendshipResponseDto }) {
       toast({
         title: "Friend request declined",
       })
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Failed to decline request",
-        description: error || "An error occurred",
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       })
     }

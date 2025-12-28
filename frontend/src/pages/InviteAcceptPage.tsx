@@ -44,8 +44,11 @@ export function InviteAcceptPage() {
       try {
         const data = await invitesApi.getInviteByCode(code)
         setInvite(data)
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Invite not found")
+      } catch (err) {
+        const message = err instanceof Error 
+          ? err.message 
+          : (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        setError(message || "Invite not found")
       } finally {
         setIsLoading(false)
       }
@@ -62,7 +65,7 @@ export function InviteAcceptPage() {
       const guild = await invitesApi.acceptInvite(code)
       
       // Refresh guilds list
-      await dispatch(fetchGuilds())
+      await dispatch(fetchGuilds()).unwrap()
 
       toast({
         title: "Success",
@@ -71,10 +74,13 @@ export function InviteAcceptPage() {
 
       // Navigate to the guild
       navigate(`/guilds/${guild.id}`)
-    } catch (err: any) {
+    } catch (err) {
+      const message = err instanceof Error 
+        ? err.message 
+        : (err as { response?: { data?: { message?: string } } })?.response?.data?.message
       toast({
         title: "Error",
-        description: err.response?.data?.message || "Failed to accept invite",
+        description: message || "Failed to accept invite",
         variant: "destructive",
       })
     } finally {
