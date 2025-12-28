@@ -280,3 +280,4 @@ export function DMView() {
   )
 }
 
+// Test lint-staged
