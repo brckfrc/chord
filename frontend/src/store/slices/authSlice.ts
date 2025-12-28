@@ -81,7 +81,7 @@ export const getCurrentUser = createAsyncThunk(
 export const logout = createAsyncThunk("auth/logout", async () => {
   try {
     await authApi.logout();
-  } catch (_error) {
+  } catch {
     // Ignore logout errors
   } finally {
     localStorage.removeItem("accessToken");

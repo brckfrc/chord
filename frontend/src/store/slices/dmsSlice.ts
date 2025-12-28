@@ -24,9 +24,10 @@ export const fetchDMs = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       return await dmsApi.getDMs()
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch DMs"
+        err.response?.data?.message || "Failed to fetch DMs"
       )
     }
   }
@@ -38,9 +39,10 @@ export const fetchDMMessages = createAsyncThunk(
     try {
       const messages = await dmsApi.getDMMessages(dmId, page)
       return { dmId, messages }
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch messages"
+        err.response?.data?.message || "Failed to fetch messages"
       )
     }
   }
@@ -51,9 +53,10 @@ export const createOrGetDM = createAsyncThunk(
   async (userId: string, { rejectWithValue }) => {
     try {
       return await dmsApi.createOrGetDM(userId)
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create DM"
+        err.response?.data?.message || "Failed to create DM"
       )
     }
   }

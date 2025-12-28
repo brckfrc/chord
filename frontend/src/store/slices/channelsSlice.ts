@@ -42,9 +42,10 @@ export const fetchChannels = createAsyncThunk(
     try {
       const channels = await channelsApi.getGuildChannels(guildId)
       return { guildId, channels }
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch channels"
+        err.response?.data?.message || "Failed to fetch channels"
       )
     }
   }
@@ -58,9 +59,10 @@ export const createChannel = createAsyncThunk(
   ) => {
     try {
       return await channelsApi.createChannel(guildId, data)
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { response?: { data?: { message?: string } } }
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create channel"
+        err.response?.data?.message || "Failed to create channel"
       )
     }
   }
