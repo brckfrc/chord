@@ -19,6 +19,7 @@ import { MentionsPanel } from "@/components/messages/MentionsPanel"
 import { Hash, Mic, Megaphone, Bell } from "lucide-react"
 import { ChannelType } from "@/lib/api/channels"
 import { Button } from "@/components/ui/button"
+import type { MessageResponseDto } from "@/lib/api/messages"
 // TODO: Re-enable VoiceRoom after fixing bugs
 // import { VoiceRoom } from "@/components/voice"
 
@@ -129,13 +130,13 @@ export function ChannelView() {
     }
 
     // ReceiveMessage event
-    const handleReceiveMessage = (message: any) => {
+    const handleReceiveMessage = (message: MessageResponseDto) => {
       // SignalR group ensures we only receive messages for channels we've joined
       dispatch(addMessage({ channelId, message }))
     }
 
     // MessageEdited event
-    const handleMessageEdited = (message: any) => {
+    const handleMessageEdited = (message: MessageResponseDto) => {
       if (message.channelId === channelId) {
         dispatch(
           updateMessageState({
@@ -222,7 +223,7 @@ export function ChannelView() {
       cleanupUserMentioned()
       cleanupError()
     }
-  }, [channelId, isChatConnected, chatOn, dispatch])
+  }, [channelId, isChatConnected, chatOn, dispatch, user?.id])
 
   // Show VoiceRoom for voice channels
   // TODO: VoiceRoom UI is temporarily disabled due to bugs

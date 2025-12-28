@@ -14,7 +14,7 @@ import { Plus, User } from "lucide-react"
 import { AddFriendModal } from "@/components/modals/AddFriendModal"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import type { FriendDto, FriendRequestDto } from "@/lib/api/friends"
+import type { FriendshipResponseDto } from "@/lib/api/friends"
 
 // UserStatus enum values
 const UserStatus = {
@@ -25,7 +25,8 @@ const UserStatus = {
   Offline: 4,
 } as const
 
-function FriendItem({ friend }: { friend: FriendDto }) {
+function FriendItem({ friend }: { friend: FriendshipResponseDto }) {
+  const otherUser = friend.otherUser
   const getStatusColor = (status: number) => {
     switch (status) {
       case UserStatus.Online:
@@ -49,19 +50,19 @@ function FriendItem({ friend }: { friend: FriendDto }) {
     >
       <div className="relative flex-shrink-0">
         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-          {friend.username.charAt(0).toUpperCase()}
+          {otherUser.username.charAt(0).toUpperCase()}
         </div>
         <div
           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-secondary ${getStatusColor(
-            friend.status
+            otherUser.status
           )}`}
         />
       </div>
       <div className="flex-1 text-left min-w-0">
-        <p className="text-sm font-medium truncate">{friend.username}</p>
-        {friend.customStatus && (
+        <p className="text-sm font-medium truncate">{otherUser.username}</p>
+        {otherUser.customStatus && (
           <p className="text-xs text-muted-foreground truncate">
-            {friend.customStatus}
+            {otherUser.customStatus}
           </p>
         )}
       </div>
@@ -69,10 +70,10 @@ function FriendItem({ friend }: { friend: FriendDto }) {
   )
 }
 
-function PendingRequestItem({ request }: { request: FriendRequestDto }) {
+function PendingRequestItem({ request }: { request: FriendshipResponseDto }) {
   const dispatch = useAppDispatch()
   const { toast } = useToast()
-  const requester = request.requester
+  const requester = request.otherUser
   const username = requester?.username || "Unknown User"
 
   const handleAccept = async () => {

@@ -1,15 +1,13 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import {
   friendsApi,
-  type FriendDto,
-  type FriendRequestDto,
   type FriendshipResponseDto,
 } from "@/lib/api/friends"
 
 interface FriendsState {
-  friends: FriendDto[]
-  onlineFriends: FriendDto[]
-  pendingRequests: FriendRequestDto[]
+  friends: FriendshipResponseDto[]
+  onlineFriends: FriendshipResponseDto[]
+  pendingRequests: FriendshipResponseDto[]
   isLoading: boolean
   error: string | null
   activeTab: "online" | "all" | "pending"

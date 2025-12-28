@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { AddFriendModal } from "@/components/modals/AddFriendModal"
 import { User, Hash } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { DMDto } from "@/lib/api/dms"
+import type { DirectMessageChannelDto } from "@/lib/api/dms"
 
 // UserStatus enum values
 const UserStatus = {
@@ -18,7 +18,7 @@ const UserStatus = {
     Offline: 4,
 } as const
 
-function DMItem({ dm }: { dm: DMDto }) {
+function DMItem({ dm }: { dm: DirectMessageChannelDto }) {
     const navigate = useNavigate()
     const location = useLocation()
     const dispatch = useAppDispatch()

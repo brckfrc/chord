@@ -14,8 +14,8 @@ export const invitesApi = {
     return response.data
   },
 
-  acceptInvite: async (code: string): Promise<any> => {
-    const response = await api.post<any>(`/invites/${code}/accept`)
+  acceptInvite: async (code: string): Promise<{ guildId: string }> => {
+    const response = await api.post<{ guildId: string }>(`/invites/${code}/accept`)
     return response.data
   },
 

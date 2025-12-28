@@ -33,23 +33,6 @@ const getStatusColor = (status: number) => {
     }
 }
 
-const getStatusText = (status: number) => {
-    switch (status) {
-        case UserStatus.Online:
-            return "Online"
-        case UserStatus.Idle:
-            return "Idle"
-        case UserStatus.DoNotDisturb:
-            return "Do Not Disturb"
-        case UserStatus.Invisible:
-            return "Invisible"
-        case UserStatus.Offline:
-            return "Offline"
-        default:
-            return "Offline"
-    }
-}
-
 interface UserProfileBarProps {
     compact?: boolean
 }
