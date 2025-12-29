@@ -279,5 +279,3 @@ export function DMView() {
     </div>
   )
 }
-
-// Test lint-staged
