@@ -1,6 +1,9 @@
 # Chord CD Pipeline
 # Builds and deploys to production after CI passes on main
 # Uses Blue-Green deployment strategy
+#
+# Skip: Use [skip ci], [ci skip], [no ci], [skip actions], or [actions skip] in commit message
+# Note: This also skips if CI workflow is skipped
 
 name: Deploy
 
@@ -11,6 +14,10 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch: # Manual trigger
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
@@ -65,8 +72,11 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ github.repository }}/api:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ github.repository }}/api:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=deploy-backend
+            type=gha,scope=ci-backend
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}/api:latest
+          cache-to: type=gha,mode=max,scope=deploy-backend
           labels: ${{ steps.meta.outputs.labels }}
 
       # Build and push Frontend
@@ -79,8 +89,11 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ github.repository }}/frontend:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ github.repository }}/frontend:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=deploy-frontend
+            type=gha,scope=ci-frontend
+            type=registry,ref=${{ env.REGISTRY }}/${{ github.repository }}/frontend:latest
+          cache-to: type=gha,mode=max,scope=deploy-frontend
           labels: ${{ steps.meta.outputs.labels }}
 
   # Deploy to VPS (disabled until VPS is configured)

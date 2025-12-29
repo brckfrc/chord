@@ -1,14 +1,33 @@
 # Chord CI Pipeline
 # Runs on every push and pull request
 # Tests, lints, and validates builds
+#
+# Skip CI: Use [skip ci], [ci skip], [no ci], [skip actions], or [actions skip] in commit message
+# Example: git commit -m "docs: update README [skip ci]"
 
 name: CI
 
 on:
   push:
     branches: [main, develop]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'chord_roadmap.md'
+      - '.cursorrules'
+      - 'LICENSE'
   pull_request:
     branches: [main, develop]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'chord_roadmap.md'
+      - '.cursorrules'
+      - 'LICENSE'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   DOTNET_VERSION: "9.0.x"
@@ -31,6 +50,8 @@ jobs:
         uses: actions/setup-dotnet@v5.0.1
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+          cache-dependency-path: backend/**/*.csproj
 
       - name: Restore dependencies
         run: dotnet restore
@@ -88,8 +109,10 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=ci-backend
+            type=registry,ref=ghcr.io/${{ github.repository }}/api:latest
+          cache-to: type=gha,mode=max,scope=ci-backend
 
       - name: Build Frontend Image (cache only)
         uses: docker/build-push-action@v6.18.0
@@ -97,6 +120,8 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=ci-frontend
+            type=registry,ref=ghcr.io/${{ github.repository }}/frontend:latest
+          cache-to: type=gha,mode=max,scope=ci-frontend
 

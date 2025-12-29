@@ -156,6 +156,29 @@ git commit → pre-commit hook → ESLint on staged files
 - **Errors** block the commit (must be fixed)
 - **Warnings** are allowed (fix later)
 
+### Commit Conventions
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+```bash
+feat: add new feature
+fix: fix bug
+chore: update dependencies
+docs: update documentation
+style: format code
+refactor: refactor code
+test: add tests
+```
+
+**Skip CI/CD:**
+
+```bash
+git commit -m "docs: update README [skip ci]"
+git commit -m "chore: cleanup [ci skip]"
+```
+
+Supported skip keywords: `[skip ci]`, `[ci skip]`, `[no ci]`, `[skip actions]`, `[actions skip]`
+
 ### Backend
 
 ```bash
