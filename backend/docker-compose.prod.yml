@@ -111,8 +111,9 @@ services:
     image: livekit/livekit-server:latest
     container_name: chord-livekit
     environment:
-      - LIVEKIT_KEYS="${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET}"
-      - LIVEKIT_NODE_IP=${LIVEKIT_NODE_IP:-}
+      # Format must be "key: secret" with a space after colon
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET}"
+      LIVEKIT_NODE_IP: "${LIVEKIT_NODE_IP:-}"
     ports:
       - "${LIVEKIT_WS_PORT:-7880}:7880"
       - "${LIVEKIT_RTC_PORT:-7881}:7881/udp"
