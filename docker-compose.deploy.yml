@@ -138,11 +138,11 @@ services:
     networks:
       - chord-network
     restart: unless-stopped
-    depends_on:
-      - api-blue
-      - api-green
-      - frontend-blue
-      - frontend-green
+    # depends_on:  # Commented out - Caddy is not used (YunoHost Nginx instead)
+    #   - api-blue
+    #   - api-green
+    #   - frontend-blue
+    #   - frontend-green
 
   # ===========================================
   # BLUE STACK

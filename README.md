@@ -109,7 +109,8 @@ chord/
 │
 ├── scripts/                 # Deployment scripts
 │   ├── deploy.sh            # Blue-green deployment
-│   └── rollback.sh          # Rollback utility
+│   ├── rollback.sh          # Rollback utility
+│   └── setup-infra.sh       # Infrastructure setup automation
 │
 ├── docs/
 │   └── DEPLOYMENT.md        # Deployment guide

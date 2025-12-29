@@ -1,15 +1,27 @@
 # Chord Project Rules
 
 ## Language Rules
+
 - All code comments must be written in English only
 - No Turkish in comments, commit messages, or documentation
 - No emojis in code comments
 - Use Turkish only when directly conversing with the user
 
 ## Code Style
+
 - Follow existing patterns and conventions in the codebase
 - Keep solutions simple and focused
 - Prefer editing existing files over creating new ones
 
+## Git Operations (CRITICAL)
 
+- NEVER run git commands (add, commit, push, stash, merge, rebase) without explicit user approval
+- Always show changes first (git diff) and ask: "Commit yapmamı ister misin?"
+- Only proceed after receiving clear user confirmation
 
+## File Editing
+
+- NEVER add or remove trailing newlines at the end of files
+- Preserve the original file ending format exactly as it is
+- If old_string ends without newline, new_string must also end without newline
+- If old_string ends with newline, new_string must also end with newline

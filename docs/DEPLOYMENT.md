@@ -95,15 +95,40 @@ In your GitHub repository, go to **Settings → Secrets and variables → Action
 
 ### Initial Server Setup
 
+#### Automated Setup (Recommended)
+
 ```bash
 # 1. Clone repository on server
 cd /opt
 git clone https://github.com/brckfrc/chord.git
 cd chord
 
-# 2. Run environment setup
-chmod +x setup-env.sh
-./setup-env.sh  # Select "prod" mode
+# 2. Run automated infrastructure setup
+chmod +x scripts/setup-infra.sh
+./scripts/setup-infra.sh
+```
+
+**What this script does:**
+- Generates config files if missing (calls `generate-configs.sh`)
+- Verifies Docker is running
+- Creates Docker network with proper aliases
+- Starts infrastructure services (SQL Server, Redis, MinIO, LiveKit, Coturn)
+- Waits for services to be healthy
+- Creates MinIO bucket
+- Optionally creates Nginx configuration
+- Verifies all services are running
+
+#### Manual Setup
+
+```bash
+# 1. Clone repository on server
+cd /opt
+git clone https://github.com/brckfrc/chord.git
+cd chord
+
+# 2. Generate configurations
+chmod +x generate-configs.sh
+./generate-configs.sh
 
 # 3. Start infrastructure
 docker compose -f docker-compose.deploy.yml --profile infra up -d
@@ -123,9 +148,17 @@ usermod -aG docker deploy
    - Detects active stack (blue or green)
    - Pulls new images
    - Starts inactive stack
-   - Health check (60s timeout)
+   - Health check (120s timeout)
    - Updates Caddy to route to new stack
    - Stops old stack
+
+**Health Check Timeout**: 120 seconds allows for:
+- GHCR image pull (~10-20s)
+- Container startup (~5-10s)
+- Database migrations (~10-30s)
+- Service warmup (~10-20s)
+
+This prevents premature rollbacks during slow deployments or large migrations.
 
 ### Manual Deployment
 
@@ -212,6 +245,16 @@ docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### 3. Configure Your Reverse Proxy
+
+**Network Configuration:**
+
+When deploying behind a reverse proxy, infrastructure services use Docker network aliases:
+- SQL Server: `sqlserver` / `chord-sqlserver`
+- Redis: `redis` / `chord-redis`
+- MinIO: `minio`
+- LiveKit: `livekit`
+
+Port mappings are commented out by default to prevent conflicts with host services (e.g., YunoHost Redis on 6379).
 
 #### YunoHost
 
@@ -400,6 +443,64 @@ sudo firewall-cmd --reload
 
 ## Troubleshooting
 
+### Docker Compose Parse Error
+
+**Error:** `services.livekit.environment.[0]: unexpected type map[string]interface {}`
+
+**Cause:** LiveKit environment variables use map format (not array) due to the special "key: secret" format requirement.
+
+**Solution:** The current configuration uses the correct format:
+
+```yaml
+livekit:
+  environment:
+    # Format must be "key: secret" with a space after colon
+    LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET}"
+    LIVEKIT_NODE_IP: "${LIVEKIT_NODE_IP:-}"
+```
+
+If you see this error, ensure your `docker-compose.deploy.yml` and `docker-compose.prod.yml` files use map format (not array with `-` prefix).
+
+### Network Alias Issues
+
+**Error:** API containers can't connect to `sqlserver` or `redis`
+
+**Solution:** Ensure infrastructure services have proper network aliases in `docker-compose.deploy.yml`:
+
+```yaml
+sqlserver:
+  networks:
+    chord-network:
+      aliases:
+        - sqlserver
+        - chord-sqlserver
+
+redis:
+  networks:
+    chord-network:
+      aliases:
+        - redis
+        - chord-redis
+```
+
+Run `./scripts/setup-infra.sh` to automatically apply correct configuration.
+
+### LiveKit Panic: use_external_ip
+
+**Error:** `panic: invalid argument to Intn in getNAT1to1IPsForConf`
+
+**Cause:** LiveKit can't detect external IP when behind reverse proxy.
+
+**Solution:** Use `use_external_ip: false` with explicit `node_ip`:
+
+```yaml
+rtc:
+  use_external_ip: false
+  node_ip: YOUR_PUBLIC_IP
+```
+
+This is automatically configured by `generate-configs.sh` and `setup-env.sh`.
+
 ### Clean Reset (Regenerate All Configs)
 
 If you need to regenerate configuration files with new secrets:
@@ -427,9 +528,23 @@ docker compose -f backend/docker-compose.dev.yml down -v
 docker compose logs -f [service-name]
 
 # Common issues:
-# - SQL Server: Password policy not met
-# - LiveKit: Invalid config file
+# - SQL Server: Password policy not met, or port conflict
+# - Redis: Port 6379 conflict with host Redis (comment out port mapping)
+# - LiveKit: Invalid config file or environment variable format
 # - Coturn: Port already in use
+```
+
+**Quick fix for port conflicts:**
+```bash
+# Edit docker-compose.deploy.yml or docker-compose.prod.yml
+# Comment out conflicting port mappings:
+sqlserver:
+  # ports:  # Not exposed - behind reverse proxy
+  #   - "1433:1433"
+
+redis:
+  # ports:  # Not exposed - avoids host Redis conflict
+  #   - "6379:6379"
 ```
 
 ### Voice not connecting
