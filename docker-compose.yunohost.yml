@@ -1,0 +1,17 @@
+# YunoHost-specific Docker Compose overrides
+#
+# Purpose: Close security-critical ports that should not be exposed on YunoHost servers
+# Usage: docker compose -f docker-compose.deploy.yml -f docker-compose.yunohost.yml --profile blue up -d
+#
+# YunoHost Considerations:
+# - YunoHost Nginx handles all external traffic (SSL, domain routing)
+# - YunoHost has its own Redis instance on localhost
+# - SQL Server should NEVER be internet-facing (security risk)
+# - API, Frontend, MinIO remain exposed for YunoHost Nginx to proxy
+
+services:
+  sqlserver:
+    ports: !reset []
+
+  redis:
+    ports: !reset []

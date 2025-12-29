@@ -902,7 +902,7 @@ TURN_REALM=chord.local
 ## 🏗️ FAZ 10: TESTING & OBSERVABILITY
 
 **Süre**: ~4-5 gün (Audit Log eklendi)  
-**DURUM**: ⏳ Başlanmadı
+**DURUM**: 🟡 Kısmen Tamamlandı (Backend ✅, Frontend ❌)
 
 ### Görevler
 
@@ -918,15 +918,22 @@ TURN_REALM=chord.local
 - [ ] OpenTelemetry kurulumu (traces, metrics)
 - [ ] Health checks genişletme (Redis, MinIO)
 
-#### ⭐ YENİ: Audit Log
+#### ⭐ Audit Log (Backend Tamamlandı)
 
-- [ ] AuditLog entity (Id, GuildId, UserId, Action, TargetType, TargetId, Changes, IpAddress, Timestamp)
-- [ ] AuditAction enum (MemberJoin, MemberKick, ChannelCreate, MessageDelete, RoleUpdate, etc.)
-- [ ] Middleware: AuditLogMiddleware (önemli işlemleri logla)
-- [ ] Service method'larına audit log kaydetme
-- [ ] API: GET /guilds/{id}/audit-logs?limit=50
-- [ ] Frontend: AuditLogPanel (guild settings)
-- [ ] Migration: CreateAuditLogsTable
+**Backend:**
+- [x] AuditLog entity (Id, GuildId, UserId, Action, TargetType, TargetId, Changes, IpAddress, Timestamp) ✅
+- [x] AuditAction enum (MemberJoin, MemberKick, ChannelCreate, MessageDelete, RoleUpdate, etc.) ✅
+- [x] Middleware: AuditLogMiddleware (önemli işlemleri logla) ✅
+- [x] IAuditLogService + AuditLogService implementation ✅
+- [x] AuditLogsController: GET /guilds/{id}/audit-logs (owner only, pagination) ✅
+- [x] Migration: CreateAuditLogsTable ✅
+- [x] Integration with services (logging important actions) ✅
+
+**Frontend:**
+- [ ] AuditLogPanel component (guild settings)
+- [ ] API client: auditLogs.ts
+- [ ] Redux slice: auditLogsSlice
+- [ ] Display in GuildSettingsModal (new "Audit Log" tab)
 
 ### Frontend (Mevcut)
 
@@ -936,10 +943,11 @@ TURN_REALM=chord.local
 
 ### Deliverables
 
-✅ Test coverage ≥60%  
-✅ E2E testler ana akışı kapsıyor  
-✅ Metrik/trace dashboard görünür  
-✅ Audit log çalışıyor (kim ne yaptı izlenebiliyor)
+✅ Audit log backend tamamlandı (API endpoint, service, middleware)  
+⏳ Test coverage ≥60%  
+⏳ E2E testler ana akışı kapsıyor  
+⏳ Metrik/trace dashboard görünür  
+⏳ Audit log frontend UI (guild settings panel)
 
 ### 📝 Test Notları
 
@@ -991,15 +999,28 @@ TURN_REALM=chord.local
 
 ## 🏗️ FAZ 12: DEPLOYMENT & DOCUMENTATION
 
-**Süre**: ~1 hafta
+**Süre**: ~1 hafta  
+**DURUM**: 🟡 Büyük oranda tamamlandı (7/10 görev)
 
 ### Görevler
 
-- [ ] Production Dockerfile (backend + frontend)
-- [ ] Docker Compose production config
-- [ ] GitHub Actions CI/CD (build → test → deploy)
-- [ ] Sunucuya deployment (domain bağlama, SSL)
-- [x] Environment variables yönetimi
+#### Tamamlananlar
+
+- [x] Production Dockerfile (backend + frontend) ✅
+- [x] Docker Compose production config ✅
+  - ✅ `docker-compose.standalone.yml` (Caddy + blue-green)
+  - ✅ `docker-compose.deploy.yml` (Standard VPS + blue-green)
+  - ✅ `docker-compose.yunohost.yml` (YunoHost overrides)
+- [x] GitHub Actions CI/CD ✅
+  - ✅ Build → Test → Push to GHCR → Deploy to VPS
+  - ✅ Blue-green deployment strategy
+  - ✅ Health checks
+  - ✅ Automatic rollback on failure
+- [x] Deployment scripts ✅
+  - ✅ `scripts/deploy.sh` (blue-green automation)
+  - ✅ `scripts/rollback.sh`
+  - ✅ `scripts/setup-infra.sh`
+- [x] Environment variables yönetimi ✅
   - ✅ `setup-env.sh` ile otomatik environment yönetimi
   - ✅ Template-based config generation (.env, livekit.yaml, turnserver.conf)
   - ✅ Secret auto-generation (SQL, JWT, MinIO, LiveKit, TURN)
@@ -1007,19 +1028,32 @@ TURN_REALM=chord.local
   - ✅ Frontend `.env`: `VITE_API_BASE_URL` **mutlaka `/api` prefix'i içermeli**
   - ✅ Frontend `.env`: `VITE_SIGNALR_BASE_URL` (gerekli)
   - ✅ `update-ip.sh` ile hızlı IP değişikliği (ağ değişimlerinde)
-- [ ] API dokümantasyonu (Swagger/Redoc)
-- [ ] README: Kurulum, kullanım, mimari diyagram
-- [ ] ER diagram güncel
-- [ ] Postman collection export
+- [x] API dokümantasyonu ✅
+  - ✅ Swagger UI active (http://localhost:5049/swagger)
+  - ✅ Comprehensive backend/README.md
+- [x] Deployment documentation ✅
+  - ✅ `docs/DEPLOYMENT.md` (decision tree + overview)
+  - ✅ `docs/DEPLOYMENT-STANDALONE.md` (fresh server + Caddy)
+  - ✅ `docs/DEPLOYMENT-STANDARD.md` (existing reverse proxy)
+  - ✅ `docs/DEPLOYMENT-YUNOHOST.md` (YunoHost integration)
+
+#### Kalan Görevler
+
+- [ ] ER diagram güncelliği kontrol
+- [ ] Postman collection güncelliği kontrol
 - [ ] Demo senaryosu hazırlama
 - [ ] Video demo kaydı
 
 ### Deliverables
 
-✅ Uygulama production'da çalışıyor (domain üzerinden erişilebilir)  
-✅ CI/CD pipeline aktif  
-✅ Dokümantasyon tamamlanmış  
-✅ Demo videosu hazır
+✅ Docker Compose production configs (3 scenarios)  
+✅ GitHub Actions CI/CD pipeline aktif  
+✅ Blue-green deployment with automatic rollback  
+✅ Comprehensive deployment documentation (4 guides)  
+✅ API documentation (Swagger + backend/README.md)  
+⏳ ER diagram güncelliği  
+⏳ Postman collection güncelliği  
+⏳ Demo videosu hazır
 
 ---
 
@@ -1037,38 +1071,55 @@ TURN_REALM=chord.local
 10. **Faz 7** ✅ File Upload & Video Support
 11. **Faz 8** ✅ Voice Channels (WebRTC + LiveKit)
 12. **Faz 9** ✅ Permissions & Roles + Guild Settings + Profile Photos
-13. **Faz 9.5** ✅ DMs + Friends (Tamamlandı!)
-14. **Faz 10** 🟡 **SONRAKİ ADIM** → Testing + Audit Log
-15. **Faz 11** → Security + Notification Settings
-16. **Faz 12** → Production deployment
+13. **Faz 9.5** ✅ DMs + Friends
+14. **Faz 10** 🟡 Testing + Audit Log (Backend ✅, Frontend ⏳)
+15. **Faz 12** 🟡 **ŞU AN** → Deployment & Documentation (7/10 ✅)
+16. **Faz 11** → Security + Notification Settings
 
 ---
 
-## 🚀 SONRAKİ ADIM: FAZ 10
+## 🚀 ŞU ANKİ DURUM: FAZ 12 (7/10 ✅)
 
-**Hemen yapılacaklar:**
+**Kalan görevler:**
 
-### FAZ 10: Testing & Observability
+### FAZ 12: Deployment & Documentation - Finalize
 
-1. **Unit testler düzelt ve genişlet** (AuthService, GuildService, ChannelService)
-2. **Integration testler** (WebApplicationFactory)
-3. **Audit Log sistemi**:
-   - AuditLog entity (kim ne yaptı, ne zaman)
-   - AuditAction enum (member join/kick, channel create, message delete, etc.)
-   - Middleware: Önemli işlemleri otomatik logla
-   - API: GET /guilds/{id}/audit-logs
-   - Frontend: AuditLogPanel (guild settings)
+1. **ER Diagram Güncelliği**
+   - Mevcut schema'yı yansıtıyor mu kontrol et
+   - Yeni entity'ler: AuditLog, Friendship, DirectMessage, DirectMessageChannel
+2. **Postman Collection Güncelliği**
+   - `ChordAPI.postman_collection.json` dosyasını kontrol et
+   - Yeni endpoint'ler: Audit Logs, Friends, DMs
+3. **Demo Senaryosu**
+   - Kullanıcı hikayesi yazılımı (login → guild → message → voice → DM)
+4. **Video Demo**
+   - Özellik showcase videosu
+
+**Tahmini süre**: ~1-2 gün  
+**Test edilebilir**: Demo akışı çalıştığından emin ol
+
+---
+
+## 🔄 ALTERNATIF SONRAKI ADIM: FAZ 10 - Frontend
+
+**Audit Log frontend UI:**
+
+1. **Frontend components**:
+   - AuditLogPanel component (guild settings)
+   - API client: `auditLogs.ts`
+   - Redux slice: `auditLogsSlice`
+   - GuildSettingsModal'a "Audit Log" tab'ı ekle
+2. **Unit testler** düzelt ve genişlet (AuthService, GuildService, ChannelService)
+3. **Integration testler** (WebApplicationFactory)
 4. **OpenTelemetry** kurulumu (traces, metrics)
-5. **Health checks** genişletme (Redis, MinIO)
 
-**Tahmini süre**: ~4-5 gün  
-**Test edilebilir**: Audit log görüntüleme, coverage raporları
+**Tahmini süre**: ~2-3 gün
 
 ---
 
-## ✅ SON TAMAMLANAN: FAZ 9.5
+## ✅ SON TAMAMLANAN
 
-### Direct Messages & Friends
+### FAZ 9.5: Direct Messages & Friends ✅
 
 **Friend System:**
 - Friendship entity (RequesterId, AddresseeId, Status)
@@ -1098,28 +1149,51 @@ TURN_REALM=chord.local
 - Redux: friendsSlice, dmsSlice
 - API clients: Full backend integration
 
+### FAZ 10: Audit Logs Backend ✅
+
+**Backend Implementation:**
+- AuditLog entity with full tracking (User, Action, Target, Changes, IP, Timestamp)
+- AuditAction enum (19 action types)
+- AuditLogService + IAuditLogService
+- AuditLogsController with pagination (50 logs/page, max 100)
+- AuditLogMiddleware for automatic logging
+- Owner-only access control
+- Migration: CreateAuditLogsTable
+
+### FAZ 12: Deployment & Documentation (7/10) 🟡
+
+**Completed:**
+- Docker Compose configs (3 deployment scenarios)
+- GitHub Actions CI/CD with blue-green deployment
+- Deployment scripts (deploy.sh, rollback.sh, setup-infra.sh)
+- Comprehensive deployment guides (4 documents)
+- Environment management automation
+- API documentation (Swagger + backend/README.md)
+
 ---
 
 ## 📊 ÖZELLIK ÖZETİ
 
-| Özellik                    | Faz | Zorluk    | Frontend Bağımlılığı | Durum |
-| -------------------------- | --- | --------- | -------------------- | ----- |
-| Reactions                  | 3.5 | Kolay     | Hayır                | ✅    |
-| Pinned Messages            | 3.5 | Çok Kolay | Hayır                | ✅    |
-| Unread Messages            | 3.5 | Kolay     | Hayır                | ✅    |
-| User Status                | 3.5 | Çok Kolay | Hayır                | ✅    |
-| Voice Channel UI (UI Only) | 5.3 | Orta      | Evet (Guild UI)      | ✅    |
-| Guild Invites              | 5.5 | Orta      | Evet (Guild UI)      | ✅    |
-| Mentions                   | 6.5 | Orta      | Evet (Message UI)    | ✅    |
-| File Upload                | 7   | Orta      | Evet (Message UI)    | ✅    |
-| Voice/Video (WebRTC)       | 8   | Zor       | Evet (LiveKit)       | ✅    |
-| Permissions & Roles        | 9   | Orta      | Evet (Guild UI)      | ✅    |
-| Guild Settings Modal       | 9   | Kolay     | Evet (Permissions)   | ✅    |
-| Profile Photos             | 9   | Kolay     | Evet (MinIO)         | ✅    |
-| DMs                        | 9.5 | Orta      | Evet (Permissions)   | ✅    |
-| Friends                    | 9.5 | Orta      | Evet (Permissions)   | ✅    |
-| Username Display Fix       | 9.5 | Çok Kolay | Evet (Full UI)       | ✅    |
-| Audit Log                  | 10  | Kolay     | Hayır                | ⏳    |
-| Notification Settings      | 11  | Orta      | Evet (Full UI)       | ⏳    |
+| Özellik                    | Faz | Zorluk    | Frontend Bağımlılığı | Durum                |
+| -------------------------- | --- | --------- | -------------------- | -------------------- |
+| Reactions                  | 3.5 | Kolay     | Hayır                | ✅                   |
+| Pinned Messages            | 3.5 | Çok Kolay | Hayır                | ✅                   |
+| Unread Messages            | 3.5 | Kolay     | Hayır                | ✅                   |
+| User Status                | 3.5 | Çok Kolay | Hayır                | ✅                   |
+| Voice Channel UI (UI Only) | 5.3 | Orta      | Evet (Guild UI)      | ✅                   |
+| Guild Invites              | 5.5 | Orta      | Evet (Guild UI)      | ✅                   |
+| Mentions                   | 6.5 | Orta      | Evet (Message UI)    | ✅                   |
+| File Upload                | 7   | Orta      | Evet (Message UI)    | ✅                   |
+| Voice/Video (WebRTC)       | 8   | Zor       | Evet (LiveKit)       | ✅                   |
+| Permissions & Roles        | 9   | Orta      | Evet (Guild UI)      | ✅                   |
+| Guild Settings Modal       | 9   | Kolay     | Evet (Permissions)   | ✅                   |
+| Profile Photos             | 9   | Kolay     | Evet (MinIO)         | ✅                   |
+| DMs                        | 9.5 | Orta      | Evet (Permissions)   | ✅                   |
+| Friends                    | 9.5 | Orta      | Evet (Permissions)   | ✅                   |
+| Username Display Fix       | 9.5 | Çok Kolay | Evet (Full UI)       | ✅                   |
+| Audit Log (Backend)        | 10  | Kolay     | Hayır                | ✅                   |
+| Audit Log (Frontend)       | 10  | Kolay     | Evet (Guild UI)      | ⏳                   |
+| Deployment & CI/CD         | 12  | Orta      | Hayır                | 🟡 (7/10 tamamlandı) |
+| Notification Settings      | 11  | Orta      | Evet (Full UI)       | ⏳                   |
 
 ---

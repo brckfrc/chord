@@ -3,10 +3,11 @@
 # Performs zero-downtime deployment using blue-green strategy
 #
 # Usage:
-#   ./deploy.sh --image-tag <tag> --registry <registry> --repo <repo>
+#   ./deploy.sh --image-tag <tag> --registry <registry> --repo <repo> [compose-files...]
 #
-# Example:
+# Examples:
 #   ./deploy.sh --image-tag abc123 --registry ghcr.io --repo username/chord
+#   ./deploy.sh --image-tag abc123 --registry ghcr.io --repo username/chord -f docker-compose.deploy.yml -f docker-compose.yunohost.yml
 
 set -e
 
@@ -16,10 +17,12 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-COMPOSE_FILE="$PROJECT_DIR/docker-compose.deploy.yml"
 STATE_FILE="$PROJECT_DIR/.deploy-state"
 HEALTH_TIMEOUT=120
 HEALTH_INTERVAL=5
+
+# Default compose files
+COMPOSE_FILES=("-f" "$PROJECT_DIR/docker-compose.deploy.yml")
 
 # Colors
 RED='\033[0;31m'
@@ -49,18 +52,21 @@ log_error() {
 }
 
 show_usage() {
-    echo "Usage: $0 [OPTIONS]"
+    echo "Usage: $0 [OPTIONS] [-f compose-file ...]"
     echo ""
     echo "Options:"
     echo "  --image-tag TAG     Docker image tag (required)"
     echo "  --registry REG      Container registry (default: ghcr.io)"
     echo "  --repo REPO         GitHub repository (required)"
+    echo "  -f FILE             Docker compose file (can be specified multiple times)"
+    echo "                      Default: -f docker-compose.deploy.yml"
     echo "  --skip-infra        Skip infrastructure health check"
     echo "  --force             Force deployment even if health check fails"
     echo "  -h, --help          Show this help message"
     echo ""
-    echo "Example:"
+    echo "Examples:"
     echo "  $0 --image-tag abc123 --registry ghcr.io --repo username/chord"
+    echo "  $0 --image-tag abc123 --repo user/chord -f docker-compose.deploy.yml -f docker-compose.yunohost.yml"
 }
 
 get_active_stack() {
@@ -149,7 +155,7 @@ check_infra() {
     if [ "$all_running" = false ]; then
         log_warn "Some infrastructure services are not running"
         log_info "Starting infrastructure..."
-        docker compose -f "$COMPOSE_FILE" --profile infra up -d
+        docker compose "${COMPOSE_FILES[@]}" --profile infra up -d
         sleep 10
     fi
 }
@@ -233,7 +239,7 @@ deploy_stack() {
     
     # Start the stack
     log_info "Starting $stack stack..."
-    docker compose -f "$COMPOSE_FILE" --profile "$stack" up -d
+    docker compose "${COMPOSE_FILES[@]}" --profile "$stack" up -d
     
     return 0
 }
@@ -242,7 +248,7 @@ stop_stack() {
     local stack=$1
     
     log_info "Stopping $stack stack..."
-    docker compose -f "$COMPOSE_FILE" --profile "$stack" down --remove-orphans 2>/dev/null || true
+    docker compose "${COMPOSE_FILES[@]}" --profile "$stack" down --remove-orphans 2>/dev/null || true
 }
 
 rollback() {
@@ -257,7 +263,7 @@ rollback() {
     # Ensure active stack is still running
     if [ "$active_stack" != "none" ]; then
         log_info "Ensuring $active_stack stack is running..."
-        docker compose -f "$COMPOSE_FILE" --profile "$active_stack" up -d
+        docker compose "${COMPOSE_FILES[@]}" --profile "$active_stack" up -d
         update_caddy "$active_stack"
     fi
     
@@ -272,6 +278,7 @@ rollback() {
 REGISTRY="ghcr.io"
 SKIP_INFRA=false
 FORCE=false
+CUSTOM_COMPOSE_FILES=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -285,6 +292,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --repo)
             GITHUB_REPO="$2"
+            shift 2
+            ;;
+        -f)
+            if [ "$CUSTOM_COMPOSE_FILES" = false ]; then
+                COMPOSE_FILES=()
+                CUSTOM_COMPOSE_FILES=true
+            fi
+            COMPOSE_FILES+=("-f" "$2")
             shift 2
             ;;
         --skip-infra)

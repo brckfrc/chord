@@ -1,0 +1,647 @@
+# Chord YunoHost Deployment Guide
+
+**Target Scenario:** YunoHost self-hosting server
+
+**What's Different:**
+- YunoHost Nginx handles all external traffic and SSL
+- Port configuration adjusted to avoid conflicts
+- Blue-green deployment with YunoHost-safe settings
+- Docker override file for YunoHost-specific configuration
+
+## Prerequisites
+
+- YunoHost server (11.x+)
+- SSH access with sudo privileges
+- Domain configured in YunoHost
+- Docker installed on YunoHost
+
+## Step 1: Install Docker on YunoHost
+
+YunoHost doesn't include Docker by default:
+
+```bash
+# SSH into your YunoHost server
+ssh admin@your-yunohost-server
+
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Add your user to docker group
+sudo usermod -aG docker $USER
+
+# Apply group changes
+newgrp docker
+
+# Verify
+docker --version
+docker compose version
+```
+
+**Important:** Docker runs independently from YunoHost apps. It won't interfere with YunoHost's package management.
+
+## Step 2: Configure YunoHost Domain
+
+### Option A: Use Existing Domain
+
+If you already have a domain in YunoHost:
+
+```bash
+# List domains
+yunohost domain list
+```
+
+Use an existing domain like `chord.your-domain.com`.
+
+### Option B: Add New Subdomain
+
+```bash
+# Add subdomain
+sudo yunohost domain add chord.your-domain.com
+
+# Install certificate
+sudo yunohost domain cert install chord.your-domain.com
+```
+
+YunoHost will automatically:
+- Create Nginx configuration
+- Obtain Let's Encrypt SSL certificate
+- Configure automatic renewal
+
+## Step 3: Clone Repository
+
+```bash
+cd /home/$USER
+git clone https://github.com/YOUR_USERNAME/chord.git
+cd chord
+```
+
+## Step 4: Generate Configuration
+
+```bash
+chmod +x generate-configs.sh
+./generate-configs.sh
+```
+
+When prompted:
+- **Environment:** `production`
+- **Public IP:** Your server's public IP (find with `curl ifconfig.me`)
+- **Domain:** `chord.your-domain.com`
+- **Database password:** Generate strong password
+- **JWT secret:** Generate random string
+- **LIVEKIT_API_KEY:** `devkey` (or custom)
+- **LIVEKIT_API_SECRET:** Generate random string
+
+## Step 5: Start Infrastructure
+
+```bash
+docker compose -f docker-compose.deploy.yml \
+               -f docker-compose.yunohost.yml \
+               --profile infra up -d
+```
+
+**YunoHost override closes these ports:**
+- SQL Server 1433 (security risk if exposed!)
+- Redis 6379 (YunoHost has own Redis)
+
+**Exposed ports (safe):**
+- MinIO: 9000 (API), 9001 (Console)
+- LiveKit: 7880 (WebSocket), 7881 (RTC)
+- Coturn: 3478 (TURN server)
+
+### Verify Infrastructure
+
+```bash
+docker ps | grep chord
+
+# Check health
+docker compose -f docker-compose.deploy.yml \
+               -f docker-compose.yunohost.yml \
+               ps
+```
+
+Wait until all show "healthy" status.
+
+### Initialize MinIO
+
+```bash
+# Install MinIO client
+wget https://dl.min.io/client/mc/release/linux-amd64/mc
+chmod +x mc && sudo mv mc /usr/local/bin/
+
+# Configure (use credentials from .env)
+mc alias set chord http://localhost:9000 YOUR_MINIO_USER YOUR_MINIO_PASSWORD
+
+# Create bucket
+mc mb chord/chord-uploads
+mc anonymous set download chord/chord-uploads
+```
+
+## Step 6: Deploy Blue Stack
+
+```bash
+docker compose -f docker-compose.deploy.yml \
+               -f docker-compose.yunohost.yml \
+               --profile blue up -d
+```
+
+Services start on:
+- **API:** Port 5000
+- **Frontend:** Port 3000
+
+### Verify Deployment
+
+```bash
+# Check containers
+docker ps | grep blue
+
+# Test internally
+curl http://localhost:5000/health
+curl http://localhost:3000/health
+```
+
+## Step 7: Configure YunoHost Nginx
+
+YunoHost automatically creates:
+- `/etc/nginx/conf.d/chord.your-domain.com.conf` (main config, SSL managed by YunoHost)
+- `/etc/nginx/conf.d/chord.your-domain.com.d/` (custom config directory)
+
+Create custom proxy configuration:
+
+```bash
+sudo nano /etc/nginx/conf.d/chord.your-domain.com.d/chord.conf
+```
+
+Paste this configuration:
+
+```nginx
+# Chord Reverse Proxy Configuration
+# WebSocket upgrade headers
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# Frontend
+location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# API
+location /api {
+    proxy_pass http://127.0.0.1:5000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 25M;
+}
+
+# SignalR WebSocket (for real-time chat)
+location /hubs {
+    proxy_pass http://127.0.0.1:5000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+}
+
+# LiveKit WebSocket (for voice/video) - Optional
+location /livekit {
+    proxy_pass http://127.0.0.1:7880;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 3600s;
+}
+
+# MinIO file uploads - Optional (can use direct port 9000)
+location /uploads {
+    proxy_pass http://127.0.0.1:9000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 100M;
+}
+```
+
+**Reload Nginx:**
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+## Step 8: Test Deployment
+
+Visit `https://chord.your-domain.com` in your browser.
+
+### Check SSL
+
+YunoHost's Let's Encrypt certificate should be active automatically.
+
+```bash
+# Verify certificate
+sudo yunohost domain cert status chord.your-domain.com
+```
+
+## Step 9: Blue-Green Deployment Workflow
+
+### Deploy to Green Stack
+
+```bash
+# Pull latest code
+cd /home/$USER/chord
+git pull origin main
+
+# Start green stack
+docker compose -f docker-compose.deploy.yml \
+               -f docker-compose.yunohost.yml \
+               --profile green up -d
+```
+
+Services start on:
+- **API:** Port 5001
+- **Frontend:** Port 3001
+
+### Verify Green Stack
+
+```bash
+curl http://localhost:5001/health
+curl http://localhost:3001/health
+```
+
+### Update Nginx to Route to Green
+
+Edit `/etc/nginx/conf.d/chord.your-domain.com.d/chord.conf`:
+
+```bash
+sudo nano /etc/nginx/conf.d/chord.your-domain.com.d/chord.conf
+```
+
+Change port numbers:
+
+```nginx
+# Frontend (changed from 3000 to 3001)
+location / {
+    proxy_pass http://127.0.0.1:3001;
+    ...
+}
+
+# API (changed from 5000 to 5001)
+location /api {
+    proxy_pass http://127.0.0.1:5001;
+    ...
+}
+
+# SignalR (changed from 5000 to 5001)
+location /hubs {
+    proxy_pass http://127.0.0.1:5001;
+    ...
+}
+```
+
+Reload:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### Stop Blue Stack
+
+```bash
+docker compose -f docker-compose.deploy.yml \
+               -f docker-compose.yunohost.yml \
+               --profile blue down
+```
+
+### Next Deployment
+
+Deploy to blue (now inactive), update Nginx ports, stop green.
+
+## Step 10: GitHub Actions Setup (Optional)
+
+For automated deployments via GitHub Actions:
+
+### Set Repository Variable
+
+1. Go to: `https://github.com/YOUR_USERNAME/chord/settings/variables/actions`
+2. Click "New repository variable"
+3. Name: `COMPOSE_FILES`
+4. Value: `-f docker-compose.deploy.yml -f docker-compose.yunohost.yml`
+5. Save
+
+This tells GitHub Actions to use YunoHost overrides during deployment.
+
+### Workflow Will Automatically:
+- Build Docker images
+- Push to GitHub Container Registry
+- SSH to your server
+- Pull images
+- Deploy to inactive stack (blue/green)
+- Update Nginx configuration (you may need to customize this part)
+
+## Port Management Reference
+
+### Internal Only (No Host Port Mapping)
+- SQL Server: Accessed via `sqlserver:1433` in Docker network
+- Redis: Accessed via `redis:6379` in Docker network
+- LiveKit/Coturn: Used internally by containers
+
+### Exposed to Localhost
+- API Blue: 5000
+- API Green: 5001
+- Frontend Blue: 3000
+- Frontend Green: 3001
+- MinIO API: 9000
+- MinIO Console: 9001
+- LiveKit WebSocket: 7880
+- LiveKit RTC: 7881
+- Coturn: 3478
+
+### External Access (via YunoHost Nginx)
+- All traffic on ports 80/443 → YunoHost Nginx → Proxied to services above
+
+## YunoHost Firewall
+
+YunoHost manages its own firewall. Check/modify if needed:
+
+```bash
+# List firewall rules
+sudo yunohost firewall list
+
+# Allow additional ports (if needed, e.g., for LiveKit RTC)
+sudo yunohost firewall allow UDP 7881
+```
+
+**Note:** Ports 80/443 are already open for YunoHost's Nginx.
+
+## Monitoring and Maintenance
+
+### View Logs
+
+```bash
+# Docker logs
+docker logs -f chord-api-blue
+docker logs -f chord-frontend-blue
+docker logs -f chord-livekit
+
+# YunoHost Nginx logs
+sudo tail -f /var/log/nginx/chord.your-domain.com-access.log
+sudo tail -f /var/log/nginx/chord.your-domain.com-error.log
+```
+
+### Resource Usage
+
+```bash
+# Docker stats
+docker stats
+
+# System resources
+htop
+```
+
+### Database Backup
+
+```bash
+# Backup SQL Server database
+docker exec chord-sqlserver /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "$SQL_SA_PASSWORD" \
+  -Q "BACKUP DATABASE ChordDB TO DISK='/var/opt/mssql/backup/chord_$(date +%Y%m%d).bak'" -C
+
+# Extract backup
+docker cp chord-sqlserver:/var/opt/mssql/backup/chord_$(date +%Y%m%d).bak ./
+```
+
+### YunoHost Backup Integration
+
+To include Chord in YunoHost backups:
+
+```bash
+# Create backup script
+sudo nano /usr/local/bin/chord-backup.sh
+```
+
+```bash
+#!/bin/bash
+# Chord backup script
+BACKUP_DIR="/home/yunohost.backup/chord"
+mkdir -p "$BACKUP_DIR"
+
+# Backup database
+docker exec chord-sqlserver /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "$SQL_SA_PASSWORD" \
+  -Q "BACKUP DATABASE ChordDB TO DISK='/var/opt/mssql/backup/chord.bak'" -C
+
+docker cp chord-sqlserver:/var/opt/mssql/backup/chord.bak "$BACKUP_DIR/"
+
+# Backup .env and configs
+cp /home/$USER/chord/.env "$BACKUP_DIR/"
+cp -r /home/$USER/chord/backend/*.yaml "$BACKUP_DIR/" 2>/dev/null || true
+```
+
+```bash
+chmod +x /usr/local/bin/chord-backup.sh
+```
+
+## Troubleshooting
+
+### YunoHost Nginx 502 Bad Gateway
+
+**Cause:** Docker containers not running or not listening on expected ports
+
+**Solution:**
+```bash
+# Check containers
+docker ps | grep chord
+
+# Check Nginx can reach services
+curl http://localhost:5000/health
+curl http://localhost:3000/health
+
+# Check Nginx error logs
+sudo tail -f /var/log/nginx/chord.your-domain.com-error.log
+```
+
+### SQL Port 1433 Still Exposed (Security Risk!)
+
+**Check:**
+```bash
+sudo ss -tlnp | grep :1433
+```
+
+If you see `0.0.0.0:1433`, the port is exposed to internet!
+
+**Fix:**
+```bash
+# Ensure you're using YunoHost override
+docker compose -f docker-compose.deploy.yml \
+               -f docker-compose.yunohost.yml \
+               --profile infra down
+
+# Restart with override
+docker compose -f docker-compose.deploy.yml \
+               -f docker-compose.yunohost.yml \
+               --profile infra up -d
+
+# Verify - should show nothing
+sudo ss -tlnp | grep :1433
+```
+
+### YunoHost Let's Encrypt Certificate Issues
+
+**Check certificate status:**
+```bash
+sudo yunohost domain cert status chord.your-domain.com
+```
+
+**Renew manually:**
+```bash
+sudo yunohost domain cert renew chord.your-domain.com
+```
+
+### Port Conflicts with YunoHost Services
+
+**Error:** `bind: address already in use`
+
+**Check what's using the port:**
+```bash
+sudo ss -tlnp | grep :PORT_NUMBER
+```
+
+**Common conflicts:**
+- **Redis 6379:** YunoHost might have its own Redis → YunoHost override closes Chord Redis port
+- **Port 80/443:** YunoHost Nginx → Don't expose Caddy
+- **Other services:** Use YunoHost's app list to check
+
+```bash
+sudo yunohost app list
+```
+
+### Docker Network Conflicts
+
+If you have other Docker services:
+
+```bash
+# List networks
+docker network ls
+
+# Inspect Chord network
+docker network inspect chord_chord-network
+```
+
+### WebSocket Connection Failed
+
+**Symptoms:** Real-time chat not working, voice chat fails
+
+**Check Nginx WebSocket configuration:**
+
+Ensure these headers are in your Nginx config:
+
+```nginx
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection "upgrade";
+```
+
+**Test WebSocket:**
+```bash
+# Install wscat
+npm install -g wscat
+
+# Test SignalR
+wscat -c ws://localhost:5000/hubs/chat
+
+# Test LiveKit
+wscat -c ws://localhost:7880
+```
+
+## Security Best Practices
+
+1. **Never expose SQL Server port 1433 to internet** - Always use YunoHost override
+2. **Use strong passwords** - Generate with `openssl rand -base64 32`
+3. **Keep YunoHost updated** - `sudo yunohost tools update && sudo yunohost tools upgrade`
+4. **Monitor access logs** - Check for suspicious activity
+5. **Regular backups** - Automate with cron or YunoHost backup system
+6. **Firewall configuration** - Only open necessary ports
+
+## Performance Tuning
+
+### SQL Server Memory Limit
+
+Edit `docker-compose.deploy.yml`:
+
+```yaml
+sqlserver:
+  deploy:
+    resources:
+      limits:
+        memory: 2G
+```
+
+### Redis Memory
+
+Edit `docker-compose.deploy.yml`:
+
+```yaml
+redis:
+  command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+```
+
+## Integration with YunoHost SSO (Advanced)
+
+To integrate Chord with YunoHost's Single Sign-On:
+
+1. Install YunoHost LDAP support in your API
+2. Configure Chord API to authenticate against YunoHost's LDAP
+3. Update Nginx config to enable SSOwat authentication
+
+**This is advanced and requires code changes in the API.**
+
+## Migration from Old Setup
+
+If you're migrating from an old deployment:
+
+```bash
+# Stop old deployment
+docker compose -f docker-compose.deploy.yml --profile blue down
+docker compose -f docker-compose.deploy.yml --profile green down
+docker compose -f docker-compose.deploy.yml --profile infra down
+
+# Start with YunoHost override
+docker compose -f docker-compose.deploy.yml \
+               -f docker-compose.yunohost.yml \
+               --profile infra up -d
+
+docker compose -f docker-compose.deploy.yml \
+               -f docker-compose.yunohost.yml \
+               --profile blue up -d
+
+# Verify SQL port is closed
+sudo ss -tlnp | grep :1433  # Should show nothing
+```
+
+## Support
+
+- [Main Deployment Guide](./DEPLOYMENT.md)
+- [YunoHost Forum](https://forum.yunohost.org/)
+- [GitHub Issues](https://github.com/YOUR_USERNAME/chord/issues)

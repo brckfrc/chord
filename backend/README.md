@@ -713,11 +713,12 @@ await connection.invoke("JoinChannel", "channel-guid");
 - ✅ Unread message tracking
 - ✅ Direct Messages (1-1 private messaging)
 - ✅ Friends System (add, accept, decline, block)
+- ✅ Audit logs (guild owner access, pagination, IP tracking)
 - ✅ CI/CD with Blue-Green deployment
 
 ## Upcoming Features
 
-- Audit logs
+- Audit logs frontend UI
 - Notification settings
 - Push notifications
 - Message search

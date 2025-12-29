@@ -1,16 +1,14 @@
-# Chord Production Deployment with Existing Reverse Proxy
+# Chord Standalone Deployment with Caddy
 # Blue-Green Deployment Configuration
 #
-# Target: Server with existing reverse proxy (Nginx, Traefik, Apache, YunoHost)
-# Assumes: You have your own reverse proxy managing SSL and domain routing
+# Target: Fresh server with no existing reverse proxy
+# Includes: Caddy for automatic HTTPS, all infrastructure services
 #
 # Usage:
-#   Infrastructure: docker compose -f docker-compose.deploy.yml --profile infra up -d
-#   Blue stack:     docker compose -f docker-compose.deploy.yml --profile blue up -d
-#   Green stack:    docker compose -f docker-compose.deploy.yml --profile green up -d
-#
-# For YunoHost: Add override file
-#   docker compose -f docker-compose.deploy.yml -f docker-compose.yunohost.yml --profile blue up -d
+#   Infrastructure: docker compose -f docker-compose.standalone.yml --profile infra up -d
+#   Blue stack:     docker compose -f docker-compose.standalone.yml --profile blue up -d
+#   Green stack:    docker compose -f docker-compose.standalone.yml --profile green up -d
+#   With Caddy:     docker compose -f docker-compose.standalone.yml --profile blue --profile caddy up -d
 
 services:
   # ===========================================
@@ -125,6 +123,24 @@ services:
     command: -c /etc/turnserver.conf
     network_mode: "${TURN_NETWORK_MODE:-bridge}"
     restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: chord-caddy
+    profiles: ["caddy"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./backend/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - chord-network
+    restart: unless-stopped
+    depends_on:
+      - api-blue
+      - frontend-blue
 
   # ===========================================
   # BLUE STACK
@@ -246,9 +262,9 @@ volumes:
   sqlserver_data:
   redis_data:
   minio_data:
+  caddy_data:
+  caddy_config:
 
 networks:
   chord-network:
     driver: bridge
-
-

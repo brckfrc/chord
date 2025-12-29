@@ -104,12 +104,13 @@ jobs:
           DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_USER: ${{ github.actor }}
+          COMPOSE_FILES: ${{ vars.COMPOSE_FILES || '-f docker-compose.deploy.yml' }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT }}
-          envs: IMAGE_TAG,REGISTRY,REPO,DEPLOY_PATH,GHCR_TOKEN,GHCR_USER
+          envs: IMAGE_TAG,REGISTRY,REPO,DEPLOY_PATH,GHCR_TOKEN,GHCR_USER,COMPOSE_FILES
           script: |
             cd "${DEPLOY_PATH:-/opt/chord}"
 
@@ -124,7 +125,8 @@ jobs:
             ./scripts/deploy.sh \
               --image-tag "$IMAGE_TAG" \
               --registry "$REGISTRY" \
-              --repo "$REPO"
+              --repo "$REPO" \
+              $COMPOSE_FILES
 
       - name: Health Check
         uses: appleboy/ssh-action@v1.2.4

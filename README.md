@@ -94,31 +94,40 @@ See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/REA
 
 ```
 chord/
-├── backend/                 # .NET 9 Web API
-│   ├── Controllers/         # API endpoints
-│   ├── Hubs/                # SignalR (ChatHub, PresenceHub)
-│   ├── Services/            # Business logic
-│   └── README.md            # Backend documentation
+├── backend/                       # .NET 9 Web API
+│   ├── Controllers/               # API endpoints
+│   ├── Hubs/                      # SignalR (ChatHub, PresenceHub)
+│   ├── Services/                  # Business logic
+│   ├── docker-compose.dev.yml     # Development infrastructure
+│   ├── docker-compose.standalone.yml # Backend standalone (deprecated)
+│   └── README.md                  # Backend documentation
 │
-├── frontend/                # React + TypeScript
+├── frontend/                      # React + TypeScript
 │   ├── src/
-│   │   ├── components/      # UI components
-│   │   ├── store/           # Redux state
-│   │   └── hooks/           # Custom hooks
-│   └── README.md            # Frontend documentation
+│   │   ├── components/            # UI components
+│   │   ├── store/                 # Redux state
+│   │   └── hooks/                 # Custom hooks
+│   └── README.md                  # Frontend documentation
 │
-├── scripts/                 # Deployment scripts
-│   ├── deploy.sh            # Blue-green deployment
-│   ├── rollback.sh          # Rollback utility
-│   └── setup-infra.sh       # Infrastructure setup automation
+├── scripts/                       # Deployment scripts
+│   ├── deploy.sh                  # Blue-green deployment
+│   ├── rollback.sh                # Rollback utility
+│   └── setup-infra.sh             # Infrastructure setup automation
 │
-├── docs/
-│   └── DEPLOYMENT.md        # Deployment guide
+├── docs/                          # Documentation
+│   ├── DEPLOYMENT.md              # Deployment overview & decision tree
+│   ├── DEPLOYMENT-STANDALONE.md   # Fresh server + Caddy guide
+│   ├── DEPLOYMENT-STANDARD.md     # Existing reverse proxy guide
+│   └── DEPLOYMENT-YUNOHOST.md     # YunoHost-specific guide
 │
-├── setup-env.sh             # Automated setup script
-├── start-dev.sh             # Start development
-├── stop.sh                  # Stop all services
-└── chord_roadmap.md         # Development roadmap
+├── docker-compose.standalone.yml  # Standalone deployment (Caddy + blue-green)
+├── docker-compose.deploy.yml      # Standard VPS deployment (blue-green)
+├── docker-compose.yunohost.yml    # YunoHost overrides (security)
+│
+├── setup-env.sh                   # Automated setup script
+├── start-dev.sh                   # Start development
+├── stop.sh                        # Stop all services
+└── chord_roadmap.md               # Development roadmap
 ```
 
 ---
@@ -175,13 +184,31 @@ npm run lint     # ESLint
 
 ## Deployment
 
-For production deployment options:
+Three deployment scenarios with blue-green support:
 
-- **CI/CD Blue-Green** - Automated with GitHub Actions
-- **Behind Proxy** - YunoHost, Traefik, Nginx
-- **Standalone** - Single server with Caddy
+| Scenario | When to Use | Guide |
+|----------|-------------|-------|
+| **Standalone** | Fresh server, no existing infrastructure | [DEPLOYMENT-STANDALONE.md](docs/DEPLOYMENT-STANDALONE.md) |
+| **Standard VPS** | Have Nginx, Traefik, or Apache | [DEPLOYMENT-STANDARD.md](docs/DEPLOYMENT-STANDARD.md) |
+| **YunoHost** | Using YunoHost for self-hosting | [DEPLOYMENT-YUNOHOST.md](docs/DEPLOYMENT-YUNOHOST.md) |
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed instructions.
+**Quick Start:**
+
+```bash
+# Standalone (includes Caddy)
+docker compose -f docker-compose.standalone.yml --profile infra up -d
+docker compose -f docker-compose.standalone.yml --profile blue --profile caddy up -d
+
+# Standard VPS (bring your own reverse proxy)
+docker compose -f docker-compose.deploy.yml --profile infra up -d
+docker compose -f docker-compose.deploy.yml --profile blue up -d
+
+# YunoHost (with security overrides)
+docker compose -f docker-compose.deploy.yml -f docker-compose.yunohost.yml --profile infra up -d
+docker compose -f docker-compose.deploy.yml -f docker-compose.yunohost.yml --profile blue up -d
+```
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the decision tree and detailed instructions.
 
 ---
 
