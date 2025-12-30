@@ -27,10 +27,9 @@ export const fetchFriends = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       return await friendsApi.getFriends()
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch friends"
-      )
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to fetch friends"
+      return rejectWithValue(message)
     }
   }
 )
@@ -40,10 +39,9 @@ export const fetchOnlineFriends = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       return await friendsApi.getOnlineFriends()
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch online friends"
-      )
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to fetch online friends"
+      return rejectWithValue(message)
     }
   }
 )
@@ -53,10 +51,9 @@ export const fetchPendingRequests = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       return await friendsApi.getPendingRequests()
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch pending requests"
-      )
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to fetch pending requests"
+      return rejectWithValue(message)
     }
   }
 )
@@ -67,10 +64,9 @@ export const sendFriendRequest = createAsyncThunk(
     try {
       await friendsApi.sendFriendRequest(username)
       return username
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to send friend request"
-      )
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to send friend request"
+      return rejectWithValue(message)
     }
   }
 )
@@ -81,10 +77,9 @@ export const acceptFriendRequest = createAsyncThunk(
     try {
       await friendsApi.acceptFriendRequest(requestId)
       return requestId
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to accept friend request"
-      )
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to accept friend request"
+      return rejectWithValue(message)
     }
   }
 )
@@ -95,10 +90,9 @@ export const declineFriendRequest = createAsyncThunk(
     try {
       await friendsApi.declineFriendRequest(requestId)
       return requestId
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to decline friend request"
-      )
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to decline friend request"
+      return rejectWithValue(message)
     }
   }
 )

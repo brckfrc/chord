@@ -222,7 +222,7 @@ export function useLiveKit(): UseLiveKitReturn {
         updateParticipants();
       });
 
-      newRoom.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+      newRoom.on(RoomEvent.TrackUnsubscribed, (track, _publication, participant) => {
         console.log("[LiveKit] Track unsubscribed:", {
           trackSid: track.sid,
           kind: track.kind,
