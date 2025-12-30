@@ -117,13 +117,23 @@ health_check() {
     log_info "Waiting for $stack stack to be healthy..."
     
     while [ $elapsed -lt $HEALTH_TIMEOUT ]; do
+        local api_healthy=false
+        local frontend_healthy=false
+        
         # Check API health
         if curl -sf "http://localhost:$api_port/health" > /dev/null 2>&1; then
-            # Check Frontend health
-            if curl -sf "http://localhost:$frontend_port/health" > /dev/null 2>&1; then
-                log_success "$stack stack is healthy!"
-                return 0
-            fi
+            api_healthy=true
+        fi
+        
+        # Check Frontend health
+        if curl -sf "http://localhost:$frontend_port/health" > /dev/null 2>&1; then
+            frontend_healthy=true
+        fi
+        
+        # Both must be healthy
+        if [ "$api_healthy" = true ] && [ "$frontend_healthy" = true ]; then
+            log_success "$stack stack is healthy!"
+            return 0
         fi
         
         sleep $HEALTH_INTERVAL
