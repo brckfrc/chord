@@ -186,19 +186,48 @@ export function useLiveKit(): UseLiveKitReturn {
         dispatch(setConnectionState(mapConnectionState(connState)));
       });
 
-      newRoom.on(RoomEvent.ParticipantConnected, () => {
+      newRoom.on(RoomEvent.ParticipantConnected, (participant) => {
+        console.log("[LiveKit] Participant connected:", {
+          identity: participant.identity,
+          name: participant.name,
+          isLocal: participant instanceof LocalParticipant,
+          audioTracks: Array.from(participant.audioTrackPublications.values()).map(pub => ({
+            trackSid: pub.trackSid,
+            kind: pub.kind,
+            isSubscribed: pub.isSubscribed,
+            track: pub.track ? "exists" : "null"
+          }))
+        });
         updateParticipants();
       });
 
-      newRoom.on(RoomEvent.ParticipantDisconnected, () => {
+      newRoom.on(RoomEvent.ParticipantDisconnected, (participant) => {
+        console.log("[LiveKit] Participant disconnected:", participant.identity);
         updateParticipants();
       });
 
-      newRoom.on(RoomEvent.TrackSubscribed, () => {
+      newRoom.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+        console.log("[LiveKit] Track subscribed:", {
+          trackSid: track.sid,
+          kind: track.kind,
+          source: track.source,
+          participantIdentity: participant.identity,
+          isRemote: participant instanceof RemoteParticipant,
+          publication: {
+            trackSid: publication.trackSid,
+            kind: publication.kind,
+            isSubscribed: publication.isSubscribed
+          }
+        });
         updateParticipants();
       });
 
-      newRoom.on(RoomEvent.TrackUnsubscribed, () => {
+      newRoom.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+        console.log("[LiveKit] Track unsubscribed:", {
+          trackSid: track.sid,
+          kind: track.kind,
+          participantIdentity: participant.identity
+        });
         updateParticipants();
       });
 
@@ -235,6 +264,21 @@ export function useLiveKit(): UseLiveKitReturn {
       // Connect to the room
       await newRoom.connect(liveKitUrl, liveKitToken);
 
+      console.log("[LiveKit] Connected to room:", {
+        name: newRoom.name,
+        localParticipant: {
+          identity: newRoom.localParticipant.identity,
+          audioTracks: Array.from(newRoom.localParticipant.audioTrackPublications.values()).length
+        },
+        remoteParticipants: Array.from(newRoom.remoteParticipants.values()).map(p => ({
+          identity: p.identity,
+          audioTracks: Array.from(p.audioTrackPublications.values()).map(pub => ({
+            trackSid: pub.trackSid,
+            isSubscribed: pub.isSubscribed
+          }))
+        }))
+      });
+
       updateState({
         isConnected: true,
         isConnecting: false,
@@ -245,7 +289,13 @@ export function useLiveKit(): UseLiveKitReturn {
       // Enable microphone by default
       try {
         const audioTrack = await createLocalAudioTrack();
+        console.log("[LiveKit] Created local audio track:", {
+          trackId: audioTrack.sid,
+          kind: audioTrack.kind,
+          enabled: !audioTrack.isMuted
+        });
         await newRoom.localParticipant.publishTrack(audioTrack);
+        console.log("[LiveKit] Published local audio track");
         updateState({ isMicrophoneEnabled: true });
       } catch (err) {
         console.error("Failed to enable microphone:", err);
