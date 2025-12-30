@@ -158,7 +158,7 @@ services:
       - LIVEKIT_URL=${LIVEKIT_URL:-ws://livekit:7880}
       - LIVEKIT_PUBLIC_URL=${LIVEKIT_PUBLIC_URL:-wss://chord.borak.dev/livekit}
     ports:
-      - "5000:80"
+      - "5002:80"
     networks:
       - chord-network
     restart: unless-stopped
@@ -174,7 +174,7 @@ services:
     container_name: chord-frontend-blue
     profiles: ["blue"]
     ports:
-      - "3000:80"
+      - "3002:80"
     networks:
       - chord-network
     restart: unless-stopped
@@ -217,7 +217,7 @@ services:
       - LIVEKIT_URL=${LIVEKIT_URL:-ws://livekit:7880}
       - LIVEKIT_PUBLIC_URL=${LIVEKIT_PUBLIC_URL:-wss://chord.borak.dev/livekit}
     ports:
-      - "5002:80"
+      - "5003:80"
     networks:
       - chord-network
     restart: unless-stopped
@@ -233,7 +233,7 @@ services:
     container_name: chord-frontend-green
     profiles: ["green"]
     ports:
-      - "3002:80"
+      - "3003:80"
     networks:
       - chord-network
     restart: unless-stopped

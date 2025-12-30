@@ -93,18 +93,18 @@ get_inactive_stack() {
 get_api_port() {
     local stack=$1
     if [ "$stack" == "blue" ]; then
-        echo "5000"
-    else
         echo "5002"
+    else
+        echo "5003"
     fi
 }
 
 get_frontend_port() {
     local stack=$1
     if [ "$stack" == "blue" ]; then
-        echo "3000"
-    else
         echo "3002"
+    else
+        echo "3003"
     fi
 }
 

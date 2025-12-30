@@ -59,18 +59,18 @@ set_active_stack() {
 get_api_port() {
     local stack=$1
     if [ "$stack" == "blue" ]; then
-        echo "5000"
-    else
         echo "5002"
+    else
+        echo "5003"
     fi
 }
 
 get_frontend_port() {
     local stack=$1
     if [ "$stack" == "blue" ]; then
-        echo "3000"
-    else
         echo "3002"
+    else
+        echo "3003"
     fi
 }
 
@@ -159,8 +159,8 @@ show_status() {
     echo "Blue stack:"
     if check_stack_running "blue"; then
         echo "  ✓ Running"
-        echo "    API: http://localhost:5000"
-        echo "    Frontend: http://localhost:3000"
+        echo "    API: http://localhost:5002"
+        echo "    Frontend: http://localhost:3002"
     else
         echo "  ✗ Not running"
     fi
@@ -169,8 +169,8 @@ show_status() {
     echo "Green stack:"
     if check_stack_running "green"; then
         echo "  ✓ Running"
-        echo "    API: http://localhost:5001"
-        echo "    Frontend: http://localhost:3001"
+        echo "    API: http://localhost:5003"
+        echo "    Frontend: http://localhost:3003"
     else
         echo "  ✗ Not running"
     fi

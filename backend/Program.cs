@@ -121,7 +121,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // CORS - Read allowed origins from environment
 var corsOrigins = Environment.GetEnvironmentVariable("CORS_ORIGINS")?.Split(',')
-    ?? new[] { "http://localhost:3000", "http://localhost:5173" };
+    ?? new[] { "http://localhost:3002", "http://localhost:5173" };
 
 builder.Services.AddCors(options =>
 {

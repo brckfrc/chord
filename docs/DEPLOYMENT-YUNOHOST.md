@@ -3,6 +3,7 @@
 **Target Scenario:** YunoHost self-hosting server
 
 **What's Different:**
+
 - YunoHost Nginx handles all external traffic and SSL
 - Port configuration adjusted to avoid conflicts
 - Blue-green deployment with YunoHost-safe settings
@@ -64,6 +65,7 @@ sudo yunohost domain cert install chord.your-domain.com
 ```
 
 YunoHost will automatically:
+
 - Create Nginx configuration
 - Obtain Let's Encrypt SSL certificate
 - Configure automatic renewal
@@ -84,6 +86,7 @@ chmod +x generate-configs.sh
 ```
 
 When prompted:
+
 - **Environment:** `production`
 - **Public IP:** Your server's public IP (find with `curl ifconfig.me`)
 - **Domain:** `chord.your-domain.com`
@@ -101,10 +104,12 @@ docker compose -f docker-compose.deploy.yml \
 ```
 
 **YunoHost override closes these ports:**
+
 - SQL Server 1433 (security risk if exposed!)
 - Redis 6379 (YunoHost has own Redis)
 
 **Exposed ports (safe):**
+
 - MinIO: 9000 (API), 9001 (Console)
 - LiveKit: 7880 (WebSocket), 7881 (RTC)
 - Coturn: 3478 (TURN server)
@@ -146,6 +151,7 @@ docker compose -f docker-compose.deploy.yml \
 ```
 
 Services start on:
+
 - **API:** Port 5000
 - **Frontend:** Port 3000
 
@@ -156,13 +162,14 @@ Services start on:
 docker ps | grep blue
 
 # Test internally
-curl http://localhost:5000/health
-curl http://localhost:3000/health
+curl http://localhost:5002/health
+curl http://localhost:3002/health
 ```
 
 ## Step 7: Configure YunoHost Nginx
 
 YunoHost automatically creates:
+
 - `/etc/nginx/conf.d/chord.your-domain.com.conf` (main config, SSL managed by YunoHost)
 - `/etc/nginx/conf.d/chord.your-domain.com.d/` (custom config directory)
 
@@ -184,7 +191,7 @@ map $http_upgrade $connection_upgrade {
 
 # Frontend
 location / {
-    proxy_pass http://127.0.0.1:3000;
+    proxy_pass http://127.0.0.1:3002;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection $connection_upgrade;
@@ -196,7 +203,7 @@ location / {
 
 # API
 location /api {
-    proxy_pass http://127.0.0.1:5000;
+    proxy_pass http://127.0.0.1:5002;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -209,7 +216,7 @@ location /api {
 # IMPORTANT: Frontend requests /api/hubs but backend expects /hubs
 # So we strip the /api prefix here
 location /api/hubs {
-    proxy_pass http://127.0.0.1:5000/hubs;
+    proxy_pass http://127.0.0.1:5002/hubs;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
@@ -318,6 +325,7 @@ docker compose -f docker-compose.deploy.yml \
 ```
 
 Services start on:
+
 - **API:** Port 5002
 - **Frontend:** Port 3002
 
@@ -393,6 +401,7 @@ For automated deployments via GitHub Actions:
 This tells GitHub Actions to use YunoHost overrides during deployment.
 
 ### Workflow Will Automatically:
+
 - Build Docker images
 - Push to GitHub Container Registry
 - SSH to your server
@@ -403,11 +412,13 @@ This tells GitHub Actions to use YunoHost overrides during deployment.
 ## Port Management Reference
 
 ### Internal Only (No Host Port Mapping)
+
 - SQL Server: Accessed via `sqlserver:1433` in Docker network
 - Redis: Accessed via `redis:6379` in Docker network
 - LiveKit/Coturn: Used internally by containers
 
 ### Exposed to Localhost
+
 - API Blue: 5000
 - API Green: 5002 (changed from 5001 to avoid conflicts)
 - Frontend Blue: 3000
@@ -419,6 +430,7 @@ This tells GitHub Actions to use YunoHost overrides during deployment.
 - Coturn: 3478
 
 ### External Access (via YunoHost Nginx)
+
 - All traffic on ports 80/443 → YunoHost Nginx → Proxied to services above
 
 ## YunoHost Firewall
@@ -510,13 +522,14 @@ chmod +x /usr/local/bin/chord-backup.sh
 **Cause:** Docker containers not running or not listening on expected ports
 
 **Solution:**
+
 ```bash
 # Check containers
 docker ps | grep chord
 
 # Check Nginx can reach services
-curl http://localhost:5000/health
-curl http://localhost:3000/health
+curl http://localhost:5002/health
+curl http://localhost:3002/health
 
 # Check Nginx error logs
 sudo tail -f /var/log/nginx/chord.your-domain.com-error.log
@@ -525,6 +538,7 @@ sudo tail -f /var/log/nginx/chord.your-domain.com-error.log
 ### SQL Port 1433 Still Exposed (Security Risk!)
 
 **Check:**
+
 ```bash
 sudo ss -tlnp | grep :1433
 ```
@@ -532,6 +546,7 @@ sudo ss -tlnp | grep :1433
 If you see `0.0.0.0:1433`, the port is exposed to internet!
 
 **Fix:**
+
 ```bash
 # Ensure you're using YunoHost override
 docker compose -f docker-compose.deploy.yml \
@@ -550,11 +565,13 @@ sudo ss -tlnp | grep :1433
 ### YunoHost Let's Encrypt Certificate Issues
 
 **Check certificate status:**
+
 ```bash
 sudo yunohost domain cert status chord.your-domain.com
 ```
 
 **Renew manually:**
+
 ```bash
 sudo yunohost domain cert renew chord.your-domain.com
 ```
@@ -564,11 +581,13 @@ sudo yunohost domain cert renew chord.your-domain.com
 **Error:** `bind: address already in use`
 
 **Check what's using the port:**
+
 ```bash
 sudo ss -tlnp | grep :PORT_NUMBER
 ```
 
 **Common conflicts:**
+
 - **Redis 6379:** YunoHost might have its own Redis → YunoHost override closes Chord Redis port
 - **Port 80/443:** YunoHost Nginx → Don't expose Caddy
 - **Other services:** Use YunoHost's app list to check
@@ -603,12 +622,13 @@ proxy_set_header Connection "upgrade";
 ```
 
 **Test WebSocket:**
+
 ```bash
 # Install wscat
 npm install -g wscat
 
 # Test SignalR
-wscat -c ws://localhost:5000/hubs/chat
+wscat -c ws://localhost:5002/hubs/chat
 
 # Test LiveKit
 wscat -c ws://localhost:7880
@@ -686,6 +706,7 @@ sudo ss -tlnp | grep :1433  # Should show nothing
 **Cause:** LiveKit trying to use TLS for TURN but certificate file doesn't exist.
 
 **Solution:**
+
 ```bash
 # Edit livekit.yaml
 nano backend/livekit.yaml
