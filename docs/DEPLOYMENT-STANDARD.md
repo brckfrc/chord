@@ -134,7 +134,9 @@ server {
     }
 
     # SignalR WebSocket (for real-time chat)
-    location /hubs/ {
+    # IMPORTANT: Frontend requests /api/hubs but backend expects /hubs
+    # So we strip the /api prefix here
+    location /api/hubs/ {
         proxy_pass http://chord_api/hubs/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

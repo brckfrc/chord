@@ -84,10 +84,13 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 var liveKitApiKey = Environment.GetEnvironmentVariable("LIVEKIT_API_KEY") ?? "devkey";
 var liveKitApiSecret = Environment.GetEnvironmentVariable("LIVEKIT_API_SECRET") ?? "secret";
 var liveKitUrl = Environment.GetEnvironmentVariable("LIVEKIT_URL") ?? "ws://localhost:7880";
+// Public URL for frontend (should be the reverse proxy path, e.g., wss://domain.com/livekit)
+var liveKitPublicUrl = Environment.GetEnvironmentVariable("LIVEKIT_PUBLIC_URL") ?? liveKitUrl;
 
 builder.Configuration["LiveKit:ApiKey"] = liveKitApiKey;
 builder.Configuration["LiveKit:ApiSecret"] = liveKitApiSecret;
 builder.Configuration["LiveKit:Url"] = liveKitUrl;
+builder.Configuration["LiveKit:PublicUrl"] = liveKitPublicUrl;
 
 // MinIO Configuration
 var minioEndpoint = Environment.GetEnvironmentVariable("MINIO_ENDPOINT") ?? "localhost:9000";

@@ -11,6 +11,7 @@ public class VoiceService : IVoiceService
     private readonly string _apiKey;
     private readonly string _apiSecret;
     private readonly string _liveKitUrl;
+    private readonly string _liveKitPublicUrl;
     private readonly ILogger<VoiceService> _logger;
 
     public VoiceService(IConfiguration configuration, ILogger<VoiceService> logger)
@@ -18,6 +19,8 @@ public class VoiceService : IVoiceService
         _apiKey = configuration["LiveKit:ApiKey"] ?? "devkey";
         _apiSecret = configuration["LiveKit:ApiSecret"] ?? "secret";
         _liveKitUrl = configuration["LiveKit:Url"] ?? "ws://localhost:7880";
+        // Public URL for frontend (should be the reverse proxy path)
+        _liveKitPublicUrl = configuration["LiveKit:PublicUrl"] ?? _liveKitUrl;
         _logger = logger;
     }
 
@@ -51,7 +54,7 @@ public class VoiceService : IVoiceService
             return Task.FromResult(new VoiceTokenResponseDto
             {
                 Token = jwt,
-                Url = _liveKitUrl,
+                Url = _liveKitPublicUrl, // Use public URL for frontend
                 RoomName = roomName
             });
         }

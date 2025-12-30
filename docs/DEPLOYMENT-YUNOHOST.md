@@ -206,8 +206,10 @@ location /api {
 }
 
 # SignalR WebSocket (for real-time chat)
-location /hubs {
-    proxy_pass http://127.0.0.1:5000;
+# IMPORTANT: Frontend requests /api/hubs but backend expects /hubs
+# So we strip the /api prefix here
+location /api/hubs {
+    proxy_pass http://127.0.0.1:5000/hubs;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
@@ -264,6 +266,42 @@ YunoHost's Let's Encrypt certificate should be active automatically.
 sudo yunohost domain cert status chord.your-domain.com
 ```
 
+## Important Configuration Notes
+
+### Port Configuration
+
+**Green stack uses ports 5002/3002** (instead of standard 5001/3001) to avoid potential conflicts with other services on your server.
+
+- Blue: API 5000, Frontend 3000
+- Green: API 5002, Frontend 3002
+
+### SignalR Path Routing
+
+**Critical:** Frontend requests `/api/hubs` but backend expects `/hubs`. Your Nginx config must strip the `/api` prefix:
+
+```nginx
+location /api/hubs {
+    proxy_pass http://127.0.0.1:5002/hubs;  # /api/hubs → /hubs
+    ...
+}
+```
+
+Without this path stripping, SignalR WebSocket connections will fail with 404.
+
+### LiveKit TLS Configuration
+
+**If LiveKit keeps restarting with "TURN tls cert required" error:**
+
+LiveKit's `tls_port` must be disabled because YunoHost Nginx handles all SSL termination.
+
+```yaml
+# backend/livekit.yaml
+turn:
+  enabled: true
+  #tls_port: 5349   # Comment out - no TLS cert needed
+  udp_port: 3478
+```
+
 ## Step 9: Blue-Green Deployment Workflow
 
 ### Deploy to Green Stack
@@ -314,8 +352,9 @@ location /api {
 }
 
 # SignalR (changed from 5000 to 5002)
-location /hubs {
-    proxy_pass http://127.0.0.1:5002;
+# Strip /api prefix: /api/hubs → /hubs
+location /api/hubs {
+    proxy_pass http://127.0.0.1:5002/hubs;
     ...
 }
 ```
@@ -370,9 +409,9 @@ This tells GitHub Actions to use YunoHost overrides during deployment.
 
 ### Exposed to Localhost
 - API Blue: 5000
-- API Green: 5002
+- API Green: 5002 (changed from 5001 to avoid conflicts)
 - Frontend Blue: 3000
-- Frontend Green: 3002
+- Frontend Green: 3002 (changed from 3001 to avoid conflicts)
 - MinIO API: 9000
 - MinIO Console: 9001
 - LiveKit WebSocket: 7880
@@ -639,6 +678,33 @@ docker compose -f docker-compose.deploy.yml \
 # Verify SQL port is closed
 sudo ss -tlnp | grep :1433  # Should show nothing
 ```
+
+### LiveKit Restart Loop
+
+**Error:** `TURN tls cert required: open : no such file or directory`
+
+**Cause:** LiveKit trying to use TLS for TURN but certificate file doesn't exist.
+
+**Solution:**
+```bash
+# Edit livekit.yaml
+nano backend/livekit.yaml
+
+# Comment out tls_port:
+turn:
+  enabled: true
+  #tls_port: 5349   # Disabled - no TLS cert needed
+  udp_port: 3478
+
+# Restart LiveKit
+docker restart chord-livekit
+
+# Verify it's running
+docker ps | grep livekit
+# Should show: Up X minutes (healthy)
+```
+
+**Why this works:** YunoHost Nginx handles all SSL/TLS termination. LiveKit only needs UDP TURN server, not TLS.
 
 ## Support
 
