@@ -143,11 +143,14 @@ jobs:
 
       - name: Health Check
         uses: appleboy/ssh-action@v1.2.4
+        env:
+          DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT }}
+          envs: DEPLOY_PATH
           script: |
             sleep 10
             cd "${DEPLOY_PATH:-/opt/chord}"
