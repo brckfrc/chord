@@ -150,9 +150,19 @@ jobs:
           port: ${{ secrets.VPS_SSH_PORT }}
           script: |
             sleep 10
+            cd "${DEPLOY_PATH:-/opt/chord}"
+            # Check active stack and use correct ports
+            ACTIVE=$(cat .deploy-state)
+            if [ "$ACTIVE" == "blue" ]; then
+              API_PORT=5000
+              FRONTEND_PORT=3000
+            else
+              API_PORT=5002
+              FRONTEND_PORT=3002
+            fi
             # Internal health check (no SSL issues)
-            curl -f http://localhost:5000/health || exit 1
-            curl -f http://localhost:3000/health || exit 1
+            curl -f http://localhost:$API_PORT/health || exit 1
+            curl -f http://localhost:$FRONTEND_PORT/health || exit 1
 
       - name: Notify Success
         if: success()
