@@ -1,8 +1,7 @@
 import * as signalR from "@microsoft/signalr";
 
 // SignalR base URL (hubs are mapped at root level, not under /api)
-const SIGNALR_BASE_URL =
-  import.meta.env.VITE_SIGNALR_BASE_URL || "http://localhost:5049";
+const SIGNALR_BASE_URL = import.meta.env.VITE_SIGNALR_BASE_URL || "/api";
 
 // Global connection manager - one connection per hubUrl
 class SignalRConnectionManager {
