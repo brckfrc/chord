@@ -164,7 +164,29 @@ class SignalRConnectionManager {
 
   async stopConnection(hubUrl: string): Promise<void> {
     const connection = this.connections.get(hubUrl);
-    if (
+    const connectingPromise = this.connectingPromises.get(hubUrl);
+    
+    // If there's a connecting promise, we need to handle it
+    if (connectingPromise) {
+      // Delete the promise first to prevent new connections
+      this.connectingPromises.delete(hubUrl);
+      // Try to stop the connection if it exists
+      if (connection) {
+        try {
+          // Only stop if not already disconnected
+          if (connection.state !== signalR.HubConnectionState.Disconnected) {
+            await connection.stop();
+          }
+        } catch (err) {
+          // Ignore errors when stopping during connection
+          console.debug("Error stopping connection during cleanup:", err);
+        }
+      }
+      // Clean up state
+      this.connections.delete(hubUrl);
+      this.connectionStates.delete(hubUrl);
+      this.subscribers.delete(hubUrl);
+    } else if (
       connection &&
       connection.state !== signalR.HubConnectionState.Disconnected
     ) {

@@ -55,29 +55,14 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
         setConnectionState("Connected");
         setError(null);
       }
-    } else if (existingState === "Connecting") {
-      // Connection is already being created, wait for it
-      connectionManager
-        .createConnection(hubUrl, getAccessToken)
-        .then(() => {
-          if (isMounted) {
-            connectionStateRef.current = "Connected";
-            setConnectionState("Connected");
-            setError(null);
-            optionsRef.current.onConnected?.();
-          }
-        })
-        .catch((err) => {
-          if (isMounted) {
-            connectionStateRef.current = "Disconnected";
-            setConnectionState("Disconnected");
-            setError(err.message || "Failed to connect");
-            // Only log non-abort errors (abort errors are expected during React Strict Mode)
-            if (!err.message?.includes("stopped during negotiation") && !err.message?.includes("AbortError")) {
-              console.error("SignalR connection error:", err);
-            }
-          }
-        });
+    } else if (existingState === "Connecting" || existingState === "Reconnecting") {
+      // Connection is already being created/reconnecting, just wait for it via subscription
+      // Don't call createConnection again - connection manager will return the existing promise
+      // Just subscribe to state changes and wait
+      if (isMounted) {
+        connectionStateRef.current = existingState;
+        setConnectionState(existingState);
+      }
     } else {
       // Create new connection
       connectionManager
@@ -94,9 +79,12 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
           if (isMounted) {
             connectionStateRef.current = "Disconnected";
             setConnectionState("Disconnected");
-            setError(err.message || "Failed to connect");
+            const errorMessage = err.message || "Failed to connect";
+            setError(errorMessage);
             // Only log non-abort errors (abort errors are expected during React Strict Mode)
-            if (!err.message?.includes("stopped during negotiation") && !err.message?.includes("AbortError")) {
+            if (!errorMessage.includes("stopped during negotiation") && 
+                !errorMessage.includes("AbortError") &&
+                !errorMessage.includes("Failed to start the HttpConnection")) {
               console.error("SignalR connection error:", err);
             }
           }
