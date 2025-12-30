@@ -242,8 +242,8 @@ docker compose -f docker-compose.standalone.yml --profile green up -d
 
 ```bash
 # Test green stack directly
-curl http://localhost:5001/health  # API
-curl http://localhost:3001/health  # Frontend
+curl http://localhost:5002/health  # API
+curl http://localhost:3002/health  # Frontend
 ```
 
 ### 3. Switch Traffic to Green

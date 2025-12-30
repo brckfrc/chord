@@ -280,14 +280,14 @@ docker compose -f docker-compose.deploy.yml \
 ```
 
 Services start on:
-- **API:** Port 5001
-- **Frontend:** Port 3001
+- **API:** Port 5002
+- **Frontend:** Port 3002
 
 ### Verify Green Stack
 
 ```bash
-curl http://localhost:5001/health
-curl http://localhost:3001/health
+curl http://localhost:5002/health
+curl http://localhost:3002/health
 ```
 
 ### Update Nginx to Route to Green
@@ -301,21 +301,21 @@ sudo nano /etc/nginx/conf.d/chord.your-domain.com.d/chord.conf
 Change port numbers:
 
 ```nginx
-# Frontend (changed from 3000 to 3001)
+# Frontend (changed from 3000 to 3002)
 location / {
-    proxy_pass http://127.0.0.1:3001;
+    proxy_pass http://127.0.0.1:3002;
     ...
 }
 
-# API (changed from 5000 to 5001)
+# API (changed from 5000 to 5002)
 location /api {
-    proxy_pass http://127.0.0.1:5001;
+    proxy_pass http://127.0.0.1:5002;
     ...
 }
 
-# SignalR (changed from 5000 to 5001)
+# SignalR (changed from 5000 to 5002)
 location /hubs {
-    proxy_pass http://127.0.0.1:5001;
+    proxy_pass http://127.0.0.1:5002;
     ...
 }
 ```
@@ -370,9 +370,9 @@ This tells GitHub Actions to use YunoHost overrides during deployment.
 
 ### Exposed to Localhost
 - API Blue: 5000
-- API Green: 5001
+- API Green: 5002
 - Frontend Blue: 3000
-- Frontend Green: 3001
+- Frontend Green: 3002
 - MinIO API: 9000
 - MinIO Console: 9001
 - LiveKit WebSocket: 7880

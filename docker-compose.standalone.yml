@@ -231,7 +231,7 @@ services:
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
       - LIVEKIT_URL=${LIVEKIT_URL:-ws://livekit:7880}
     ports:
-      - "5001:80"
+      - "5002:80"
     networks:
       - chord-network
     restart: unless-stopped
@@ -247,7 +247,7 @@ services:
     container_name: chord-frontend-green
     profiles: ["green"]
     ports:
-      - "3001:80"
+      - "3002:80"
     networks:
       - chord-network
     restart: unless-stopped

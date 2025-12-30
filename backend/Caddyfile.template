@@ -3,9 +3,9 @@
 #
 # For Blue-Green deployment:
 #   - Blue API:      localhost:5000
-#   - Green API:     localhost:5001
+#   - Green API:     localhost:5002
 #   - Blue Frontend: localhost:3000
-#   - Green Frontend: localhost:3001
+#   - Green Frontend: localhost:3002
 #
 # The deploy.sh script automatically updates this file during deployment.
 

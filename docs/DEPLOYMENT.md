@@ -125,7 +125,7 @@ docker compose -f docker-compose.deploy.yml \
 All three scenarios support **blue-green deployment** for zero-downtime updates:
 
 1. **Blue stack** runs on ports 5000 (API), 3000 (Frontend)
-2. Deploy **green stack** on ports 5001 (API), 3001 (Frontend)
+2. Deploy **green stack** on ports 5002 (API), 3002 (Frontend)
 3. Test green stack
 4. Switch reverse proxy to point to green
 5. Stop blue stack
@@ -150,8 +150,8 @@ All three scenarios support **blue-green deployment** for zero-downtime updates:
 ┌───────▼─────────┐            ┌─────────▼────────┐
 │   Blue Stack    │            │   Green Stack     │
 │                 │            │                   │
-│ API:      :5000 │            │ API:       :5001  │
-│ Frontend: :3000 │            │ Frontend:  :3001  │
+│ API:      :5000 │            │ API:       :5002  │
+│ Frontend: :3000 │            │ Frontend:  :3002  │
 └───────┬─────────┘            └─────────┬────────┘
         │                                │
         └────────────┬───────────────────┘

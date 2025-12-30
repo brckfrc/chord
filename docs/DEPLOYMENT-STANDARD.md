@@ -257,20 +257,20 @@ docker compose -f docker-compose.deploy.yml --profile green up -d
 ```
 
 Services start on:
-- **API:** Port 5001
-- **Frontend:** Port 3001
+- **API:** Port 5002
+- **Frontend:** Port 3002
 
 ### Update Reverse Proxy
 
-**Nginx:** Change upstream ports in config (5000→5001, 3000→3001):
+**Nginx:** Change upstream ports in config (5000→5002, 3000→3002):
 
 ```nginx
 upstream chord_api {
-    server localhost:5001;  # Changed
+    server localhost:5002;  # Changed
 }
 
 upstream chord_frontend {
-    server localhost:3001;  # Changed
+    server localhost:3002;  # Changed
 }
 ```
 

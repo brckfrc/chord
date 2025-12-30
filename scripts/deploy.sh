@@ -95,7 +95,7 @@ get_api_port() {
     if [ "$stack" == "blue" ]; then
         echo "5000"
     else
-        echo "5001"
+        echo "5002"
     fi
 }
 
@@ -104,7 +104,7 @@ get_frontend_port() {
     if [ "$stack" == "blue" ]; then
         echo "3000"
     else
-        echo "3001"
+        echo "3002"
     fi
 }
 
