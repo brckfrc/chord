@@ -24,6 +24,9 @@ public class ChatHub : Hub
     // TODO: Migrate to Redis when scaling to multiple instances
     private static readonly Dictionary<string, HashSet<VoiceChannelUserInfo>> _voiceChannelUsers = new();
 
+    // Connection tracking: connectionId -> userId
+    private static readonly Dictionary<string, string> _connectionToUserId = new();
+
     private class VoiceChannelUserInfo : IEquatable<VoiceChannelUserInfo>
     {
         public string UserId { get; set; } = string.Empty;
@@ -32,6 +35,7 @@ public class ChatHub : Hub
         public bool IsMuted { get; set; }
         public bool IsDeafened { get; set; }
         public int Status { get; set; }
+        public string GuildId { get; set; } = string.Empty;
 
         public bool Equals(VoiceChannelUserInfo? other)
         {
@@ -75,35 +79,163 @@ public class ChatHub : Hub
     public override async Task OnConnectedAsync()
     {
         var userId = GetUserId();
+        var connectionId = Context.ConnectionId;
+
+        // Track connection
+        lock (_connectionToUserId)
+        {
+            _connectionToUserId[connectionId] = userId.ToString();
+        }
+
+        // Check if user has old connections in voice channels
+        // If yes, clean them up (user reconnected)
+        lock (_voiceChannelUsers)
+        {
+            foreach (var kvp in _voiceChannelUsers)
+            {
+                var userInfo = kvp.Value.FirstOrDefault(u => u.UserId == userId.ToString());
+                if (userInfo != null)
+                {
+                    // User reconnected - this is normal, no need to broadcast leave
+                    _logger.LogInformation("User {UserId} reconnected, already in voice channel {ChannelId}", userId, kvp.Key);
+                }
+            }
+        }
+
         _logger.LogInformation("User {UserId} connected to ChatHub with connection {ConnectionId}",
-            userId, Context.ConnectionId);
+            userId, connectionId);
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var userId = GetUserId();
-        _logger.LogInformation("User {UserId} disconnected from ChatHub", userId);
+        var connectionId = Context.ConnectionId;
+        string? userIdentifier = null;
 
-        // Clean up user from all voice channels on disconnect
+        // Get userId from connection tracking
+        lock (_connectionToUserId)
+        {
+            if (_connectionToUserId.TryGetValue(connectionId, out var userId))
+            {
+                userIdentifier = userId;
+                _connectionToUserId.Remove(connectionId);
+            }
+        }
+
+        // Fallback to GetUserId() if not found in tracking
+        if (string.IsNullOrEmpty(userIdentifier))
+        {
+            try
+            {
+                var userId = GetUserId();
+                userIdentifier = userId.ToString();
+                _logger.LogInformation("User {UserId} disconnected from ChatHub (from GetUserId)", userIdentifier);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Cannot determine userId during disconnect, skipping voice channel cleanup");
+                await base.OnDisconnectedAsync(exception);
+                return;
+            }
+        }
+        else
+        {
+            _logger.LogInformation("User {UserId} disconnected from ChatHub (from connection tracking)", userIdentifier);
+        }
+
+        _logger.LogInformation("User {UserId} disconnected from ChatHub. Checking voice channels...", userIdentifier);
+
+        // Find all voice channels the user was in before removing them
+        var channelsToNotify = new List<(string ChannelId, string GuildId)>();
+
         lock (_voiceChannelUsers)
         {
+            // Log dictionary state at Information level
+            _logger.LogInformation("Voice channel users dictionary has {Count} channels", _voiceChannelUsers.Count);
+
+            if (_voiceChannelUsers.Count == 0)
+            {
+                _logger.LogInformation("No voice channels found in dictionary for disconnected user {UserId}", userIdentifier);
+            }
+
             var channelsToClean = new List<string>();
             foreach (var kvp in _voiceChannelUsers)
             {
-                var userToRemove = new VoiceChannelUserInfo { UserId = userId.ToString() };
-                if (kvp.Value.Remove(userToRemove))
+                // Log at Information level
+                _logger.LogInformation("Checking channel {ChannelId} with {UserCount} users", kvp.Key, kvp.Value.Count);
+
+                // Log all user IDs in this channel for debugging
+                var userIdsInChannel = string.Join(", ", kvp.Value.Select(u => u.UserId));
+                _logger.LogInformation("User IDs in channel {ChannelId}: {UserIds}. Looking for: {TargetUserId}",
+                    kvp.Key, userIdsInChannel, userIdentifier);
+
+                // Find the user info before removing to get GuildId
+                var userInfo = kvp.Value.FirstOrDefault(u => u.UserId == userIdentifier);
+                if (userInfo != null)
                 {
-                    if (kvp.Value.Count == 0)
+                    _logger.LogInformation("Found user {UserId} in channel {ChannelId} with GuildId {GuildId}",
+                        userIdentifier, kvp.Key, userInfo.GuildId);
+
+                    var userToRemove = new VoiceChannelUserInfo { UserId = userIdentifier };
+                    if (kvp.Value.Remove(userToRemove))
                     {
-                        channelsToClean.Add(kvp.Key);
+                        // User was in this channel, need to notify others
+                        channelsToNotify.Add((kvp.Key, userInfo.GuildId));
+                        _logger.LogInformation("Added channel {ChannelId} (GuildId: {GuildId}) to notify list",
+                            kvp.Key, userInfo.GuildId);
+
+                        if (kvp.Value.Count == 0)
+                        {
+                            channelsToClean.Add(kvp.Key);
+                        }
                     }
+                }
+                else
+                {
+                    _logger.LogInformation("User {UserId} not found in channel {ChannelId}", userIdentifier, kvp.Key);
                 }
             }
 
             foreach (var channelId in channelsToClean)
             {
                 _voiceChannelUsers.Remove(channelId);
+            }
+        }
+
+        _logger.LogInformation("Found {Count} channels to notify for disconnected user {UserId}",
+            channelsToNotify.Count, userIdentifier);
+
+        // Broadcast UserLeftVoiceChannel for each channel the user was in
+        foreach (var (channelId, guildId) in channelsToNotify)
+        {
+            try
+            {
+                var leaveData = new
+                {
+                    userId = userIdentifier,
+                    channelId
+                };
+
+                _logger.LogInformation("Broadcasting UserLeftVoiceChannel for user {UserId} from channel {ChannelId} to guild {GuildId}",
+                    userIdentifier, channelId, guildId);
+
+                // Broadcast to voice group AND guild group so all guild members see the update
+                await Clients.Group($"voice_{channelId}").SendAsync("UserLeftVoiceChannel", leaveData);
+                if (!string.IsNullOrEmpty(guildId))
+                {
+                    await Clients.Group($"guild_{guildId}").SendAsync("UserLeftVoiceChannel", leaveData);
+                    _logger.LogInformation("Sent UserLeftVoiceChannel to voice_{ChannelId} and guild_{GuildId}",
+                        channelId, guildId);
+                }
+                else
+                {
+                    _logger.LogWarning("GuildId is empty for channel {ChannelId}, only sent to voice group", channelId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to broadcast UserLeftVoiceChannel for disconnected user {UserId} from channel {ChannelId}",
+                    userIdentifier, channelId);
             }
         }
 
@@ -428,7 +560,8 @@ public class ChatHub : Hub
                     DisplayName = displayName,
                     IsMuted = false,
                     IsDeafened = false,
-                    Status = (int)status
+                    Status = (int)status,
+                    GuildId = channel.GuildId.ToString()
                 };
 
                 _voiceChannelUsers[channelId].Remove(userInfo); // Remove if exists (update case)

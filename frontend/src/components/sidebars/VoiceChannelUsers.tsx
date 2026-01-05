@@ -295,8 +295,12 @@ export function VoiceChannelUsers({ channelId }: VoiceChannelUsersProps) {
   }, [channelId, dispatch])
 
   const handleUserLeft = useCallback((data: { userId: string; channelId: string }) => {
+    console.log("[VoiceChannelUsers] UserLeftVoiceChannel event received:", data);
     if (data.channelId === channelId) {
+      console.log("[VoiceChannelUsers] Removing user", data.userId, "from channel", data.channelId);
       dispatch(removeVoiceChannelUser({ channelId: data.channelId, userId: data.userId }))
+    } else {
+      console.log("[VoiceChannelUsers] Event for different channel, ignoring. Expected:", channelId, "Got:", data.channelId);
     }
   }, [channelId, dispatch])
 
