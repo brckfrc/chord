@@ -6,6 +6,7 @@ import { MainLayout } from "@/components/layouts/MainLayout"
 import { FriendsLayout } from "@/components/layouts/FriendsLayout"
 import { UserProfileBar } from "@/components/user/UserProfileBar"
 import { VoiceBar } from "@/components/user/VoiceBar"
+import { GlobalAudioRenderer } from "@/components/voice/GlobalAudioRenderer"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import { getCurrentUser, updateStatusFromSignalR } from "@/store/slices/authSlice"
 import { connectionManager } from "@/hooks/useSignalRConnectionManager"
@@ -129,8 +130,8 @@ function AppContent() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* Voice Bar - Above UserProfileBar when in voice channel */}
-      {showUserProfileBar && activeVoiceChannelId && (
+      {/* Voice Bar - Above UserProfileBar when in voice channel - GLOBAL */}
+      {isAuthenticated && activeVoiceChannelId && (
         <div key="voice-bar" className="fixed bottom-14 left-0 z-[100] pointer-events-auto">
           {/* VoiceBar - GuildSidebar (w-16) + Sidebar (w-60) = w-[19rem] width */}
           <div className="w-[19rem]">
@@ -148,6 +149,9 @@ function AppContent() {
           </div>
         </div>
       )}
+
+      {/* Global Audio Renderer - Renders audio for all remote participants when in voice channel */}
+      {isAuthenticated && <GlobalAudioRenderer />}
 
     </>
   )

@@ -8,6 +8,7 @@ import {
     addVoiceChannelUser,
     removeVoiceChannelUser,
     setGuildChannels,
+    setVoiceChannelUsers,
 } from "@/store/slices/channelsSlice"
 import { joinVoiceChannel, leaveVoiceChannel } from "@/store/slices/voiceSlice"
 import { useSignalR } from "@/hooks/useSignalR"
@@ -58,6 +59,48 @@ export function ChannelSidebar() {
             }
         }
     }, [dispatch, activeGuildId, channelsByGuild])
+
+    // Fetch voice channel users when guild channels are loaded
+    useEffect(() => {
+        if (!activeGuildId || !isChatConnected || !channels.length) {
+            return
+        }
+
+        const fetchVoiceChannelUsers = async () => {
+            const voiceChannels = channels.filter((c) => c.type === ChannelType.Voice)
+
+            for (const channel of voiceChannels) {
+                try {
+                    const users = await chatInvoke("GetVoiceChannelUsers", channel.id) as Array<{
+                        userId: string
+                        username: string
+                        displayName: string
+                        isMuted: boolean
+                        isDeafened: boolean
+                        status: number
+                    }>
+
+                    if (users && users.length > 0) {
+                        dispatch(setVoiceChannelUsers({
+                            channelId: channel.id,
+                            users: users.map(u => ({
+                                userId: u.userId,
+                                username: u.username,
+                                displayName: u.displayName,
+                                isMuted: u.isMuted,
+                                isDeafened: u.isDeafened,
+                                status: u.status,
+                            }))
+                        }))
+                    }
+                } catch (error) {
+                    console.error(`Failed to fetch voice channel users for ${channel.id}:`, error)
+                }
+            }
+        }
+
+        fetchVoiceChannelUsers()
+    }, [activeGuildId, channels, isChatConnected, chatInvoke, dispatch])
 
     const handleChannelClick = (channel: { id: string; type: ChannelType }) => {
         if (activeGuildId) {
@@ -123,7 +166,7 @@ export function ChannelSidebar() {
                     // Call SignalR JoinVoiceChannel and handle response
                     if (isChatConnected) {
                         chatInvoke("JoinVoiceChannel", channel.id)
-                            .then((response: {
+                            .then(async (response: {
                                 success: boolean;
                                 liveKitToken?: string;
                                 liveKitUrl?: string;
@@ -138,6 +181,33 @@ export function ChannelSidebar() {
                                         liveKitUrl: response.liveKitUrl,
                                         roomName: response.roomName || `voice_${channel.id}`,
                                     }))
+                                    
+                                    // Fetch existing voice channel users after joining
+                                    try {
+                                        const users = await chatInvoke("GetVoiceChannelUsers", channel.id) as Array<{
+                                            userId: string;
+                                            username: string;
+                                            displayName: string;
+                                            isMuted: boolean;
+                                            isDeafened: boolean;
+                                            status: number;
+                                        }>
+                                        if (users && users.length > 0) {
+                                            dispatch(setVoiceChannelUsers({
+                                                channelId: channel.id,
+                                                users: users.map(u => ({
+                                                    userId: u.userId,
+                                                    username: u.username,
+                                                    displayName: u.displayName,
+                                                    isMuted: u.isMuted,
+                                                    isDeafened: u.isDeafened,
+                                                    status: u.status,
+                                                }))
+                                            }))
+                                        }
+                                    } catch (error) {
+                                        console.error("Failed to fetch voice channel users:", error)
+                                    }
                                 } else {
                                     console.error("Failed to get LiveKit token:", response)
                                 }

@@ -1,16 +1,33 @@
 import { useEffect, useState, useRef } from "react"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
+import { shallowEqual } from "react-redux"
 import { useLiveKit } from "@/hooks/useLiveKit"
 import { setVoiceError } from "@/store/slices/voiceSlice"
 import { ParticipantTile } from "./ParticipantTile"
 import { MediaControls } from "./MediaControls"
-import { AudioRenderer } from "./AudioRenderer"
 import { Button } from "@/components/ui/button"
 import { Loader2, AlertCircle, Mic, RefreshCw } from "lucide-react"
 
 export function VoiceRoom() {
   const dispatch = useAppDispatch()
-  const { currentChannelId, connectionState, liveKitToken, error } = useAppSelector((state) => state.voice)
+  // Use separate selectors with shallowEqual for better reactivity
+  const connectionState = useAppSelector(
+    (state) => state.voice.connectionState,
+    shallowEqual
+  )
+  const currentChannelId = useAppSelector(
+    (state) => state.voice.currentChannelId,
+    shallowEqual
+  )
+  const liveKitToken = useAppSelector(
+    (state) => state.voice.liveKitToken,
+    shallowEqual
+  )
+  const error = useAppSelector(
+    (state) => state.voice.error,
+    shallowEqual
+  )
+  
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const maxRetries = 3
@@ -27,7 +44,15 @@ export function VoiceRoom() {
     toggleMicrophone,
     toggleCamera,
     isSpeaking,
+    refreshParticipants,
   } = useLiveKit()
+
+  // Refresh participants when component mounts and is connected
+  useEffect(() => {
+    if (connectionState === "connected" && refreshParticipants) {
+      refreshParticipants()
+    }
+  }, [connectionState, refreshParticipants])
 
   // Track mount status to handle React Strict Mode double-invoke
   useEffect(() => {
@@ -231,8 +256,7 @@ export function VoiceRoom() {
               isMuted={!participant.isMicrophoneEnabled}
               isVideoEnabled={participant.isCameraEnabled}
             />
-            {/* Audio renderer for each remote participant */}
-            <AudioRenderer participant={participant} />
+            {/* Audio rendering is handled by GlobalAudioRenderer at App.tsx level */}
           </div>
         ))}
 

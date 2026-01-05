@@ -20,6 +20,31 @@ public class ChatHub : Hub
     private readonly ILogger<ChatHub> _logger;
     private readonly IDMChannelService _dmChannelService;
 
+    // In-memory storage for voice channel users
+    // TODO: Migrate to Redis when scaling to multiple instances
+    private static readonly Dictionary<string, HashSet<VoiceChannelUserInfo>> _voiceChannelUsers = new();
+
+    private class VoiceChannelUserInfo : IEquatable<VoiceChannelUserInfo>
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public bool IsMuted { get; set; }
+        public bool IsDeafened { get; set; }
+        public int Status { get; set; }
+
+        public bool Equals(VoiceChannelUserInfo? other)
+        {
+            if (other is null) return false;
+            return UserId == other.UserId;
+        }
+
+        public override int GetHashCode()
+        {
+            return UserId.GetHashCode();
+        }
+    }
+
     public ChatHub(
         AppDbContext context,
         IMessageService messageService,
@@ -59,6 +84,29 @@ public class ChatHub : Hub
     {
         var userId = GetUserId();
         _logger.LogInformation("User {UserId} disconnected from ChatHub", userId);
+
+        // Clean up user from all voice channels on disconnect
+        lock (_voiceChannelUsers)
+        {
+            var channelsToClean = new List<string>();
+            foreach (var kvp in _voiceChannelUsers)
+            {
+                var userToRemove = new VoiceChannelUserInfo { UserId = userId.ToString() };
+                if (kvp.Value.Remove(userToRemove))
+                {
+                    if (kvp.Value.Count == 0)
+                    {
+                        channelsToClean.Add(kvp.Key);
+                    }
+                }
+            }
+
+            foreach (var channelId in channelsToClean)
+            {
+                _voiceChannelUsers.Remove(channelId);
+            }
+        }
+
         await base.OnDisconnectedAsync(exception);
     }
 
@@ -141,7 +189,7 @@ public class ChatHub : Hub
             try
             {
                 var mentions = await _mentionService.GetMentionsByMessageIdAsync(message.Id);
-                
+
                 foreach (var mention in mentions)
                 {
                     // Send UserMentioned event to the mentioned user
@@ -231,8 +279,8 @@ public class ChatHub : Hub
     public async Task Typing(string channelId)
     {
         var userId = GetUserId();
-        var username = Context.User?.FindFirstValue(ClaimTypes.Name) 
-            ?? Context.User?.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName) 
+        var username = Context.User?.FindFirstValue(ClaimTypes.Name)
+            ?? Context.User?.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName)
             ?? "Unknown";
 
         // Broadcast to others in the channel (not to self)
@@ -324,8 +372,8 @@ public class ChatHub : Hub
     public async Task<VoiceJoinResponseDto> JoinVoiceChannel(string channelId)
     {
         var userId = GetUserId();
-        var username = Context.User?.FindFirstValue(ClaimTypes.Name) 
-            ?? Context.User?.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName) 
+        var username = Context.User?.FindFirstValue(ClaimTypes.Name)
+            ?? Context.User?.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName)
             ?? "Unknown";
         var displayName = Context.User?.FindFirstValue("displayName") ?? username;
 
@@ -350,7 +398,7 @@ public class ChatHub : Hub
             // Add to voice-specific SignalR group
             await Groups.AddToGroupAsync(Context.ConnectionId, $"voice_{channelId}");
 
-            _logger.LogInformation("User {UserId} joined voice channel {ChannelId} in guild {GuildId}", 
+            _logger.LogInformation("User {UserId} joined voice channel {ChannelId} in guild {GuildId}",
                 userId, channelId, channel.GuildId);
 
             // Prepare broadcast data with status field
@@ -364,6 +412,28 @@ public class ChatHub : Hub
                 isDeafened = false,
                 status = (int)status
             };
+
+            // Add user to in-memory tracking (thread-safe)
+            lock (_voiceChannelUsers)
+            {
+                if (!_voiceChannelUsers.ContainsKey(channelId))
+                {
+                    _voiceChannelUsers[channelId] = new HashSet<VoiceChannelUserInfo>();
+                }
+
+                var userInfo = new VoiceChannelUserInfo
+                {
+                    UserId = userId.ToString(),
+                    Username = username,
+                    DisplayName = displayName,
+                    IsMuted = false,
+                    IsDeafened = false,
+                    Status = (int)status
+                };
+
+                _voiceChannelUsers[channelId].Remove(userInfo); // Remove if exists (update case)
+                _voiceChannelUsers[channelId].Add(userInfo);
+            }
 
             // Broadcast to voice group AND guild group so all guild members viewing sidebar receive the update
             await Clients.Group($"voice_{channelId}").SendAsync("UserJoinedVoiceChannel", joinData);
@@ -383,7 +453,7 @@ public class ChatHub : Hub
         {
             _logger.LogWarning(ex, "User {UserId} failed to join voice channel {ChannelId}", userId, channelId);
             await Clients.Caller.SendAsync("Error", $"Failed to join voice channel: {ex.Message}");
-            
+
             return new VoiceJoinResponseDto
             {
                 Success = false,
@@ -421,6 +491,22 @@ public class ChatHub : Hub
                 await Clients.Group($"guild_{channel.GuildId}").SendAsync("UserLeftVoiceChannel", leaveData);
             }
 
+            // Remove user from in-memory tracking (thread-safe)
+            lock (_voiceChannelUsers)
+            {
+                if (_voiceChannelUsers.ContainsKey(channelId))
+                {
+                    var userToRemove = new VoiceChannelUserInfo { UserId = userId.ToString() };
+                    _voiceChannelUsers[channelId].Remove(userToRemove);
+
+                    // Clean up empty channels
+                    if (_voiceChannelUsers[channelId].Count == 0)
+                    {
+                        _voiceChannelUsers.Remove(channelId);
+                    }
+                }
+            }
+
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"voice_{channelId}");
 
             await Clients.Caller.SendAsync("LeftVoiceChannel", channelId);
@@ -452,6 +538,22 @@ public class ChatHub : Hub
             isDeafened
         };
 
+        // Update in-memory tracking (thread-safe)
+        lock (_voiceChannelUsers)
+        {
+            if (_voiceChannelUsers.ContainsKey(channelId))
+            {
+                var userInfo = _voiceChannelUsers[channelId]
+                    .FirstOrDefault(u => u.UserId == userId.ToString());
+
+                if (userInfo != null)
+                {
+                    userInfo.IsMuted = isMuted;
+                    userInfo.IsDeafened = isDeafened;
+                }
+            }
+        }
+
         // Get channel to find guild ID for broadcasting
         var channel = await _channelService.GetChannelByIdAsync(Guid.Parse(channelId), userId);
 
@@ -472,10 +574,28 @@ public class ChatHub : Hub
 
         _logger.LogDebug("User {UserId} requested active users in voice channel {ChannelId}", userId, channelId);
 
-        // TODO: In a production environment, store voice channel state in Redis
-        // For now, this returns empty - frontend will track based on join/leave events
+        lock (_voiceChannelUsers)
+        {
+            if (!_voiceChannelUsers.ContainsKey(channelId))
+            {
+                return Task.FromResult(new List<object>());
+            }
 
-        return Task.FromResult(new List<object>());
+            var users = _voiceChannelUsers[channelId]
+                .Select(u => new
+                {
+                    userId = u.UserId,
+                    username = u.Username,
+                    displayName = u.DisplayName,
+                    isMuted = u.IsMuted,
+                    isDeafened = u.IsDeafened,
+                    status = u.Status
+                })
+                .Cast<object>()
+                .ToList();
+
+            return Task.FromResult(users);
+        }
     }
 
     // ==================== DIRECT MESSAGE METHODS ====================
@@ -526,8 +646,8 @@ public class ChatHub : Hub
     public async Task TypingInDM(string dmId)
     {
         var userId = GetUserId();
-        var username = Context.User?.FindFirstValue(ClaimTypes.Name) 
-            ?? Context.User?.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName) 
+        var username = Context.User?.FindFirstValue(ClaimTypes.Name)
+            ?? Context.User?.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.UniqueName)
             ?? "Unknown";
 
         // Broadcast to the other user in the DM (not to self)

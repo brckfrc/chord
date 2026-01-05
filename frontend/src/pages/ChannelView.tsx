@@ -20,8 +20,7 @@ import { Hash, Mic, Megaphone, Bell } from "lucide-react"
 import { ChannelType } from "@/lib/api/channels"
 import { Button } from "@/components/ui/button"
 import type { MessageDto } from "@/lib/api/messages"
-// TODO: Re-enable VoiceRoom after fixing bugs
-// import { VoiceRoom } from "@/components/voice"
+import { VoiceRoom } from "@/components/voice"
 
 export function ChannelView() {
   const { channelId } = useParams<{
@@ -226,8 +225,6 @@ export function ChannelView() {
   }, [channelId, isChatConnected, chatOn, dispatch, user?.id])
 
   // Show VoiceRoom for voice channels
-  // TODO: VoiceRoom UI is temporarily disabled due to bugs
-  // Re-enable after fixing LiveKit connection issues
   if (!isTextChannel) {
     return (
       <div className="flex h-full flex-col bg-background">
@@ -238,12 +235,10 @@ export function ChannelView() {
             {currentChannel?.name || "Voice Channel"}
           </h2>
         </div>
-        
-        {/* VoiceRoom temporarily disabled - placeholder */}
-        <div className="flex-1 flex flex-col items-center justify-center p-4 text-muted-foreground">
-          <Mic className="h-12 w-12 mb-4 opacity-50" />
-          <p className="text-lg font-medium">Voice Room</p>
-          <p className="text-sm mt-1">Connected via VoiceBar below</p>
+
+        {/* VoiceRoom - ENABLED */}
+        <div className="flex-1 p-4">
+          <VoiceRoom />
         </div>
       </div>
     )

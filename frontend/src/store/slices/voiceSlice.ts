@@ -120,7 +120,9 @@ const voiceSlice = createSlice({
 
     // Connection state changes
     setConnectionState: (state, action: PayloadAction<VoiceConnectionState>) => {
+      console.log("[voiceSlice] setConnectionState called with:", action.payload, "previous:", state.connectionState);
       state.connectionState = action.payload
+      console.log("[voiceSlice] connectionState updated to:", state.connectionState);
     },
 
     // User joined voice channel (from SignalR)

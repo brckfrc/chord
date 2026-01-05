@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils"
 
 export function VoiceBar() {
   const dispatch = useAppDispatch()
-  const { activeVoiceChannelId, channels } = useAppSelector((state) => state.channels)
+  const { activeVoiceChannelId, channelsByGuild } = useAppSelector((state) => state.channels)
+  const { guilds } = useAppSelector((state) => state.guilds)
   const { user: currentUser } = useAppSelector((state) => state.auth)
   const { connectionState, liveKitToken } = useAppSelector((state) => state.voice)
 
@@ -57,14 +58,19 @@ export function VoiceBar() {
     return null
   }
 
-  // Find the active voice channel
-  const activeVoiceChannel = channels.find(
-    (channel) => channel.id === activeVoiceChannelId
-  )
+  // Find the active voice channel across all guilds
+  const activeVoiceChannel = Object.values(channelsByGuild)
+    .flat()
+    .find((channel) => channel.id === activeVoiceChannelId)
 
   if (!activeVoiceChannel) {
     return null
   }
+
+  // Find guild
+  const activeGuild = activeVoiceChannel
+    ? guilds.find((g) => g.id === activeVoiceChannel.guildId)
+    : null
 
   const handleDisconnect = async () => {
     if (!currentUser) return
@@ -127,7 +133,10 @@ export function VoiceBar() {
 
         {/* Channel Info */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{activeVoiceChannel.name}</p>
+          <p className="text-sm font-medium truncate">
+            {activeVoiceChannel.name}
+            {activeGuild && ` (${activeGuild.name})`}
+          </p>
           <p className="text-xs text-muted-foreground truncate">
             {getConnectionStatusText()}
           </p>

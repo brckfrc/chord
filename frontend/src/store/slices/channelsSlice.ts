@@ -117,8 +117,8 @@ const channelsSlice = createSlice({
     clearChannels: (state) => {
       state.channels = []
       state.selectedChannelId = null
-      state.activeVoiceChannelId = null
-      state.voiceChannelUsers = {}
+      // Don't clear activeVoiceChannelId - user might be in voice channel while viewing DMs
+      // Don't clear voiceChannelUsers - these should persist across navigation
     },
     // Set channels for a specific guild (used when switching guilds)
     setGuildChannels: (state, action: PayloadAction<{ guildId: string; channels: ChannelDto[] }>) => {
