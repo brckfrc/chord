@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import { guildsApi, type GuildDto, type CreateGuildDto, type GuildMemberDto } from "@/lib/api/guilds"
+import type { AxiosError } from "axios"
 
 interface GuildsState {
   guilds: GuildDto[]
@@ -27,9 +28,10 @@ export const fetchGuilds = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       return await guildsApi.getGuilds()
-    } catch (error: any) {
+    } catch (error) {
+      const axiosError = error as AxiosError<{ message?: string }>
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch guilds"
+        axiosError.response?.data?.message || "Failed to fetch guilds"
       )
     }
   }
@@ -40,9 +42,10 @@ export const createGuild = createAsyncThunk(
   async (data: CreateGuildDto, { rejectWithValue }) => {
     try {
       return await guildsApi.createGuild(data)
-    } catch (error: any) {
+    } catch (error) {
+      const axiosError = error as AxiosError<{ message?: string }>
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create guild"
+        axiosError.response?.data?.message || "Failed to create guild"
       )
     }
   }
@@ -66,10 +69,11 @@ export const fetchGuildMembers = createAsyncThunk(
         return nameA.localeCompare(nameB)
       })
       return { guildId, members: sorted }
-    } catch (error: any) {
+    } catch (error) {
+      const axiosError = error as AxiosError<{ message?: string }>
       return rejectWithValue({
         guildId,
-        error: error.response?.data?.message || "Failed to fetch guild members",
+        error: axiosError.response?.data?.message || "Failed to fetch guild members",
       })
     }
   }

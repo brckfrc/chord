@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore, useEffect } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import {
   Room,
   RoomEvent,
@@ -207,18 +207,18 @@ export function useLiveKit(): UseLiveKitReturn {
         updateParticipants();
       });
 
-      newRoom.on(RoomEvent.ParticipantDisconnected, (participant) => {
+      newRoom.on(RoomEvent.ParticipantDisconnected, (_participant) => {
         updateParticipants();
       });
 
-      newRoom.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+      newRoom.on(RoomEvent.TrackSubscribed, (_track, _publication, participant) => {
         // CRITICAL: Update participants immediately so AudioRenderer can mount
         if (participant instanceof RemoteParticipant) {
           updateParticipants();
         }
       });
 
-      newRoom.on(RoomEvent.TrackUnsubscribed, (track, _publication, participant) => {
+      newRoom.on(RoomEvent.TrackUnsubscribed, (_track, _publication, _participant) => {
         updateParticipants();
       });
 

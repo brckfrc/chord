@@ -18,6 +18,12 @@ export function AudioRenderer({ participant }: AudioRendererProps) {
       return
     }
 
+    // Map to store cleanup handlers for publication event listeners
+    const publicationCleanupHandlers = new Map<
+      RemoteTrackPublication,
+      { handleSubscribed: () => void; handleUnsubscribed: () => void }
+    >()
+
     // Helper function to attach audio track
     const attachAudioTrack = (publication: RemoteTrackPublication) => {
       if (!publication.track || publication.track.kind !== Track.Kind.Audio) {
@@ -69,22 +75,15 @@ export function AudioRenderer({ participant }: AudioRendererProps) {
     })
 
     // Subscribe to track changes
-    const handleTrackSubscribed = (track: Track, publication: RemoteTrackPublication) => {
-      if (track.kind === Track.Kind.Audio && publication.isSubscribed) {
+    const handleTrackSubscribed = (_track: Track, publication: RemoteTrackPublication) => {
+      if (publication.kind === Track.Kind.Audio && publication.isSubscribed) {
         attachAudioTrack(publication)
       }
     }
 
-    const handleTrackUnsubscribed = (track: Track) => {
-      if (track.kind === Track.Kind.Audio && audioElement) {
+    const handleTrackUnsubscribed = (_track: Track) => {
+      if (audioElement) {
         audioElement.srcObject = null
-      }
-    }
-
-    // Listen for publication changes (subscription status)
-    const handleTrackSubscriptionChanged = (publication: RemoteTrackPublication) => {
-      if (publication.kind === Track.Kind.Audio && publication.isSubscribed && publication.track) {
-        attachAudioTrack(publication)
       }
     }
 
@@ -94,18 +93,39 @@ export function AudioRenderer({ participant }: AudioRendererProps) {
       if (publication.kind === Track.Kind.Audio && publication.track && publication.isSubscribed) {
         attachAudioTrack(publication)
       }
+      // Listen for subscription changes on the publication itself
+      if (publication.kind === Track.Kind.Audio) {
+        const handleSubscribed = () => {
+          if (publication.track) {
+            attachAudioTrack(publication)
+          }
+        }
+        const handleUnsubscribed = () => {
+          if (audioElement) {
+            audioElement.srcObject = null
+          }
+        }
+        publication.on("subscribed", handleSubscribed)
+        publication.on("unsubscribed", handleUnsubscribed)
+        // Store cleanup handlers
+        publicationCleanupHandlers.set(publication, { handleSubscribed, handleUnsubscribed })
+      }
     }
 
     participant.on("trackSubscribed", handleTrackSubscribed)
     participant.on("trackUnsubscribed", handleTrackUnsubscribed)
-    participant.on("trackSubscriptionChanged", handleTrackSubscriptionChanged)
     participant.on("trackPublished", handleTrackPublished)
 
     return () => {
       participant.off("trackSubscribed", handleTrackSubscribed)
       participant.off("trackUnsubscribed", handleTrackUnsubscribed)
-      participant.off("trackSubscriptionChanged", handleTrackSubscriptionChanged)
       participant.off("trackPublished", handleTrackPublished)
+      // Clean up publication event listeners
+      publicationCleanupHandlers.forEach((handlers, pub) => {
+        pub.off("subscribed", handlers.handleSubscribed)
+        pub.off("unsubscribed", handlers.handleUnsubscribed)
+      })
+      publicationCleanupHandlers.clear()
       if (audioElement) {
         audioElement.srcObject = null
       }
