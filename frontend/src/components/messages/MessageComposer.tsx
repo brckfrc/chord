@@ -297,7 +297,7 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder={`Message #${channelId.substring(0, 8)}...`}
+                        placeholder={currentChannel ? `Message #${currentChannel.name}` : `Message #${channelId.substring(0, 8)}...`}
                         className="w-full px-4 py-2 bg-[#383a40] border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none max-h-32 overflow-hidden min-h-[36px] leading-[20px]"
                         rows={1}
                         disabled={isSending}

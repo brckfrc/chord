@@ -12,6 +12,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 | [backend/README.md](backend/README.md)   | API endpoints, SignalR, LiveKit, mobile integration |
 | [frontend/README.md](frontend/README.md) | React components, state management, UI              |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment scenarios, CI/CD, production setup       |
+| [docs/ER_DIAGRAM.md](docs/ER_DIAGRAM.md) | Database schema ER diagram (Mermaid)                |
 | [chord_roadmap.md](chord_roadmap.md)     | Development phases and feature roadmap              |
 
 ---
@@ -118,7 +119,8 @@ chord/
 │   ├── DEPLOYMENT.md              # Deployment overview & decision tree
 │   ├── DEPLOYMENT-STANDALONE.md   # Fresh server + Caddy guide
 │   ├── DEPLOYMENT-STANDARD.md     # Existing reverse proxy guide
-│   └── DEPLOYMENT-YUNOHOST.md     # YunoHost-specific guide
+│   ├── DEPLOYMENT-YUNOHOST.md     # YunoHost-specific guide
+│   └── ER_DIAGRAM.md              # Database ER diagram (Mermaid)
 │
 ├── docker-compose.standalone.yml  # Standalone deployment (Caddy + blue-green)
 ├── docker-compose.deploy.yml      # Standard VPS deployment (blue-green)

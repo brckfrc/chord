@@ -1000,7 +1000,7 @@ TURN_REALM=chord.local
 ## 🏗️ FAZ 12: DEPLOYMENT & DOCUMENTATION
 
 **Süre**: ~1 hafta  
-**DURUM**: 🟡 Büyük oranda tamamlandı (7/10 görev)
+**DURUM**: 🟡 Büyük oranda tamamlandı (8/10 görev)
 
 ### Görevler
 
@@ -1039,7 +1039,11 @@ TURN_REALM=chord.local
 
 #### Kalan Görevler
 
-- [ ] ER diagram güncelliği kontrol
+- [x] ER diagram güncelliği kontrol ✅
+  - ✅ `docs/ER_DIAGRAM.md` oluşturuldu (Mermaid ER diagram)
+  - ✅ Tüm entity'ler ve ilişkileri eklendi
+  - ✅ Backend README'ye AuditLog eklendi
+  - ✅ Backend README'ye ER diagram referansı eklendi
 - [ ] Postman collection güncelliği kontrol
 - [ ] Demo senaryosu hazırlama
 - [ ] Video demo kaydı
@@ -1051,7 +1055,7 @@ TURN_REALM=chord.local
 ✅ Blue-green deployment with automatic rollback  
 ✅ Comprehensive deployment documentation (4 guides)  
 ✅ API documentation (Swagger + backend/README.md)  
-⏳ ER diagram güncelliği  
+✅ ER diagram güncelliği (Mermaid diagram + entity list)  
 ⏳ Postman collection güncelliği  
 ⏳ Demo videosu hazır
 
@@ -1073,12 +1077,12 @@ TURN_REALM=chord.local
 12. **Faz 9** ✅ Permissions & Roles + Guild Settings + Profile Photos
 13. **Faz 9.5** ✅ DMs + Friends
 14. **Faz 10** 🟡 Testing + Audit Log (Backend ✅, Frontend ⏳)
-15. **Faz 12** 🟡 **ŞU AN** → Deployment & Documentation (7/10 ✅)
+15. **Faz 12** 🟡 **ŞU AN** → Deployment & Documentation (8/10 ✅)
 16. **Faz 11** → Security + Notification Settings
 
 ---
 
-## 🚀 ŞU ANKİ DURUM: FAZ 12 (7/10 ✅)
+## 🚀 ŞU ANKİ DURUM: FAZ 12 (8/10 ✅)
 
 **Kalan görevler:**
 
@@ -1160,7 +1164,7 @@ TURN_REALM=chord.local
 - Owner-only access control
 - Migration: CreateAuditLogsTable
 
-### FAZ 12: Deployment & Documentation (7/10) 🟡
+### FAZ 12: Deployment & Documentation (8/10) 🟡
 
 **Completed:**
 - Docker Compose configs (3 deployment scenarios)
@@ -1169,6 +1173,7 @@ TURN_REALM=chord.local
 - Comprehensive deployment guides (4 documents)
 - Environment management automation
 - API documentation (Swagger + backend/README.md)
+- ER diagram (Mermaid) with all entities and relationships
 
 ---
 

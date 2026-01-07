@@ -573,6 +573,8 @@ room.addListener(roomListener)
 
 ## Database Schema
 
+> **Visual ER Diagram:** See [ER_DIAGRAM.md](../docs/ER_DIAGRAM.md) for a complete visual representation of all entities and relationships.
+
 ### Entities
 
 | Entity             | Description                                               |
@@ -591,6 +593,7 @@ room.addListener(roomListener)
 | `Friendship`          | Friend relationships (Pending, Accepted, Blocked)         |
 | `DirectMessageChannel`| DM channels between users (User1Id < User2Id constraint)  |
 | `DirectMessage`       | DM messages with soft delete                              |
+| `AuditLog`            | Audit trail for guild actions (owner-only access)         |
 
 ### Permission Bitfield
 
