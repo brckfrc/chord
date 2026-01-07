@@ -65,14 +65,14 @@ docker compose -f docker-compose.deploy.yml --profile blue up -d
 ```
 
 Services:
-- **API:** Port 5000
-- **Frontend:** Port 3000
+- **API:** Port 5002
+- **Frontend:** Port 3002
 
 ### Verify
 
 ```bash
-curl http://localhost:5000/health
-curl http://localhost:3000/health
+curl http://localhost:5002/health
+curl http://localhost:3002/health
 ```
 
 ## Step 4: Configure Your Reverse Proxy
@@ -83,11 +83,11 @@ Create `/etc/nginx/sites-available/chord`:
 
 ```nginx
 upstream chord_api {
-    server localhost:5000;
+    server localhost:5002;
 }
 
 upstream chord_frontend {
-    server localhost:3000;
+    server localhost:3002;
 }
 
 upstream chord_livekit {
@@ -223,16 +223,16 @@ Create `/etc/apache2/sites-available/chord.conf`:
     SSLCertificateKeyFile /etc/letsencrypt/live/your-domain.com/privkey.pem
 
     # Frontend
-    ProxyPass / http://localhost:3000/
-    ProxyPassReverse / http://localhost:3000/
+    ProxyPass / http://localhost:3002/
+    ProxyPassReverse / http://localhost:3002/
 
     # API
-    ProxyPass /api http://localhost:5000/api
-    ProxyPassReverse /api http://localhost:5000/api
+    ProxyPass /api http://localhost:5002/api
+    ProxyPassReverse /api http://localhost:5002/api
 
     # WebSockets
-    ProxyPass /hubs ws://localhost:5000/hubs
-    ProxyPassReverse /hubs ws://localhost:5000/hubs
+    ProxyPass /hubs ws://localhost:5002/hubs
+    ProxyPassReverse /hubs ws://localhost:5002/hubs
 
     ProxyPass /livekit ws://localhost:7880/
     ProxyPassReverse /livekit ws://localhost:7880/
@@ -259,20 +259,20 @@ docker compose -f docker-compose.deploy.yml --profile green up -d
 ```
 
 Services start on:
-- **API:** Port 5002
-- **Frontend:** Port 3002
+- **API:** Port 5003
+- **Frontend:** Port 3003
 
 ### Update Reverse Proxy
 
-**Nginx:** Change upstream ports in config (5000→5002, 3000→3002):
+**Nginx:** Change upstream ports in config (5002→5003, 3002→3003):
 
 ```nginx
 upstream chord_api {
-    server localhost:5002;  # Changed
+    server localhost:5003;  # Changed
 }
 
 upstream chord_frontend {
-    server localhost:3002;  # Changed
+    server localhost:3003;  # Changed
 }
 ```
 
@@ -347,11 +347,17 @@ API will connect via `sqlserver:1433` internally.
 ### Health Checks
 
 ```bash
-# API
-curl http://localhost:5000/health
+# API (Blue stack)
+curl http://localhost:5002/health
 
-# Frontend
-curl http://localhost:3000/health
+# Frontend (Blue stack)
+curl http://localhost:3002/health
+
+# API (Green stack)
+curl http://localhost:5003/health
+
+# Frontend (Green stack)
+curl http://localhost:3003/health
 
 # LiveKit
 curl http://localhost:7880/
@@ -378,7 +384,7 @@ docker logs -f chord-api-blue
 
 ```bash
 # Check what's using the port
-sudo ss -tlnp | grep ':5000\|:3000'
+sudo ss -tlnp | grep ':5002\|:3002\|:5003\|:3003'
 
 # Stop conflicting service or change ports in .env
 ```
@@ -394,8 +400,10 @@ docker ps | grep chord
 # Check container health
 docker inspect chord-api-blue | grep Health
 
-# Test direct connection
-curl http://localhost:5000/health
+# Test direct connection (use current active stack port)
+curl http://localhost:5002/health  # Blue stack
+# or
+curl http://localhost:5003/health  # Green stack
 ```
 
 ### WebSocket Connection Failed
@@ -412,7 +420,9 @@ proxy_set_header Connection "upgrade";
 
 **Apache:**
 ```apache
-ProxyPass /hubs ws://localhost:5000/hubs
+ProxyPass /hubs ws://localhost:5002/hubs  # Blue stack
+# or
+ProxyPass /hubs ws://localhost:5003/hubs  # Green stack
 ```
 
 ## Support

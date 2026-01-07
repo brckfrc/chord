@@ -68,8 +68,8 @@ docker compose -f docker-compose.deploy.yml --profile infra up -d
 docker compose -f docker-compose.deploy.yml --profile blue up -d
 
 # Configure your reverse proxy to route to:
-# - API: localhost:5000
-# - Frontend: localhost:3000
+# - API: localhost:5002 (Blue stack)
+# - Frontend: localhost:3002 (Blue stack)
 ```
 
 **[→ Full Standard VPS Guide](./DEPLOYMENT-STANDARD.md)**
@@ -124,6 +124,15 @@ docker compose -f docker-compose.deploy.yml \
 
 All three scenarios support **blue-green deployment** for zero-downtime updates:
 
+**For Standard VPS / YunoHost (docker-compose.deploy.yml):**
+1. **Blue stack** runs on ports 5002 (API), 3002 (Frontend)
+2. Deploy **green stack** on ports 5003 (API), 3003 (Frontend)
+3. Test green stack
+4. Switch reverse proxy to point to green
+5. Stop blue stack
+6. Next deployment: deploy to blue, switch, stop green
+
+**For Standalone (docker-compose.standalone.yml):**
 1. **Blue stack** runs on ports 5000 (API), 3000 (Frontend)
 2. Deploy **green stack** on ports 5002 (API), 3002 (Frontend)
 3. Test green stack
@@ -150,8 +159,13 @@ All three scenarios support **blue-green deployment** for zero-downtime updates:
 ┌───────▼─────────┐            ┌─────────▼────────┐
 │   Blue Stack    │            │   Green Stack     │
 │                 │            │                   │
+│ API:      :5002 │            │ API:       :5003  │
+│ Frontend: :3002 │            │ Frontend:  :3003  │
+│ (Standard/YunoHost)          │ (Standard/YunoHost) │
+│                               │                     │
 │ API:      :5000 │            │ API:       :5002  │
 │ Frontend: :3000 │            │ Frontend:  :3002  │
+│ (Standalone)                  │ (Standalone)       │
 └───────┬─────────┘            └─────────┬────────┘
         │                                │
         └────────────┬───────────────────┘
@@ -239,7 +253,7 @@ All scenarios can be automated with GitHub Actions. See `.github/workflows/deplo
 ### From Standalone → Standard VPS
 
 1. Stop Caddy: `docker compose -f docker-compose.standalone.yml --profile caddy down`
-2. Configure your reverse proxy to point to ports 5000, 3000
+2. Configure your reverse proxy to point to ports 5002, 3002 (Blue stack)
 3. Continue using same compose file or switch to `docker-compose.deploy.yml`
 
 ### From Standard VPS → YunoHost
@@ -279,9 +293,17 @@ docker ps
 # Check logs
 docker logs CONTAINER_NAME
 
-# Test health endpoints
-curl http://localhost:5000/health
-curl http://localhost:3000/health
+# Test health endpoints (Standard VPS / YunoHost)
+curl http://localhost:5002/health  # Blue stack API
+curl http://localhost:3002/health  # Blue stack Frontend
+curl http://localhost:5003/health  # Green stack API
+curl http://localhost:3003/health  # Green stack Frontend
+
+# Test health endpoints (Standalone)
+curl http://localhost:5000/health  # Blue stack API
+curl http://localhost:3000/health  # Blue stack Frontend
+curl http://localhost:5002/health  # Green stack API
+curl http://localhost:3002/health  # Green stack Frontend
 ```
 
 ### SSL Certificate Issues

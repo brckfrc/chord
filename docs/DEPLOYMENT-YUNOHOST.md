@@ -152,8 +152,8 @@ docker compose -f docker-compose.deploy.yml \
 
 Services start on:
 
-- **API:** Port 5000
-- **Frontend:** Port 3000
+- **API:** Port 5002
+- **Frontend:** Port 3002
 
 ### Verify Deployment
 
@@ -277,10 +277,10 @@ sudo yunohost domain cert status chord.your-domain.com
 
 ### Port Configuration
 
-**Green stack uses ports 5002/3002** (instead of standard 5001/3001) to avoid potential conflicts with other services on your server.
+**Port configuration for YunoHost deployment:**
 
-- Blue: API 5000, Frontend 3000
-- Green: API 5002, Frontend 3002
+- Blue: API 5002, Frontend 3002
+- Green: API 5003, Frontend 3003
 
 ### SignalR Path Routing
 
@@ -326,14 +326,14 @@ docker compose -f docker-compose.deploy.yml \
 
 Services start on:
 
-- **API:** Port 5002
-- **Frontend:** Port 3002
+- **API:** Port 5003
+- **Frontend:** Port 3003
 
 ### Verify Green Stack
 
 ```bash
-curl http://localhost:5002/health
-curl http://localhost:3002/health
+curl http://localhost:5003/health
+curl http://localhost:3003/health
 ```
 
 ### Update Nginx to Route to Green
@@ -347,22 +347,22 @@ sudo nano /etc/nginx/conf.d/chord.your-domain.com.d/chord.conf
 Change port numbers:
 
 ```nginx
-# Frontend (changed from 3000 to 3002)
+# Frontend (changed from 3002 to 3003)
 location / {
-    proxy_pass http://127.0.0.1:3002;
+    proxy_pass http://127.0.0.1:3003;
     ...
 }
 
-# API (changed from 5000 to 5002)
+# API (changed from 5002 to 5003)
 location /api {
-    proxy_pass http://127.0.0.1:5002;
+    proxy_pass http://127.0.0.1:5003;
     ...
 }
 
-# SignalR (changed from 5000 to 5002)
+# SignalR (changed from 5002 to 5003)
 # Strip /api prefix: /api/hubs → /hubs
 location /api/hubs {
-    proxy_pass http://127.0.0.1:5002/hubs;
+    proxy_pass http://127.0.0.1:5003/hubs;
     ...
 }
 ```
@@ -419,10 +419,10 @@ This tells GitHub Actions to use YunoHost overrides during deployment.
 
 ### Exposed to Localhost
 
-- API Blue: 5000
-- API Green: 5002 (changed from 5001 to avoid conflicts)
-- Frontend Blue: 3000
-- Frontend Green: 3002 (changed from 3001 to avoid conflicts)
+- API Blue: 5002
+- API Green: 5003
+- Frontend Blue: 3002
+- Frontend Green: 3003
 - MinIO API: 9000
 - MinIO Console: 9001
 - LiveKit WebSocket: 7880
@@ -528,8 +528,11 @@ chmod +x /usr/local/bin/chord-backup.sh
 docker ps | grep chord
 
 # Check Nginx can reach services
-curl http://localhost:5002/health
-curl http://localhost:3002/health
+curl http://localhost:5002/health  # Blue stack
+curl http://localhost:3002/health  # Blue stack
+# or
+curl http://localhost:5003/health  # Green stack
+curl http://localhost:3003/health  # Green stack
 
 # Check Nginx error logs
 sudo tail -f /var/log/nginx/chord.your-domain.com-error.log
@@ -627,8 +630,10 @@ proxy_set_header Connection "upgrade";
 # Install wscat
 npm install -g wscat
 
-# Test SignalR
-wscat -c ws://localhost:5002/hubs/chat
+# Test SignalR (use current active stack port)
+wscat -c ws://localhost:5002/hubs/chat  # Blue stack
+# or
+wscat -c ws://localhost:5003/hubs/chat  # Green stack
 
 # Test LiveKit
 wscat -c ws://localhost:7880
