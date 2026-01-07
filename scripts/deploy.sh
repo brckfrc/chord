@@ -368,7 +368,8 @@ deploy_stack "$DEPLOY_STACK"
 
 # Health check
 if health_check "$DEPLOY_STACK"; then
-    # Switch traffic
+    # Switch traffic (only for Caddy/standalone deployments)
+    # For YunoHost, Nginx config is static and always points to green stack
     update_caddy "$DEPLOY_STACK"
     
     # Update state
