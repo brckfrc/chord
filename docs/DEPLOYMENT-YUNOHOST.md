@@ -681,6 +681,115 @@ To integrate Chord with YunoHost's Single Sign-On:
 
 **This is advanced and requires code changes in the API.**
 
+## Disabling SSO for Chord
+
+**Why disable SSO?**
+
+Chord has its own authentication system (JWT-based). YunoHost SSO (SSOwat) can interfere with Chord's API endpoints and cause redirect loops or authentication conflicts. For most deployments, you should disable SSO for the Chord domain.
+
+### Step 1: Check Current SSO Configuration
+
+First, verify what SSO-related configurations exist:
+
+```bash
+# Check main Nginx config for SSO directives
+grep -nE "access_by_lua_file|yunohost_sso\.conf\.inc|yunohost_api\.conf\.inc|yunohost_admin\.conf\.inc" \
+  /etc/nginx/conf.d/chord.borak.dev.conf
+
+# Check custom config directory
+ls -la /etc/nginx/conf.d/chord.borak.dev.d/
+```
+
+### Step 2: Disable SSO in Main Config
+
+Edit the main Nginx config file:
+
+```bash
+sudo nano /etc/nginx/conf.d/chord.borak.dev.conf
+```
+
+In both server blocks (port 80 and 443), comment out or remove:
+
+**A) SSO Lua directive:**
+```nginx
+# Comment out this line:
+#access_by_lua_file /usr/share/ssowat/access.lua;
+```
+
+**B) SSO include:**
+```nginx
+# Comment out this line:
+#include /etc/nginx/conf.d/yunohost_sso.conf.inc;
+```
+
+**C) YunoHost admin/api includes (recommended):**
+
+These can cause conflicts with Chord's `/api` endpoints:
+
+```nginx
+# Comment out these lines:
+#include /etc/nginx/conf.d/yunohost_admin.conf.inc;
+#include /etc/nginx/conf.d/yunohost_api.conf.inc;
+```
+
+**Why disable admin/api includes?**
+
+YunoHost's admin/api includes can create incorrect upstream proxies that conflict with Chord's API routing, potentially causing 502 errors or wrong request routing.
+
+### Step 3: Test and Reload Nginx
+
+```bash
+# Test configuration
+sudo nginx -t
+
+# Reload if test passes
+sudo systemctl reload nginx
+```
+
+### Step 4: Verify SSO is Disabled
+
+```bash
+# Check HTTP response (should be 200, not redirect)
+curl -I https://chord.borak.dev
+
+# Should show: HTTP/2 200 (not 302 redirect to login)
+```
+
+### Step 5: Lock Config File (Recommended)
+
+Prevent YunoHost updates from overwriting your changes:
+
+```bash
+# Lock the file (immutable)
+sudo chattr +i /etc/nginx/conf.d/chord.borak.dev.conf
+```
+
+**To unlock later (if needed):**
+```bash
+sudo chattr -i /etc/nginx/conf.d/chord.borak.dev.conf
+```
+
+### Verification Checklist
+
+After disabling SSO, verify:
+
+- ✅ `access_by_lua_file` is commented out
+- ✅ `yunohost_sso.conf.inc` include is commented out
+- ✅ `yunohost_admin.conf.inc` include is commented out (if present)
+- ✅ `yunohost_api.conf.inc` include is commented out (if present)
+- ✅ `curl -I https://chord.borak.dev` returns HTTP 200 (not 302 redirect)
+- ✅ Config file is locked with `chattr +i` (optional but recommended)
+
+### Important Notes
+
+1. **YunoHost Updates:** Even with file locking, always verify SSO settings after YunoHost system updates or `yunohost tools regen-conf` commands.
+
+2. **Custom Config Directory:** Your Chord-specific routing (in `/etc/nginx/conf.d/chord.borak.dev.d/chord.conf`) is separate and won't be affected by SSO changes.
+
+3. **Other Domains:** This only affects the Chord domain. Other YunoHost apps can still use SSO normally.
+
+4. **Re-enabling SSO:** If you need SSO later, uncomment the lines and unlock the file, but ensure Chord API is configured to handle YunoHost LDAP authentication.
+
 ## Migration from Old Setup
 
 If you're migrating from an old deployment:
