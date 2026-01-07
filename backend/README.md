@@ -92,7 +92,8 @@ backend/
 │   ├── MentionsController.cs
 │   ├── ReactionsController.cs
 │   ├── FriendsController.cs
-│   └── DMController.cs
+│   ├── DMController.cs
+│   └── AuditLogsController.cs
 ├── Hubs/                  # SignalR hubs
 │   ├── ChatHub.cs
 │   └── PresenceHub.cs
@@ -236,6 +237,47 @@ cp .env.example .env
 | PUT    | `/api/DMs/{dmId}/messages/{id}`       | Edit DM message         | Yes  |
 | DELETE | `/api/DMs/{dmId}/messages/{id}`       | Delete DM message       | Yes  |
 | POST   | `/api/DMs/{dmId}/mark-read`           | Mark DM as read         | Yes  |
+
+### Invites
+
+| Method | Endpoint                           | Description              | Auth        |
+| ------ | ---------------------------------- | ------------------------ | ----------- |
+| POST   | `/api/Invites/guilds/{guildId}`    | Create invite            | Yes         |
+| GET    | `/api/Invites/{code}`              | Get invite info (public) | No          |
+| POST   | `/api/Invites/{code}/accept`       | Accept invite            | Yes         |
+| GET    | `/api/Invites/guilds/{guildId}`    | List guild invites       | Yes (Owner) |
+| DELETE | `/api/Invites/{inviteId}`          | Revoke invite            | Yes (Owner) |
+
+### Reactions
+
+| Method | Endpoint                                    | Description      | Auth |
+| ------ | ------------------------------------------- | ---------------- | ---- |
+| GET    | `/api/messages/{messageId}/Reactions`       | Get reactions    | Yes  |
+| POST   | `/api/messages/{messageId}/Reactions`       | Add reaction     | Yes  |
+| DELETE | `/api/messages/{messageId}/Reactions/{emoji}` | Remove reaction | Yes  |
+
+### Mentions
+
+| Method | Endpoint                          | Description                    | Auth |
+| ------ | --------------------------------- | ------------------------------ | ---- |
+| GET    | `/api/Mentions`                   | Get user mentions              | Yes  |
+| GET    | `/api/Mentions/unread-count`      | Get unread mention count       | Yes  |
+| PATCH  | `/api/Mentions/{id}/mark-read`    | Mark mention as read           | Yes  |
+| PATCH  | `/api/Mentions/mark-all-read`     | Mark all mentions as read      | Yes  |
+
+**Query Parameters:**
+- `GET /api/Mentions?unreadOnly=true` - Filter unread mentions only
+- `PATCH /api/Mentions/mark-all-read?guildId={id}` - Mark all mentions in a guild as read
+
+### Audit Logs
+
+| Method | Endpoint                                    | Description              | Auth        |
+| ------ | ------------------------------------------- | ------------------------ | ----------- |
+| GET    | `/api/guilds/{guildId}/audit-logs`          | Get guild audit logs     | Yes (Owner) |
+
+**Query Parameters:**
+- `limit` - Maximum number of logs (default: 50, max: 100)
+- `page` - Page number (1-indexed)
 
 ---
 

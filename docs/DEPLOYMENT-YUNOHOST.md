@@ -142,28 +142,32 @@ mc mb chord/chord-uploads
 mc anonymous set download chord/chord-uploads
 ```
 
-## Step 6: Deploy Blue Stack
+## Step 6: Deploy Green Stack (Initial Setup)
+
+**Important:** Nginx configuration (Step 7) always points to green stack (5003/3003). For initial setup, deploy to green stack.
 
 ```bash
 docker compose -f docker-compose.deploy.yml \
                -f docker-compose.yunohost.yml \
-               --profile blue up -d
+               --profile green up -d
 ```
 
 Services start on:
 
-- **API:** Port 5002
-- **Frontend:** Port 3002
+- **API:** Port 5003
+- **Frontend:** Port 3003
+
+**Note:** Blue stack (5002/3002) is used for testing new versions before updating green. See Step 9 for blue-green deployment workflow.
 
 ### Verify Deployment
 
 ```bash
 # Check containers
-docker ps | grep blue
+docker ps | grep green
 
 # Test internally
-curl http://localhost:5002/health
-curl http://localhost:3002/health
+curl http://localhost:5003/health
+curl http://localhost:3003/health
 ```
 
 ## Step 7: Configure YunoHost Nginx
@@ -189,9 +193,11 @@ map $http_upgrade $connection_upgrade {
     ''      close;
 }
 
-# Frontend
-location / {
-    proxy_pass http://127.0.0.1:3002;
+# LiveKit WebSocket (for voice/video)
+# Strip /livekit prefix and forward to LiveKit server
+location /livekit/ {
+    rewrite ^/livekit/(.*) /$1 break;
+    proxy_pass http://127.0.0.1:7880;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection $connection_upgrade;
@@ -199,24 +205,15 @@ location / {
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-}
-
-# API
-location /api {
-    proxy_pass http://127.0.0.1:5002;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    client_max_body_size 25M;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
 }
 
 # SignalR WebSocket (for real-time chat)
 # IMPORTANT: Frontend requests /api/hubs but backend expects /hubs
 # So we strip the /api prefix here
 location /api/hubs {
-    proxy_pass http://127.0.0.1:5002/hubs;
+    proxy_pass http://127.0.0.1:5003/hubs;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
@@ -228,18 +225,39 @@ location /api/hubs {
     proxy_send_timeout 3600s;
 }
 
-# LiveKit WebSocket (for voice/video) - Optional
-location /livekit {
-    proxy_pass http://127.0.0.1:7880;
+# Health check endpoint (strip /api prefix)
+location /api/health {
+    proxy_pass http://127.0.0.1:5003/health;
     proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_read_timeout 3600s;
 }
+
+# API
+location /api {
+    proxy_pass http://127.0.0.1:5003;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 25M;
+}
+
+# Frontend
+location / {
+    proxy_pass http://127.0.0.1:3003;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
 
 # MinIO file uploads - Optional (can use direct port 9000)
 location /uploads {
@@ -311,23 +329,53 @@ turn:
 
 ## Step 9: Blue-Green Deployment Workflow
 
-### Deploy to Green Stack
+**YunoHost Blue-Green Strategy:**
+- **Green stack (5003/3003)**: Production stack - Nginx always routes to green
+- **Blue stack (5002/3002)**: Staging/test stack - deploy new versions here first
+- After testing blue, update green stack with new images
+- No Nginx config changes needed (Nginx is static, always points to green)
+
+### Deploy New Version to Blue Stack (Testing)
 
 ```bash
 # Pull latest code
 cd /home/$USER/chord
 git pull origin main
 
-# Start green stack
+# Start blue stack with new version
 docker compose -f docker-compose.deploy.yml \
                -f docker-compose.yunohost.yml \
-               --profile green up -d
+               --profile blue up -d
 ```
 
 Services start on:
 
-- **API:** Port 5003
-- **Frontend:** Port 3003
+- **API:** Port 5002
+- **Frontend:** Port 3002
+
+### Verify Blue Stack
+
+```bash
+curl http://localhost:5002/health
+curl http://localhost:3002/health
+```
+
+Test the new version on blue stack before updating production.
+
+### Update Green Stack (Production)
+
+After testing blue stack, update green stack with the new images:
+
+```bash
+# Pull new images (if using GitHub Actions, images are already pulled)
+docker pull ghcr.io/YOUR_USERNAME/chord/api:YOUR_TAG
+docker pull ghcr.io/YOUR_USERNAME/chord/frontend:YOUR_TAG
+
+# Restart green stack with new images
+docker compose -f docker-compose.deploy.yml \
+               -f docker-compose.yunohost.yml \
+               --profile green up -d --force-recreate
+```
 
 ### Verify Green Stack
 
@@ -336,45 +384,9 @@ curl http://localhost:5003/health
 curl http://localhost:3003/health
 ```
 
-### Update Nginx to Route to Green
-
-Edit `/etc/nginx/conf.d/chord.your-domain.com.d/chord.conf`:
-
-```bash
-sudo nano /etc/nginx/conf.d/chord.your-domain.com.d/chord.conf
-```
-
-Change port numbers:
-
-```nginx
-# Frontend (changed from 3002 to 3003)
-location / {
-    proxy_pass http://127.0.0.1:3003;
-    ...
-}
-
-# API (changed from 5002 to 5003)
-location /api {
-    proxy_pass http://127.0.0.1:5003;
-    ...
-}
-
-# SignalR (changed from 5002 to 5003)
-# Strip /api prefix: /api/hubs → /hubs
-location /api/hubs {
-    proxy_pass http://127.0.0.1:5003/hubs;
-    ...
-}
-```
-
-Reload:
-
-```bash
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
 ### Stop Blue Stack
+
+After confirming green stack is working:
 
 ```bash
 docker compose -f docker-compose.deploy.yml \
@@ -384,7 +396,7 @@ docker compose -f docker-compose.deploy.yml \
 
 ### Next Deployment
 
-Deploy to blue (now inactive), update Nginx ports, stop green.
+Deploy to blue (now inactive), test, then update green stack with new images. No Nginx config changes needed.
 
 ## Step 10: GitHub Actions Setup (Optional)
 
@@ -407,7 +419,7 @@ This tells GitHub Actions to use YunoHost overrides during deployment.
 - SSH to your server
 - Pull images
 - Deploy to inactive stack (blue/green)
-- Update Nginx configuration (you may need to customize this part)
+- **Note:** Nginx config is static (always points to green), so no Nginx updates are needed
 
 ## Port Management Reference
 

@@ -78,12 +78,26 @@ frontend/
 └── public/              # Static assets
 ```
 
+## Completed Features
+
+- ✅ File upload UI (upload button, progress bar, preview, attachment components)
+- ✅ WebRTC voice integration (LiveKit SFU, audio/video streaming, STUN/TURN)
+- ✅ Direct Messages UI (DM channel list, friend requests, DM navigation)
+- ✅ Friends system (add, accept, decline, block)
+- ✅ Real-time messaging (SignalR integration)
+- ✅ Guild and channel management
+- ✅ Voice channel presence
+- ✅ Message reactions and pinning
+- ✅ @Mentions with notifications
+- ✅ User presence (online/offline/idle/dnd/invisible)
+- ✅ Unread message tracking
+- ✅ Role-based permissions UI
+- ✅ Guild settings modal
+
 ## Upcoming Features
 
-- File upload UI (upload button, progress bar, preview, attachment components)
-- WebRTC voice integration (RTCPeerConnection, audio stream management, STUN/TURN config)
-- Direct Messages UI (DM channel list, friend requests, DM navigation)
 - Notification settings UI (per-channel preferences, mute/unmute, browser notification filtering)
+- Audit log frontend UI (guild settings panel)
 - Performance optimizations (code splitting, lazy loading, memoization)
 - E2E testing (Playwright/Cypress, critical flow tests)
 - Production build optimization (bundle size, asset optimization, PWA support)
