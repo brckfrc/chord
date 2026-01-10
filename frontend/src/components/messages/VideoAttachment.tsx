@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Play, Pause, Volume2, VolumeX, Maximize } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { fileValidation } from "@/lib/api/upload"
@@ -11,6 +11,7 @@ interface VideoAttachmentProps {
 
 export function VideoAttachment({ attachment, className }: VideoAttachmentProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const scrollPositionRef = useRef<{ x: number; y: number } | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -68,6 +69,38 @@ export function VideoAttachment({ attachment, className }: VideoAttachmentProps)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
+
+  // Save scroll position before fullscreen, restore after exit
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        // Exited fullscreen - restore scroll position
+        if (scrollPositionRef.current) {
+          // Use requestAnimationFrame to ensure DOM is ready
+          requestAnimationFrame(() => {
+            window.scrollTo({
+              top: scrollPositionRef.current!.y,
+              left: scrollPositionRef.current!.x,
+              behavior: "auto" // Instant restore, no animation
+            })
+            scrollPositionRef.current = null
+          })
+        }
+      } else {
+        // Entered fullscreen - save scroll position
+        scrollPositionRef.current = {
+          x: window.scrollX,
+          y: window.scrollY
+        }
+      }
+    }
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange)
+    
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange)
+    }
+  }, [])
 
   return (
     <div

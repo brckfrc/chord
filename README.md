@@ -217,6 +217,12 @@ Three deployment scenarios with blue-green support:
 | **Standard VPS** | Have Nginx, Traefik, or Apache | [DEPLOYMENT-STANDARD.md](docs/DEPLOYMENT-STANDARD.md) |
 | **YunoHost** | Using YunoHost for self-hosting | [DEPLOYMENT-YUNOHOST.md](docs/DEPLOYMENT-YUNOHOST.md) |
 
+**YunoHost Note:** YunoHost uses an automated blue-green strategy where:
+- **Blue stack (5002/3002)**: Staging environment - deploy new versions here first
+- **Green stack (5003/3003)**: Production - Nginx always routes to green
+- After blue stack health checks pass, automatically deploy to green, then stop blue
+- No manual Nginx config changes needed (Nginx is static, always points to green)
+
 **Quick Start:**
 
 ```bash
