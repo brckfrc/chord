@@ -94,6 +94,7 @@ When prompted:
 - **JWT secret:** Generate random string
 - **LIVEKIT_API_KEY:** `devkey` (or custom)
 - **LIVEKIT_API_SECRET:** Generate random string
+- **MINIO_PUBLIC_ENDPOINT:** `https://chord.your-domain.com/uploads` (required for file access)
 
 ## Step 5: Start Infrastructure
 
@@ -259,15 +260,18 @@ location / {
 }
 
 
-# MinIO file uploads - Optional (can use direct port 9000)
+# MinIO file uploads - REQUIRED for file access via public URLs
+# Strips /uploads prefix before forwarding to MinIO
 location /uploads {
+    rewrite ^/uploads/(.*) /$1 break;
     proxy_pass http://127.0.0.1:9000;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-    client_max_body_size 100M;
+    client_max_body_size 25M;
+    proxy_buffering off;
 }
 ```
 
@@ -326,6 +330,32 @@ turn:
   #tls_port: 5349   # Comment out - no TLS cert needed
   udp_port: 3478
 ```
+
+### MinIO Public Endpoint Configuration
+
+The `docker-compose.yunohost.yml` file automatically sets `MINIO_PUBLIC_ENDPOINT` environment variable for API containers:
+
+```yaml
+api-blue:
+  environment:
+    - MINIO_PUBLIC_ENDPOINT=${MINIO_PUBLIC_ENDPOINT:-https://chord.your-domain.com/uploads}
+
+api-green:
+  environment:
+    - MINIO_PUBLIC_ENDPOINT=${MINIO_PUBLIC_ENDPOINT:-https://chord.your-domain.com/uploads}
+```
+
+This ensures uploaded files are accessible via `https://chord.your-domain.com/uploads/...` instead of internal Docker hostname (`http://minio:9000/...`).
+
+**To customize the domain**, set `MINIO_PUBLIC_ENDPOINT` in your `.env` file:
+```
+MINIO_PUBLIC_ENDPOINT=https://your-custom-domain.com/uploads
+```
+
+**Why this is needed:**
+- Backend generates file URLs using `MINIO_PUBLIC_ENDPOINT`
+- Without this, URLs use internal Docker hostname (`minio:9000`) which browsers cannot resolve
+- Nginx `/uploads` location proxies requests to MinIO on port 9000
 
 ## Step 9: Blue-Green Deployment Workflow
 

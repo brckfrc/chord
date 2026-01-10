@@ -15,3 +15,11 @@ services:
 
   redis:
     ports: !reset []
+
+  api-blue:
+    environment:
+      - MINIO_PUBLIC_ENDPOINT=${MINIO_PUBLIC_ENDPOINT:-https://chord.borak.dev/uploads}
+
+  api-green:
+    environment:
+      - MINIO_PUBLIC_ENDPOINT=${MINIO_PUBLIC_ENDPOINT:-https://chord.borak.dev/uploads}

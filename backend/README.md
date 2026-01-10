@@ -196,6 +196,18 @@ cp .env.example .env
 | Video    | mp4, webm, quicktime                | 25MB     |
 | Document | pdf, docx, xlsx, txt, csv, zip, rar | 25MB     |
 
+**MinIO Public Endpoint Configuration:**
+
+For production deployments with reverse proxy (Nginx, Caddy, etc.), set `MINIO_PUBLIC_ENDPOINT` environment variable:
+
+- **YunoHost**: Automatically configured via `docker-compose.yunohost.yml` (default: `https://your-domain.com/uploads`)
+- **Standard VPS**: Set `MINIO_PUBLIC_ENDPOINT=https://your-domain.com/uploads` in `.env` or docker-compose
+- **Standalone**: Set `MINIO_PUBLIC_ENDPOINT=https://your-domain.com/uploads` in `.env` or docker-compose
+
+This ensures uploaded files are accessible via public URLs (e.g., `https://your-domain.com/uploads/chord-uploads/...`) instead of internal Docker hostnames (e.g., `http://minio:9000/...`).
+
+**Note**: Your reverse proxy must have a `/uploads` location that proxies to MinIO on port 9000.
+
 ### Voice
 
 | Method | Endpoint               | Description            | Auth |
