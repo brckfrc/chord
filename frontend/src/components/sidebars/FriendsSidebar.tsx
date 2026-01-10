@@ -7,6 +7,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { AddFriendModal } from "@/components/modals/AddFriendModal"
 import { User, Hash } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { formatRelativeTime } from "@/lib/dateUtils"
 import type { DirectMessageChannelDto } from "@/lib/api/dms"
 
 // UserStatus enum values
@@ -47,20 +48,6 @@ function DMItem({ dm }: { dm: DirectMessageChannelDto }) {
         navigate(`/me/dm/${dm.id}`)
     }
 
-    const formatTime = (dateString: string) => {
-        const date = new Date(dateString)
-        const now = new Date()
-        const diffMs = now.getTime() - date.getTime()
-        const diffMins = Math.floor(diffMs / 60000)
-        const diffHours = Math.floor(diffMs / 3600000)
-        const diffDays = Math.floor(diffMs / 86400000)
-
-        if (diffMins < 1) return "now"
-        if (diffMins < 60) return `${diffMins}m`
-        if (diffHours < 24) return `${diffHours}h`
-        if (diffDays < 7) return `${diffDays}d`
-        return date.toLocaleDateString()
-    }
 
     return (
         <button
@@ -88,7 +75,7 @@ function DMItem({ dm }: { dm: DirectMessageChannelDto }) {
                     <p className="text-sm font-medium truncate">{otherUser.username}</p>
                     {dm.lastMessage && (
                         <span className="text-xs text-muted-foreground flex-shrink-0">
-                            {formatTime(dm.lastMessage.createdAt)}
+                            {formatRelativeTime(dm.lastMessage.createdAt)}
                         </span>
                     )}
                 </div>

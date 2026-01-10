@@ -5,9 +5,11 @@ using System.Text;
 using ChordAPI.Data;
 using ChordAPI.Services;
 using ChordAPI.Middleware;
+using ChordAPI.HealthChecks;
 using Serilog;
 using StackExchange.Redis;
 using Minio;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 // Load .env file
 DotNetEnv.Env.Load();
@@ -189,7 +191,9 @@ builder.Services.AddSignalR()
 
 // Health checks
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<AppDbContext>("database");
+    .AddDbContextCheck<AppDbContext>("database")
+    .AddRedis(redisConnection, name: "redis")
+    .AddCheck<MinioHealthCheck>("minio");
 
 var app = builder.Build();
 

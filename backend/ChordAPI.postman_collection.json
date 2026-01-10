@@ -19,6 +19,36 @@
 			"key": "refreshToken",
 			"value": "",
 			"type": "string"
+		},
+		{
+			"key": "guildId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "dmId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "friendId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "friendshipId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "messageId",
+			"value": "",
+			"type": "string"
 		}
 	],
 	"item": [
@@ -212,6 +242,464 @@
 							"raw": "{{baseUrl}}/",
 							"host": ["{{baseUrl}}"],
 							"path": [""]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Audit Logs",
+			"item": [
+				{
+					"name": "Get Guild Audit Logs",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/guilds/{{guildId}}/audit-logs?limit=50&page=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "guilds", "{{guildId}}", "audit-logs"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50",
+									"description": "Maximum number of logs (default: 50, max: 100)"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (1-indexed)"
+								}
+							]
+						},
+						"description": "Get paginated audit logs for a guild (owner only)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Friends",
+			"item": [
+				{
+					"name": "Send Friend Request",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"targetuser\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/Friends/request",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "Friends", "request"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Friends",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Friends",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "Friends"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pending Requests",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Friends/pending",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "Friends", "pending"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Blocked Users",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Friends/blocked",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "Friends", "blocked"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Accept Friend Request",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Friends/{{friendshipId}}/accept",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "Friends", "{{friendshipId}}", "accept"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Decline Friend Request",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Friends/{{friendshipId}}/decline",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "Friends", "{{friendshipId}}", "decline"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Friend",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Friends/{{friendId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "Friends", "{{friendId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Block User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Friends/{{userId}}/block",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "Friends", "{{userId}}", "block"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unblock User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Friends/{{userId}}/block",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "Friends", "{{userId}}", "block"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "DMs",
+			"item": [
+				{
+					"name": "Get User DMs",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/dms",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "dms"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get DM by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/dms/{{dmId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "dms", "{{dmId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create or Get DM",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/dms/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "dms", "users", "{{userId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get DM Messages",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/dms/{{dmId}}/messages?page=1&pageSize=50",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "dms", "{{dmId}}", "messages"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "pageSize",
+									"value": "50",
+									"description": "Number of messages per page (default: 50)"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send DM Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Hello!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/dms/{{dmId}}/messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "dms", "{{dmId}}", "messages"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edit DM Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Updated message\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/dms/{{dmId}}/messages/{{messageId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "dms", "{{dmId}}", "messages", "{{messageId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete DM Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{accessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/dms/{{dmId}}/messages/{{messageId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "dms", "{{dmId}}", "messages", "{{messageId}}"]
 						}
 					},
 					"response": []

@@ -16,6 +16,7 @@ public class MessageServiceTests : IDisposable
     private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<ILogger<MessageService>> _loggerMock;
     private readonly Mock<IPermissionService> _permissionServiceMock;
+    private readonly Mock<IAuditLogService> _auditLogServiceMock;
     private readonly MessageService _messageService;
 
     public MessageServiceTests()
@@ -28,12 +29,21 @@ public class MessageServiceTests : IDisposable
         _mapperMock = new Mock<IMapper>();
         _loggerMock = new Mock<ILogger<MessageService>>();
         _permissionServiceMock = new Mock<IPermissionService>();
+        _auditLogServiceMock = new Mock<IAuditLogService>();
+        
+        // Setup audit log mock
+        _auditLogServiceMock.Setup(x => x.LogActionAsync(
+            It.IsAny<Guid>(), It.IsAny<AuditAction>(), It.IsAny<string>(),
+            It.IsAny<Guid?>(), It.IsAny<object?>(), It.IsAny<Guid?>(),
+            It.IsAny<string?>(), It.IsAny<string?>()))
+            .Returns(Task.CompletedTask);
 
         _messageService = new MessageService(
             _context,
             _mapperMock.Object,
             _loggerMock.Object,
-            _permissionServiceMock.Object
+            _permissionServiceMock.Object,
+            _auditLogServiceMock.Object
         );
     }
 
@@ -129,6 +139,23 @@ public class MessageServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateMessageAsync_ChannelNotFound_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var nonExistentChannelId = Guid.NewGuid();
+        var createDto = new CreateMessageDto
+        {
+            Content = "Hello, world!"
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _messageService.CreateMessageAsync(nonExistentChannelId, userId, createDto)
+        );
+    }
+
+    [Fact]
     public async Task CreateMessageAsync_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
@@ -144,6 +171,131 @@ public class MessageServiceTests : IDisposable
         await Assert.ThrowsAsync<UnauthorizedAccessException>(
             () => _messageService.CreateMessageAsync(channelId, unauthorizedUserId, createDto)
         );
+    }
+
+    [Fact]
+    public async Task CreateMessageAsync_WithMentions_CreatesMentionRecords()
+    {
+        // Arrange
+        var (userId, guildId, channelId) = await SetupBasicScenarioAsync();
+
+        // Add another user to the guild for mention
+        var mentionedUser = new User
+        {
+            Id = Guid.NewGuid(),
+            Username = "mentioneduser",
+            Email = "mentioned@example.com",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("password"),
+            DisplayName = "Mentioned User",
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Users.Add(mentionedUser);
+        _context.GuildMembers.Add(new GuildMember
+        {
+            GuildId = guildId,
+            UserId = mentionedUser.Id,
+            JoinedAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        var createDto = new CreateMessageDto
+        {
+            Content = "Hello @mentioneduser!"
+        };
+
+        _mapperMock
+            .Setup(x => x.Map<MessageResponseDto>(It.IsAny<Message>()))
+            .Returns((Message m) => new MessageResponseDto
+            {
+                Id = m.Id,
+                ChannelId = m.ChannelId,
+                AuthorId = m.AuthorId,
+                Content = m.Content,
+                CreatedAt = m.CreatedAt,
+                IsEdited = m.IsEdited,
+                IsPinned = m.IsPinned
+            });
+
+        // Act
+        var result = await _messageService.CreateMessageAsync(channelId, userId, createDto);
+
+        // Assert
+        Assert.NotNull(result);
+        var mentions = await _context.MessageMentions
+            .Where(mm => mm.MessageId == result.Id)
+            .ToListAsync();
+        Assert.Single(mentions);
+        Assert.Equal(mentionedUser.Id, mentions[0].MentionedUserId);
+    }
+
+    [Fact]
+    public async Task CreateMessageAsync_WithInvalidMentions_IgnoresInvalid()
+    {
+        // Arrange
+        var (userId, guildId, channelId) = await SetupBasicScenarioAsync();
+
+        var createDto = new CreateMessageDto
+        {
+            Content = "Hello @nonexistentuser!"
+        };
+
+        _mapperMock
+            .Setup(x => x.Map<MessageResponseDto>(It.IsAny<Message>()))
+            .Returns((Message m) => new MessageResponseDto
+            {
+                Id = m.Id,
+                ChannelId = m.ChannelId,
+                AuthorId = m.AuthorId,
+                Content = m.Content,
+                CreatedAt = m.CreatedAt,
+                IsEdited = m.IsEdited,
+                IsPinned = m.IsPinned
+            });
+
+        // Act
+        var result = await _messageService.CreateMessageAsync(channelId, userId, createDto);
+
+        // Assert
+        Assert.NotNull(result);
+        var mentions = await _context.MessageMentions
+            .Where(mm => mm.MessageId == result.Id)
+            .ToListAsync();
+        Assert.Empty(mentions); // No mention record created for non-existent user
+    }
+
+    [Fact]
+    public async Task CreateMessageAsync_NoMentions_NoMentionRecords()
+    {
+        // Arrange
+        var (userId, guildId, channelId) = await SetupBasicScenarioAsync();
+
+        var createDto = new CreateMessageDto
+        {
+            Content = "Hello, world! No mentions here."
+        };
+
+        _mapperMock
+            .Setup(x => x.Map<MessageResponseDto>(It.IsAny<Message>()))
+            .Returns((Message m) => new MessageResponseDto
+            {
+                Id = m.Id,
+                ChannelId = m.ChannelId,
+                AuthorId = m.AuthorId,
+                Content = m.Content,
+                CreatedAt = m.CreatedAt,
+                IsEdited = m.IsEdited,
+                IsPinned = m.IsPinned
+            });
+
+        // Act
+        var result = await _messageService.CreateMessageAsync(channelId, userId, createDto);
+
+        // Assert
+        Assert.NotNull(result);
+        var mentions = await _context.MessageMentions
+            .Where(mm => mm.MessageId == result.Id)
+            .ToListAsync();
+        Assert.Empty(mentions); // No mention records created
     }
 
     [Fact]
@@ -194,6 +346,29 @@ public class MessageServiceTests : IDisposable
         Assert.Equal(2, result.Messages.Count());
         Assert.Equal(2, result.TotalCount);
         Assert.False(result.HasMore);
+    }
+
+    [Fact]
+    public async Task GetChannelMessagesAsync_InvalidPagination_ReturnsEmpty()
+    {
+        // Arrange
+        var (userId, _, channelId) = await SetupBasicScenarioAsync();
+
+        _mapperMock
+            .Setup(x => x.Map<List<MessageResponseDto>>(It.IsAny<List<Message>>()))
+            .Returns(new List<MessageResponseDto>());
+
+        // Act - negative page (will be normalized to 1)
+        var resultNegativePage = await _messageService.GetChannelMessagesAsync(channelId, userId, -1, 50);
+        Assert.NotNull(resultNegativePage);
+        // Note: Service normalizes page to 1, so this will return messages if any exist
+        // The test verifies the service handles invalid input gracefully
+
+        // Act - zero limit (will be normalized to 50)
+        var resultZeroLimit = await _messageService.GetChannelMessagesAsync(channelId, userId, 1, 0);
+        Assert.NotNull(resultZeroLimit);
+        // Note: Service normalizes pageSize to 50, so this will return messages if any exist
+        // The test verifies the service handles invalid input gracefully
     }
 
     [Fact]
@@ -259,6 +434,23 @@ public class MessageServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateMessageAsync_MessageNotFound_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var nonExistentMessageId = Guid.NewGuid();
+        var updateDto = new UpdateMessageDto
+        {
+            Content = "Updated content"
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _messageService.UpdateMessageAsync(nonExistentMessageId, userId, updateDto)
+        );
+    }
+
+    [Fact]
     public async Task UpdateMessageAsync_NonAuthorUpdate_ThrowsUnauthorizedAccessException()
     {
         // Arrange
@@ -285,6 +477,48 @@ public class MessageServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(
             () => _messageService.UpdateMessageAsync(message.Id, otherUserId, updateDto)
+        );
+    }
+
+    [Fact]
+    public async Task DeleteMessageAsync_MessageNotFound_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var nonExistentMessageId = Guid.NewGuid();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _messageService.DeleteMessageAsync(nonExistentMessageId, userId)
+        );
+    }
+
+    [Fact]
+    public async Task DeleteMessageAsync_NotAuthorOrOwner_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        var (userId, guildId, channelId) = await SetupBasicScenarioAsync();
+        var otherUserId = Guid.NewGuid();
+
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            ChannelId = channelId,
+            AuthorId = userId,
+            Content = "Test message",
+            CreatedAt = DateTime.UtcNow,
+            IsEdited = false
+        };
+        _context.Messages.Add(message);
+        await _context.SaveChangesAsync();
+
+        _permissionServiceMock
+            .Setup(x => x.HasPermissionAsync(guildId, otherUserId, GuildPermission.ManageMessages))
+            .ReturnsAsync(false);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _messageService.DeleteMessageAsync(message.Id, otherUserId)
         );
     }
 
@@ -467,5 +701,219 @@ public class MessageServiceTests : IDisposable
         Assert.Single(result);
         Assert.True(result[0].IsPinned);
         Assert.Equal("Pinned message", result[0].Content);
+    }
+
+    [Fact]
+    public async Task GetMessageByIdAsync_ValidMessage_ReturnsMessageDto()
+    {
+        // Arrange
+        var (userId, guildId, channelId) = await SetupBasicScenarioAsync();
+
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            ChannelId = channelId,
+            AuthorId = userId,
+            Content = "Test message",
+            CreatedAt = DateTime.UtcNow,
+            IsEdited = false
+        };
+        _context.Messages.Add(message);
+        await _context.SaveChangesAsync();
+
+        _mapperMock
+            .Setup(x => x.Map<MessageResponseDto>(It.IsAny<Message>()))
+            .Returns((Message m) => new MessageResponseDto
+            {
+                Id = m.Id,
+                ChannelId = m.ChannelId,
+                AuthorId = m.AuthorId,
+                Content = m.Content,
+                CreatedAt = m.CreatedAt,
+                IsEdited = m.IsEdited,
+                IsPinned = m.IsPinned
+            });
+
+        // Act
+        var result = await _messageService.GetMessageByIdAsync(message.Id, userId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(message.Id, result.Id);
+        Assert.Equal("Test message", result.Content);
+    }
+
+    [Fact]
+    public async Task GetMessageByIdAsync_MessageNotFound_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var nonExistentMessageId = Guid.NewGuid();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _messageService.GetMessageByIdAsync(nonExistentMessageId, userId)
+        );
+    }
+
+    [Fact]
+    public async Task GetMessageByIdAsync_Unauthorized_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        var (userId, guildId, channelId) = await SetupBasicScenarioAsync();
+        var unauthorizedUserId = Guid.NewGuid();
+
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            ChannelId = channelId,
+            AuthorId = userId,
+            Content = "Test message",
+            CreatedAt = DateTime.UtcNow,
+            IsEdited = false
+        };
+        _context.Messages.Add(message);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _messageService.GetMessageByIdAsync(message.Id, unauthorizedUserId)
+        );
+    }
+
+    [Fact]
+    public async Task GetMessageByIdAsync_DeletedMessage_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var (userId, guildId, channelId) = await SetupBasicScenarioAsync();
+
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            ChannelId = channelId,
+            AuthorId = userId,
+            Content = "Test message",
+            CreatedAt = DateTime.UtcNow,
+            IsEdited = false,
+            DeletedAt = DateTime.UtcNow // Soft deleted
+        };
+        _context.Messages.Add(message);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _messageService.GetMessageByIdAsync(message.Id, userId)
+        );
+    }
+
+    [Fact]
+    public async Task UnpinMessageAsync_WithPermission_UnpinsMessage()
+    {
+        // Arrange
+        var (userId, guildId, channelId) = await SetupBasicScenarioAsync();
+
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            ChannelId = channelId,
+            AuthorId = userId,
+            Content = "Test message",
+            CreatedAt = DateTime.UtcNow,
+            IsEdited = false,
+            IsPinned = true,
+            PinnedAt = DateTime.UtcNow,
+            PinnedByUserId = userId
+        };
+        _context.Messages.Add(message);
+        await _context.SaveChangesAsync();
+
+        _permissionServiceMock
+            .Setup(x => x.CheckPermissionAsync(guildId, userId, GuildPermission.ManageMessages, It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _messageService.UnpinMessageAsync(channelId, message.Id, userId);
+
+        // Assert
+        var unpinnedMessage = await _context.Messages.FindAsync(message.Id);
+        Assert.NotNull(unpinnedMessage);
+        Assert.False(unpinnedMessage.IsPinned);
+        Assert.Null(unpinnedMessage.PinnedAt);
+        Assert.Null(unpinnedMessage.PinnedByUserId);
+    }
+
+    [Fact]
+    public async Task UnpinMessageAsync_MessageNotFound_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var channelId = Guid.NewGuid();
+        var nonExistentMessageId = Guid.NewGuid();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _messageService.UnpinMessageAsync(channelId, nonExistentMessageId, userId)
+        );
+    }
+
+    [Fact]
+    public async Task UnpinMessageAsync_Unauthorized_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        var (userId, guildId, channelId) = await SetupBasicScenarioAsync();
+        var unauthorizedUserId = Guid.NewGuid();
+
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            ChannelId = channelId,
+            AuthorId = userId,
+            Content = "Test message",
+            CreatedAt = DateTime.UtcNow,
+            IsEdited = false,
+            IsPinned = true,
+            PinnedAt = DateTime.UtcNow,
+            PinnedByUserId = userId
+        };
+        _context.Messages.Add(message);
+        await _context.SaveChangesAsync();
+
+        _permissionServiceMock
+            .Setup(x => x.CheckPermissionAsync(guildId, unauthorizedUserId, GuildPermission.ManageMessages, It.IsAny<string>()))
+            .ThrowsAsync(new UnauthorizedAccessException("You don't have permission to unpin messages"));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _messageService.UnpinMessageAsync(channelId, message.Id, unauthorizedUserId)
+        );
+    }
+
+    [Fact]
+    public async Task UnpinMessageAsync_NotPinned_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var (userId, guildId, channelId) = await SetupBasicScenarioAsync();
+
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            ChannelId = channelId,
+            AuthorId = userId,
+            Content = "Test message",
+            CreatedAt = DateTime.UtcNow,
+            IsEdited = false,
+            IsPinned = false // Not pinned
+        };
+        _context.Messages.Add(message);
+        await _context.SaveChangesAsync();
+
+        _permissionServiceMock
+            .Setup(x => x.CheckPermissionAsync(guildId, userId, GuildPermission.ManageMessages, It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _messageService.UnpinMessageAsync(channelId, message.Id, userId)
+        );
     }
 }

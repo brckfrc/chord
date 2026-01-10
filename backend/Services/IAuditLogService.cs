@@ -28,8 +28,8 @@ public interface IAuditLogService
     /// <param name="requesterId">User requesting the logs</param>
     /// <param name="limit">Maximum number of logs to return</param>
     /// <param name="page">Page number (1-indexed)</param>
-    /// <returns>List of audit logs</returns>
-    Task<IEnumerable<AuditLogDto>> GetGuildAuditLogsAsync(
+    /// <returns>Paginated audit logs</returns>
+    Task<PaginatedAuditLogsDto> GetGuildAuditLogsAsync(
         Guid guildId,
         Guid requesterId,
         int limit = 50,

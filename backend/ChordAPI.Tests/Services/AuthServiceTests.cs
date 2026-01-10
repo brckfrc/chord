@@ -321,6 +321,30 @@ public class AuthServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task RefreshTokenAsync_NullToken_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        string? nullToken = null;
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _authService.RefreshTokenAsync(nullToken!)
+        );
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_EmptyToken_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        var emptyToken = "";
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _authService.RefreshTokenAsync(emptyToken)
+        );
+    }
+
+    [Fact]
     public async Task RefreshTokenAsync_InvalidToken_ThrowsUnauthorizedAccessException()
     {
         // Arrange

@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { formatDMTime } from "@/lib/dateUtils"
 
 export function DMView() {
   const { channelId } = useParams<{ channelId: string }>()
@@ -216,7 +217,7 @@ export function DMView() {
                     {message.sender.username}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(message.createdAt).toLocaleTimeString()}
+                    {formatDMTime(message.createdAt)}
                   </span>
                   {message.editedAt && (
                     <span className="text-xs text-muted-foreground italic">

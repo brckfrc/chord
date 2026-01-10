@@ -13,17 +13,20 @@ public class MessageService : IMessageService
     private readonly IMapper _mapper;
     private readonly ILogger<MessageService> _logger;
     private readonly IPermissionService _permissionService;
+    private readonly IAuditLogService _auditLogService;
 
     public MessageService(
         AppDbContext context,
         IMapper mapper,
         ILogger<MessageService> logger,
-        IPermissionService permissionService)
+        IPermissionService permissionService,
+        IAuditLogService auditLogService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
         _permissionService = permissionService;
+        _auditLogService = auditLogService;
     }
 
     public async Task<MessageResponseDto> CreateMessageAsync(Guid channelId, Guid userId, CreateMessageDto dto)
@@ -62,6 +65,15 @@ public class MessageService : IMessageService
 
         _logger.LogInformation("Message {MessageId} created in channel {ChannelId} by user {UserId}",
             message.Id, channelId, userId);
+
+        // Log audit event
+        await _auditLogService.LogActionAsync(
+            userId,
+            AuditAction.MessageSent,
+            "Message",
+            message.Id,
+            new { ChannelId = channelId, HasAttachments = dto.Attachments != null && dto.Attachments.Any() },
+            channel.GuildId);
 
         // Extract and save mentions
         await ExtractAndSaveMentionsAsync(message.Id, channelId, dto.Content);

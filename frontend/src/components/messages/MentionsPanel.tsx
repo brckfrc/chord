@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { X, Hash, CheckCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { formatMentionTime } from "@/lib/dateUtils"
 import type { MessageMentionDto } from "@/lib/api/mentions"
 import { fetchChannels } from "@/store/slices/channelsSlice"
 
@@ -207,31 +208,6 @@ interface MentionItemProps {
 }
 
 function MentionItem({ mention, channelName, onClick }: MentionItemProps) {
-  const formatTime = (dateString: string) => {
-    try {
-      const date = new Date(dateString)
-      const now = new Date()
-      const isSameDay =
-        date.getDate() === now.getDate() &&
-        date.getMonth() === now.getMonth() &&
-        date.getFullYear() === now.getFullYear()
-
-      if (isSameDay) {
-        return date.toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        })
-      } else {
-        const day = String(date.getDate()).padStart(2, "0")
-        const month = String(date.getMonth() + 1).padStart(2, "0")
-        const year = date.getFullYear()
-        return `${day}.${month}.${year}`
-      }
-    } catch {
-      return dateString
-    }
-  }
 
   return (
     <button
@@ -251,7 +227,7 @@ function MentionItem({ mention, channelName, onClick }: MentionItemProps) {
               {mention.message.author.displayName}
             </span>
             <span className="text-xs text-muted-foreground">
-              {formatTime(mention.message.createdAt)}
+              {formatMentionTime(mention.message.createdAt)}
             </span>
             {!mention.isRead && (
               <span className="text-xs text-blue-400 font-medium">New</span>

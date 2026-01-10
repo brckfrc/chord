@@ -17,6 +17,7 @@ public class GuildServiceTests : IDisposable
     private readonly Mock<ILogger<GuildService>> _loggerMock;
     private readonly Mock<IChannelService> _channelServiceMock;
     private readonly Mock<IRoleService> _roleServiceMock;
+    private readonly Mock<IAuditLogService> _auditLogServiceMock;
     private readonly GuildService _guildService;
 
     public GuildServiceTests()
@@ -32,6 +33,14 @@ public class GuildServiceTests : IDisposable
         _loggerMock = new Mock<ILogger<GuildService>>();
         _channelServiceMock = new Mock<IChannelService>();
         _roleServiceMock = new Mock<IRoleService>();
+        _auditLogServiceMock = new Mock<IAuditLogService>();
+        
+        // Setup audit log mock
+        _auditLogServiceMock.Setup(x => x.LogActionAsync(
+            It.IsAny<Guid>(), It.IsAny<AuditAction>(), It.IsAny<string>(),
+            It.IsAny<Guid?>(), It.IsAny<object?>(), It.IsAny<Guid?>(),
+            It.IsAny<string?>(), It.IsAny<string?>()))
+            .Returns(Task.CompletedTask);
 
         // Create service
         _guildService = new GuildService(
@@ -39,7 +48,8 @@ public class GuildServiceTests : IDisposable
             _mapperMock.Object,
             _loggerMock.Object,
             _channelServiceMock.Object,
-            _roleServiceMock.Object
+            _roleServiceMock.Object,
+            _auditLogServiceMock.Object
         );
     }
 
@@ -351,6 +361,24 @@ public class GuildServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateGuildAsync_GuildNotFound_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var nonExistentGuildId = Guid.NewGuid();
+        var updateDto = new UpdateGuildDto
+        {
+            Name = "New Name",
+            Description = "New Description"
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _guildService.UpdateGuildAsync(nonExistentGuildId, userId, updateDto)
+        );
+    }
+
+    [Fact]
     public async Task UpdateGuildAsync_NonOwnerUpdate_ThrowsUnauthorizedAccessException()
     {
         // Arrange
@@ -415,6 +443,19 @@ public class GuildServiceTests : IDisposable
         // Assert
         var deletedGuild = await _context.Guilds.FindAsync(guildId);
         Assert.Null(deletedGuild);
+    }
+
+    [Fact]
+    public async Task DeleteGuildAsync_GuildNotFound_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var nonExistentGuildId = Guid.NewGuid();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _guildService.DeleteGuildAsync(nonExistentGuildId, userId)
+        );
     }
 
     [Fact]
@@ -517,6 +558,45 @@ public class GuildServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task AddMemberAsync_GuildNotFound_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var ownerId = Guid.NewGuid();
+        var userIdToAdd = Guid.NewGuid();
+        var nonExistentGuildId = Guid.NewGuid();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _guildService.AddMemberAsync(nonExistentGuildId, ownerId, userIdToAdd)
+        );
+    }
+
+    [Fact]
+    public async Task AddMemberAsync_NotOwner_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        var ownerId = Guid.NewGuid();
+        var nonOwnerId = Guid.NewGuid();
+        var userIdToAdd = Guid.NewGuid();
+        var guildId = Guid.NewGuid();
+        var guild = new Guild
+        {
+            Id = guildId,
+            Name = "Test Guild",
+            OwnerId = ownerId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.Guilds.Add(guild);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _guildService.AddMemberAsync(guildId, nonOwnerId, userIdToAdd)
+        );
+    }
+
+    [Fact]
     public async Task AddMemberAsync_AlreadyMember_ThrowsInvalidOperationException()
     {
         // Arrange
@@ -616,6 +696,30 @@ public class GuildServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(
             () => _guildService.RemoveMemberAsync(guildId, otherUserId, memberId)
+        );
+    }
+
+    [Fact]
+    public async Task RemoveMemberAsync_MemberNotFound_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        var ownerId = Guid.NewGuid();
+        var nonExistentMemberId = Guid.NewGuid();
+        var guildId = Guid.NewGuid();
+        var guild = new Guild
+        {
+            Id = guildId,
+            Name = "Test Guild",
+            OwnerId = ownerId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.Guilds.Add(guild);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _guildService.RemoveMemberAsync(guildId, ownerId, nonExistentMemberId)
         );
     }
 

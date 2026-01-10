@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -27,16 +28,22 @@ public class AuditLogsController : ControllerBase
     /// <param name="guildId">Guild ID</param>
     /// <param name="limit">Maximum number of logs to return (default: 50, max: 100)</param>
     /// <param name="page">Page number (1-indexed)</param>
-    /// <returns>List of audit logs</returns>
+    /// <returns>Paginated audit logs</returns>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AuditLogDto>>> GetGuildAuditLogs(
+    public async Task<ActionResult<PaginatedAuditLogsDto>> GetGuildAuditLogs(
         Guid guildId,
         [FromQuery] int limit = 50,
         [FromQuery] int page = 1)
     {
         try
         {
-            var userId = Guid.Parse(User.FindFirst("sub")!.Value);
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("sub")?.Value;
+
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(new { message = "Invalid token" });
+            }
 
             // Validate pagination parameters
             if (limit < 1 || limit > 100)

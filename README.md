@@ -32,6 +32,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 - **Guild Invites** - Shareable invite links
 - **Typing Indicators** - See who's typing
 - **Unread Tracking** - Per-channel and per-DM unread counts
+- **Audit Logs** - Track guild actions (owner-only, paginated)
 
 ---
 

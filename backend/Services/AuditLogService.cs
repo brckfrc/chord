@@ -67,7 +67,7 @@ public class AuditLogService : IAuditLogService
         }
     }
 
-    public async Task<IEnumerable<AuditLogDto>> GetGuildAuditLogsAsync(
+    public async Task<PaginatedAuditLogsDto> GetGuildAuditLogsAsync(
         Guid guildId,
         Guid requesterId,
         int limit = 50,
@@ -96,22 +96,38 @@ public class AuditLogService : IAuditLogService
             throw new UnauthorizedAccessException("Only the guild owner can view audit logs");
         }
 
+        // Get total count
+        var totalCount = await _context.AuditLogs
+            .CountAsync(al => al.GuildId == guildId);
+
         // Get audit logs
         var skip = (page - 1) * limit;
         var logs = await _context.AuditLogs
             .Where(al => al.GuildId == guildId)
-            .Include(al => al.User)
             .OrderByDescending(al => al.Timestamp)
             .Skip(skip)
             .Take(limit)
+            .Select(log => new
+            {
+                log.Id,
+                log.GuildId,
+                log.UserId,
+                log.Action,
+                log.TargetType,
+                log.TargetId,
+                log.Changes,
+                log.IpAddress,
+                log.Timestamp,
+                Username = log.User != null ? log.User.Username : "Unknown User"
+            })
             .ToListAsync();
 
-        return logs.Select(log => new AuditLogDto
+        var logDtos = logs.Select(log => new AuditLogDto
         {
             Id = log.Id,
             GuildId = log.GuildId,
             UserId = log.UserId,
-            Username = log.User.Username,
+            Username = log.Username,
             Action = log.Action,
             ActionName = log.Action.ToString(),
             TargetType = log.TargetType,
@@ -119,6 +135,15 @@ public class AuditLogService : IAuditLogService
             Changes = log.Changes,
             IpAddress = log.IpAddress,
             Timestamp = log.Timestamp
-        });
+        }).ToList();
+
+        return new PaginatedAuditLogsDto
+        {
+            Logs = logDtos,
+            TotalCount = totalCount,
+            PageSize = limit,
+            CurrentPage = page,
+            HasMore = (page * limit) < totalCount
+        };
     }
 }

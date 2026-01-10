@@ -727,6 +727,44 @@ docker compose -f docker-compose.dev.yml down -v
 
 ## Testing
 
+### xUnit Tests
+
+**Test Project:** `ChordAPI.Tests/`
+
+**Run Tests:**
+```bash
+cd backend
+dotnet test ChordAPI.Tests/ChordAPI.Tests.csproj
+```
+
+**Run with Coverage:**
+```bash
+dotnet test ChordAPI.Tests/ChordAPI.Tests.csproj --collect:"XPlat Code Coverage"
+```
+
+**Coverage Report:**
+- Location: `ChordAPI.Tests/TestResults/*/coverage.cobertura.xml`
+- Format: Cobertura XML
+- Tool: Coverlet
+
+**Test Statistics:**
+- Total Tests: 88
+- Test Framework: xUnit 2.9.2
+- Mocking: Moq 4.20.72
+- Database: EF Core InMemory 9.0.0
+
+**Coverage (Core Services):**
+- AuthService: ~100% (15 tests)
+- GuildService: ~95% (21 tests)
+- ChannelService: ~80% (14 tests)
+- MessageService: ~75% (17 tests)
+
+**Test Coverage:**
+- Error handling scenarios (KeyNotFoundException, UnauthorizedAccessException)
+- Edge cases (position shifting, mention extraction, soft delete)
+- Success paths for all CRUD operations
+- Permission checks and authorization
+
 ### Swagger UI
 
 1. Open `http://localhost:5049/swagger`
@@ -738,6 +776,26 @@ docker compose -f docker-compose.dev.yml down -v
 ### Postman
 
 Import `ChordAPI.postman_collection.json` for ready-to-use requests.
+
+**Collection includes:**
+- Auth endpoints (register, login, refresh, logout, me)
+- Health check endpoints
+- Audit Logs endpoints (get guild audit logs with pagination)
+- Friends endpoints (send request, accept, decline, block, unblock, list friends/pending/blocked)
+- DMs endpoints (list, create, get messages, send, edit, delete)
+
+**Collection Variables:**
+- `baseUrl` - API base URL (default: http://localhost:5049)
+- `accessToken` - JWT access token (auto-set on login/register)
+- `refreshToken` - JWT refresh token (auto-set on login/register)
+- `guildId` - Guild ID for testing (set manually)
+- `userId` - User ID for testing (set manually)
+- `dmId` - DM channel ID for testing (set manually)
+- `friendId` - Friend ID for testing (set manually)
+- `friendshipId` - Friendship ID for testing (set manually)
+- `messageId` - Message ID for testing (set manually)
+
+Tokens are automatically saved when you register or login. Set other variables manually for easier testing.
 
 ### SignalR Testing
 

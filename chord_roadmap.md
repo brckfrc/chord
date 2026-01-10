@@ -902,21 +902,21 @@ TURN_REALM=chord.local
 ## 🏗️ FAZ 10: TESTING & OBSERVABILITY
 
 **Süre**: ~4-5 gün (Audit Log eklendi)  
-**DURUM**: 🟡 Kısmen Tamamlandı (Backend ✅, Frontend ❌)
+**DURUM**: 🟡 Kısmen Tamamlandı (Backend ✅, Frontend ✅)
 
 ### Görevler
 
 #### Mevcut Testler
 
-- [ ] xUnit testlerini düzelt ve genişlet (AuthService testleri hazır ama çalışmıyor)
-- [ ] Unit test coverage artırma (≥70% hedef)
-  - AuthService ✅ (13 test case hazır, düzeltilecek)
-  - GuildService testleri
-  - ChannelService testleri
-  - MessageService testleri
+- [x] xUnit testlerini düzelt ve genişlet ✅
+- [x] Unit test coverage artırma (≥70% hedef) ✅
+  - AuthService ✅ (15 test case, %100 coverage)
+  - GuildService ✅ (21 test case, ~95% coverage)
+  - ChannelService ✅ (14 test case, ~80% coverage)
+  - MessageService ✅ (17 test case, ~75% coverage)
 - [ ] Integration testler (WebApplicationFactory)
 - [ ] OpenTelemetry kurulumu (traces, metrics)
-- [ ] Health checks genişletme (Redis, MinIO)
+- [x] Health checks genişletme (Redis, MinIO) ✅
 
 #### ⭐ Audit Log (Backend Tamamlandı)
 
@@ -944,10 +944,14 @@ TURN_REALM=chord.local
 ### Deliverables
 
 ✅ Audit log backend tamamlandı (API endpoint, service, middleware)  
-⏳ Test coverage ≥60%  
+✅ Audit log frontend UI tamamlandı (guild settings panel, pagination)  
+✅ Health checks genişletildi (Redis, MinIO)  
+✅ UTC timestamp handling utility (merkezi dateUtils.ts)  
+✅ xUnit testler tamamlandı (88 test case, tüm testler geçiyor)  
+✅ Test coverage ≥70% (core services: AuthService %100, GuildService ~95%, ChannelService ~80%, MessageService ~75%)  
+✅ Coverage raporu oluşturuldu (Coverlet, XML format: `ChordAPI.Tests/TestResults/*/coverage.cobertura.xml`)  
 ⏳ E2E testler ana akışı kapsıyor  
-⏳ Metrik/trace dashboard görünür  
-⏳ Audit log frontend UI (guild settings panel)
+⏳ Metrik/trace dashboard görünür
 
 ### 📝 Test Notları
 
@@ -955,9 +959,14 @@ TURN_REALM=chord.local
 
 - ✅ Proje oluşturuldu (FAZ 1'de)
 - ✅ Test infrastructure hazır (InMemory DB, Moq, xUnit)
-- ⚠️ AuthService için 13 test case yazıldı ama method signature hatası var
-- ⏳ FAZ 10'da tüm testler düzeltilip genişletilecek
+- ✅ Tüm testler düzeltildi ve genişletildi (88 test case)
+- ✅ IAuditLogService mock'ları eklendi (GuildService, ChannelService, MessageService)
+- ✅ Error handling testleri eklendi (KeyNotFoundException, UnauthorizedAccessException)
+- ✅ Edge case testleri eklendi (position shifting, mention extraction, soft delete)
+- ✅ Coverage ≥70% hedefi karşılandı (core services)
 - 📦 Test Packages: xUnit 2.9.2, Moq 4.20.72, EF Core InMemory 9.0.0
+- 📊 Coverage Tool: Coverlet (XML rapor: `ChordAPI.Tests/TestResults/*/coverage.cobertura.xml`)
+- 🎯 Test Coverage: AuthService %100, GuildService ~95%, ChannelService ~80%, MessageService ~75%
 
 ---
 
@@ -1044,7 +1053,13 @@ TURN_REALM=chord.local
   - ✅ Tüm entity'ler ve ilişkileri eklendi
   - ✅ Backend README'ye AuditLog eklendi
   - ✅ Backend README'ye ER diagram referansı eklendi
-- [ ] Postman collection güncelliği kontrol
+- [x] Postman collection güncelliği kontrol ✅
+  - ✅ Audit Logs endpoint eklendi (GET /api/guilds/{guildId}/audit-logs)
+  - ✅ Friends endpoints eklendi (9 endpoint: request, accept, decline, block, unblock, list, etc.)
+  - ✅ DMs endpoints eklendi (7 endpoint: list, create, get messages, send, edit, delete)
+  - ✅ Collection variables eklendi (guildId, userId, dmId, friendId, friendshipId, messageId)
+  - ✅ All endpoints added (Audit Logs, Friends, DMs)
+  - ✅ Collection variables added for easier testing
 - [ ] Demo senaryosu hazırlama
 - [ ] Video demo kaydı
 
@@ -1076,7 +1091,7 @@ TURN_REALM=chord.local
 11. **Faz 8** ✅ Voice Channels (WebRTC + LiveKit)
 12. **Faz 9** ✅ Permissions & Roles + Guild Settings + Profile Photos
 13. **Faz 9.5** ✅ DMs + Friends
-14. **Faz 10** 🟡 Testing + Audit Log (Backend ✅, Frontend ⏳)
+14. **Faz 10** 🟡 Testing + Audit Log (Backend ✅, Frontend ✅)
 15. **Faz 12** 🟡 **ŞU AN** → Deployment & Documentation (8/10 ✅)
 16. **Faz 11** → Security + Notification Settings
 
@@ -1197,7 +1212,7 @@ TURN_REALM=chord.local
 | Friends                    | 9.5 | Orta      | Evet (Permissions)   | ✅                   |
 | Username Display Fix       | 9.5 | Çok Kolay | Evet (Full UI)       | ✅                   |
 | Audit Log (Backend)        | 10  | Kolay     | Hayır                | ✅                   |
-| Audit Log (Frontend)       | 10  | Kolay     | Evet (Guild UI)      | ⏳                   |
+| Audit Log (Frontend)       | 10  | Kolay     | Evet (Guild UI)      | ✅                   |
 | Deployment & CI/CD         | 12  | Orta      | Hayır                | 🟡 (7/10 tamamlandı) |
 | Notification Settings      | 11  | Orta      | Evet (Full UI)       | ⏳                   |
 

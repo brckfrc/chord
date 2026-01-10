@@ -12,17 +12,20 @@ public class ChannelService : IChannelService
     private readonly IMapper _mapper;
     private readonly ILogger<ChannelService> _logger;
     private readonly IPermissionService _permissionService;
+    private readonly IAuditLogService _auditLogService;
 
     public ChannelService(
         AppDbContext context,
         IMapper mapper,
         ILogger<ChannelService> logger,
-        IPermissionService permissionService)
+        IPermissionService permissionService,
+        IAuditLogService auditLogService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
         _permissionService = permissionService;
+        _auditLogService = auditLogService;
     }
 
     public async Task<ChannelResponseDto> CreateChannelAsync(Guid guildId, Guid userId, CreateChannelDto dto)
@@ -64,6 +67,15 @@ public class ChannelService : IChannelService
 
         _logger.LogInformation("Channel {ChannelId} created in guild {GuildId} by user {UserId} at position {Position}",
             channel.Id, guildId, userId, position);
+
+        // Log audit event
+        await _auditLogService.LogActionAsync(
+            userId,
+            AuditAction.ChannelCreated,
+            "Channel",
+            channel.Id,
+            new { Name = channel.Name, Type = channel.Type.ToString(), Topic = channel.Topic },
+            guildId);
 
         return _mapper.Map<ChannelResponseDto>(channel);
     }
@@ -173,6 +185,15 @@ public class ChannelService : IChannelService
 
         _logger.LogInformation("Channel {ChannelId} updated by user {UserId}", channelId, userId);
 
+        // Log audit event
+        await _auditLogService.LogActionAsync(
+            userId,
+            AuditAction.ChannelUpdated,
+            "Channel",
+            channelId,
+            new { Name = dto.Name, Topic = dto.Topic, Position = newPosition },
+            channel.GuildId);
+
         return _mapper.Map<ChannelResponseDto>(channel);
     }
 
@@ -217,6 +238,15 @@ public class ChannelService : IChannelService
 
         _logger.LogInformation("Channel {ChannelId} ({Type}) deleted by user {UserId} from position {Position}",
             channelId, channelType, userId, deletedPosition);
+
+        // Log audit event
+        await _auditLogService.LogActionAsync(
+            userId,
+            AuditAction.ChannelDeleted,
+            "Channel",
+            channelId,
+            null,
+            guildId);
     }
 }
 

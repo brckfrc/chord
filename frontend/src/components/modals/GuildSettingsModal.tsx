@@ -4,11 +4,13 @@ import {
     DialogContent,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Home, Shield, Users, X } from "lucide-react"
+import { Home, Shield, Users, X, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { usePermission } from "@/hooks/usePermission"
 import { RoleManagement } from "@/components/settings/RoleManagement"
 import { GuildOverviewSettings } from "@/components/settings/GuildOverviewSettings"
 import { MemberRolesTab } from "@/components/settings/MemberRolesTab"
+import { AuditLogPanel } from "@/components/settings/AuditLogPanel"
 
 interface GuildSettingsModalProps {
     open: boolean
@@ -17,7 +19,7 @@ interface GuildSettingsModalProps {
     guildName: string
 }
 
-type SettingsTab = "overview" | "roles" | "members"
+type SettingsTab = "overview" | "roles" | "members" | "audit-log"
 
 interface TabItem {
     id: SettingsTab
@@ -25,19 +27,21 @@ interface TabItem {
     icon: React.ReactNode
 }
 
-const tabs: TabItem[] = [
-    { id: "overview", label: "Overview", icon: <Home className="h-4 w-4" /> },
-    { id: "roles", label: "Roles", icon: <Shield className="h-4 w-4" /> },
-    { id: "members", label: "Members", icon: <Users className="h-4 w-4" /> },
-]
-
 export function GuildSettingsModal({
     open,
     onOpenChange,
     guildId,
     guildName,
 }: GuildSettingsModalProps) {
+    const { isOwner } = usePermission(guildId)
     const [activeTab, setActiveTab] = useState<SettingsTab>("overview")
+
+    const tabs: TabItem[] = [
+        { id: "overview", label: "Overview", icon: <Home className="h-4 w-4" /> },
+        { id: "roles", label: "Roles", icon: <Shield className="h-4 w-4" /> },
+        { id: "members", label: "Members", icon: <Users className="h-4 w-4" /> },
+        ...(isOwner ? [{ id: "audit-log" as SettingsTab, label: "Audit Log", icon: <FileText className="h-4 w-4" /> }] : []),
+    ]
 
     const renderTabContent = () => {
         switch (activeTab) {
@@ -47,6 +51,8 @@ export function GuildSettingsModal({
                 return <RoleManagement guildId={guildId} />
             case "members":
                 return <MemberRolesTab guildId={guildId} />
+            case "audit-log":
+                return <AuditLogPanel guildId={guildId} />
             default:
                 return null
         }

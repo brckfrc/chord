@@ -13,19 +13,22 @@ public class GuildService : IGuildService
     private readonly ILogger<GuildService> _logger;
     private readonly IChannelService _channelService;
     private readonly IRoleService _roleService;
+    private readonly IAuditLogService _auditLogService;
 
     public GuildService(
         AppDbContext context, 
         IMapper mapper, 
         ILogger<GuildService> logger,
         IChannelService channelService,
-        IRoleService roleService)
+        IRoleService roleService,
+        IAuditLogService auditLogService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
         _channelService = channelService;
         _roleService = roleService;
+        _auditLogService = auditLogService;
     }
 
     public async Task<GuildResponseDto> CreateGuildAsync(Guid userId, CreateGuildDto dto)
@@ -55,6 +58,15 @@ public class GuildService : IGuildService
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Guild {GuildId} created by user {UserId}", guild.Id, userId);
+
+        // Log audit event
+        await _auditLogService.LogActionAsync(
+            userId,
+            AuditAction.GuildCreated,
+            "Guild",
+            guild.Id,
+            new { Name = guild.Name, Description = guild.Description },
+            guild.Id);
 
         // Create default roles and assign to owner
         try
@@ -177,6 +189,15 @@ public class GuildService : IGuildService
 
         _logger.LogInformation("Guild {GuildId} updated by user {UserId}", guildId, userId);
 
+        // Log audit event
+        await _auditLogService.LogActionAsync(
+            userId,
+            AuditAction.GuildUpdated,
+            "Guild",
+            guildId,
+            new { Name = dto.Name, Description = dto.Description, IconUrl = dto.IconUrl },
+            guildId);
+
         return _mapper.Map<GuildResponseDto>(guild);
     }
 
@@ -199,6 +220,15 @@ public class GuildService : IGuildService
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Guild {GuildId} deleted by user {UserId}", guildId, userId);
+
+        // Log audit event
+        await _auditLogService.LogActionAsync(
+            userId,
+            AuditAction.GuildDeleted,
+            "Guild",
+            guildId,
+            null,
+            guildId);
     }
 
     public async Task<GuildMemberDto> AddMemberAsync(Guid guildId, Guid ownerId, Guid userIdToAdd)
@@ -286,6 +316,15 @@ public class GuildService : IGuildService
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("User {UserId} removed from guild {GuildId}", userIdToRemove, guildId);
+
+        // Log audit event
+        await _auditLogService.LogActionAsync(
+            requesterId,
+            AuditAction.MemberLeft,
+            "GuildMember",
+            userIdToRemove,
+            null,
+            guildId);
     }
 
     public async Task<IEnumerable<GuildMemberDto>> GetGuildMembersAsync(Guid guildId, Guid userId)

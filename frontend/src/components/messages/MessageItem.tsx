@@ -11,6 +11,7 @@ import { DeleteMessageModal } from "@/components/modals/DeleteMessageModal"
 import { ImageAttachment } from "./ImageAttachment"
 import { VideoAttachment } from "./VideoAttachment"
 import { DocumentAttachment } from "./DocumentAttachment"
+import { formatMessageTime } from "@/lib/dateUtils"
 import type { MessageDto } from "@/lib/api/messages"
 import type { AttachmentDto } from "@/lib/api/upload"
 
@@ -154,40 +155,6 @@ export function MessageItem({
         return parts.length > 0 ? <>{parts}</> : content
     }
 
-    const formatTime = (dateString: string) => {
-        try {
-            const date = new Date(dateString)
-            const now = new Date()
-
-            // Check if same day
-            const isSameDay =
-                date.getDate() === now.getDate() &&
-                date.getMonth() === now.getMonth() &&
-                date.getFullYear() === now.getFullYear()
-
-            if (isSameDay) {
-                // Same day: show only time (HH:MM)
-                return date.toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false
-                })
-            } else {
-                // Different day: show date and time (DD.MM.YYYY HH:MM)
-                const day = String(date.getDate()).padStart(2, "0")
-                const month = String(date.getMonth() + 1).padStart(2, "0")
-                const year = date.getFullYear()
-                const time = date.toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false
-                })
-                return `${day}.${month}.${year} ${time}`
-            }
-        } catch {
-            return dateString
-        }
-    }
 
     return (
         <div
@@ -215,7 +182,7 @@ export function MessageItem({
                                 {message.author.username}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                                {formatTime(message.createdAt)}
+                                {formatMessageTime(message.createdAt)}
                             </span>
                             {message.isEdited && (
                                 <span className="text-xs text-muted-foreground italic">(edited)</span>
