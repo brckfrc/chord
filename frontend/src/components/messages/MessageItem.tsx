@@ -52,14 +52,21 @@ export function MessageItem({
 
     // Parse attachments from JSON string
     const parsedAttachments = useMemo<AttachmentDto[]>(() => {
+        console.log("[MessageItem] Raw attachments:", message.attachments)
         if (!message.attachments) return []
         try {
             const parsed = JSON.parse(message.attachments)
+            console.log("[MessageItem] Parsed attachments:", parsed)
             if (Array.isArray(parsed)) {
                 return parsed as AttachmentDto[]
             }
             return []
-        } catch {
+        } catch (error) {
+            console.error(
+                "[MessageItem] Failed to parse attachments:",
+                error,
+                message.attachments
+            )
             return []
         }
     }, [message.attachments])
@@ -243,7 +250,8 @@ export function MessageItem({
                         </div>
                     ) : (
                         <>
-                            {message.content && (
+                            {/* Only show content if it's not just zero-width space (used for attachment-only messages) */}
+                            {message.content && message.content.trim() && message.content !== "\u200B" && (
                                 <div className="text-sm text-foreground whitespace-pre-wrap break-words">
                                     {renderMessageWithMentions(message.content)}
                                 </div>

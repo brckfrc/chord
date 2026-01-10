@@ -9,6 +9,11 @@ import { cn } from "@/lib/utils"
 import type { GuildMemberDto } from "@/lib/api/guilds"
 import { FileUploadButton } from "./FileUploadButton"
 import type { UploadResponseDto, AttachmentDto } from "@/lib/api/upload"
+import { useToast } from "@/hooks/use-toast"
+
+// Zero-width space character - invisible but satisfies backend MinimumLength = 1 requirement
+// Regular spaces may be trimmed by ASP.NET Core model validation
+const ZERO_WIDTH_SPACE = "\u200B"
 
 interface MessageComposerProps {
     channelId: string
@@ -19,6 +24,7 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
     const { channels } = useAppSelector((state) => state.channels)
     const { membersByGuild } = useAppSelector((state) => state.guilds)
     const { user } = useAppSelector((state) => state.auth)
+    const { toast } = useToast()
     const [content, setContent] = useState("")
     const [isSending, setIsSending] = useState(false)
     const [mentionQuery, setMentionQuery] = useState("")
@@ -99,14 +105,22 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
     // Convert UploadResponseDto to AttachmentDto for message
     const attachmentsToJson = (): string | null => {
         if (attachments.length === 0) return null
-        const dtos: AttachmentDto[] = attachments.map((a) => ({
-            url: a.url,
-            type: a.type,
-            size: a.size,
-            name: a.name,
-            duration: a.duration,
-        }))
-        return JSON.stringify(dtos)
+        try {
+            const dtos: AttachmentDto[] = attachments.map((a) => ({
+                url: a.url,
+                type: a.type,
+                size: a.size,
+                name: a.name,
+                duration: a.duration,
+            }))
+            const jsonString = JSON.stringify(dtos)
+            // Validate JSON is not empty
+            if (!jsonString || jsonString === "[]") return null
+            return jsonString
+        } catch (error) {
+            console.error("Failed to serialize attachments:", error)
+            return null
+        }
     }
 
     // Handle mention selection
@@ -200,9 +214,14 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
 
         setIsSending(true)
         try {
+            // Prepare content: use zero-width space if empty but attachments exist
+            // This satisfies backend MinimumLength = 1 requirement
+            const trimmedContent = content.trim()
+            const finalContent = trimmedContent || (attachments.length > 0 ? ZERO_WIDTH_SPACE : "")
+            
             // Send via SignalR (will be broadcast via ReceiveMessage event)
             await chatInvoke("SendMessage", channelId, {
-                content: content.trim(),
+                content: finalContent,
                 attachments: attachmentsToJson(),
             })
 
@@ -221,13 +240,29 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
             }
         } catch (error) {
             console.error("Failed to send message:", error)
+            
+            // Show user-friendly error message
+            const errorMessage = error instanceof Error 
+                ? error.message 
+                : "Failed to send message. Please try again."
+            
+            toast({
+                title: "Failed to send message",
+                description: errorMessage,
+                variant: "destructive",
+            })
+            
             // Fallback to REST API if SignalR fails
             try {
+                // Prepare content: use zero-width space if empty but attachments exist
+                const trimmedContent = content.trim()
+                const finalContent = trimmedContent || (attachments.length > 0 ? ZERO_WIDTH_SPACE : "")
+                
                 await dispatch(
                     createMessage({
                         channelId,
                         data: {
-                            content: content.trim(),
+                            content: finalContent,
                             attachments: attachmentsToJson() || undefined
                         },
                     })
@@ -239,6 +274,15 @@ export function MessageComposer({ channelId }: MessageComposerProps) {
                 }
             } catch (restError) {
                 console.error("Failed to send message via REST:", restError)
+                const restErrorMessage = restError instanceof Error 
+                    ? restError.message 
+                    : "Failed to send message via REST API. Please try again."
+                
+                toast({
+                    title: "Failed to send message",
+                    description: restErrorMessage,
+                    variant: "destructive",
+                })
             }
         } finally {
             setIsSending(false)
