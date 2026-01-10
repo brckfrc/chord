@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
-import { auditLogsApi, type AuditLogDto, type PaginatedAuditLogsDto } from "@/lib/api/auditLogs"
+import { auditLogsApi, type AuditLogDto } from "@/lib/api/auditLogs"
 
 interface PaginationInfo {
   totalCount: number
@@ -36,10 +36,9 @@ export const fetchAuditLogs = createAsyncThunk(
     try {
       const result = await auditLogsApi.getGuildAuditLogs(guildId, { limit, page })
       return { guildId, result }
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch audit logs"
-      )
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to fetch audit logs"
+      return rejectWithValue(message)
     }
   }
 )

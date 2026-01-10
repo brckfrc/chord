@@ -28,10 +28,9 @@ export const fetchMentions = createAsyncThunk(
   async (unreadOnly: boolean = false, { rejectWithValue }) => {
     try {
       return await mentionsApi.getUserMentions(unreadOnly);
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch mentions"
-      );
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to fetch mentions";
+      return rejectWithValue(message);
     }
   }
 );
@@ -42,10 +41,9 @@ export const fetchUnreadMentionCount = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       return await mentionsApi.getUnreadMentionCount();
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch unread mention count"
-      );
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to fetch unread mention count";
+      return rejectWithValue(message);
     }
   }
 );
@@ -75,10 +73,9 @@ export const markAllMentionsAsRead = createAsyncThunk(
       await dispatch(fetchMentions(false));
       await dispatch(fetchUnreadMentionCount());
       return count;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to mark all mentions as read"
-      );
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to mark all mentions as read";
+      return rejectWithValue(message);
     }
   }
 );
