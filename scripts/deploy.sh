@@ -108,6 +108,20 @@ get_frontend_port() {
     fi
 }
 
+is_yunohost_deployment() {
+    # Check if docker-compose.yunohost.yml is in COMPOSE_FILES
+    for file in "${COMPOSE_FILES[@]}"; do
+        if [[ "$file" == *"yunohost"* ]] || [[ "$file" == *"docker-compose.yunohost.yml"* ]]; then
+            return 0  # true
+        fi
+    done
+    # Also check if file exists in project directory
+    if [ -f "$PROJECT_DIR/docker-compose.yunohost.yml" ]; then
+        return 0  # true
+    fi
+    return 1  # false
+}
+
 health_check() {
     local stack=$1
     local api_port=$(get_api_port "$stack")
@@ -274,7 +288,11 @@ rollback() {
     if [ "$active_stack" != "none" ]; then
         log_info "Ensuring $active_stack stack is running..."
         docker compose "${COMPOSE_FILES[@]}" --profile "$active_stack" up -d
-        update_caddy "$active_stack"
+
+        # Only update Caddy if not YunoHost
+        if ! is_yunohost_deployment; then
+            update_caddy "$active_stack"
+        fi
     fi
     
     log_warn "Rollback complete. System is running on $active_stack stack."
@@ -353,7 +371,23 @@ echo ""
 
 # Get current state
 ACTIVE_STACK=$(get_active_stack)
-DEPLOY_STACK=$(get_inactive_stack)
+
+# Detect YunoHost deployment
+IS_YUNOHOST=false
+if is_yunohost_deployment; then
+    IS_YUNOHOST=true
+    log_info "YunoHost deployment detected - using green stack strategy"
+fi
+
+# Determine deployment strategy
+if [ "$IS_YUNOHOST" = true ]; then
+    # YunoHost: Deploy to blue first (staging), then green (production)
+    DEPLOY_STACK="blue"
+    log_info "Deploying to blue stack (staging) first..."
+else
+    # Standard: Deploy to inactive stack
+    DEPLOY_STACK=$(get_inactive_stack)
+fi
 
 log_info "Current active stack: $ACTIVE_STACK"
 log_info "Deploying to: $DEPLOY_STACK"
@@ -363,20 +397,45 @@ if [ "$SKIP_INFRA" = false ]; then
     check_infra
 fi
 
-# Deploy to inactive stack
+# Deploy to stack
 deploy_stack "$DEPLOY_STACK"
 
 # Health check
 if health_check "$DEPLOY_STACK"; then
+    # For YunoHost: Deploy to green stack after blue succeeds
+    if [ "$IS_YUNOHOST" = true ] && [ "$DEPLOY_STACK" == "blue" ]; then
+        log_info "Blue stack healthy. Deploying to green stack (production)..."
+        deploy_stack "green"
+
+        if health_check "green"; then
+            log_success "Green stack deployed and healthy!"
+            DEPLOY_STACK="green"  # Update for state tracking
+            
+            # Green is healthy, stop blue stack (no longer needed)
+            log_info "Green stack is healthy. Stopping blue stack (staging)..."
+            stop_stack "blue"
+        else
+            log_error "Green stack deployment failed!"
+            log_warn "Blue stack (staging) is still running, but green (production) failed"
+            log_warn "Manual intervention required to fix green stack"
+            log_warn "Blue stack will remain running until green is fixed"
+            # Don't exit - but deployment is incomplete
+            exit 1
+        fi
+    fi
+
     # Switch traffic (only for Caddy/standalone deployments)
-    # For YunoHost, Nginx config is static and always points to green stack
-    update_caddy "$DEPLOY_STACK"
-    
+    if [ "$IS_YUNOHOST" = false ]; then
+        update_caddy "$DEPLOY_STACK"
+    else
+        log_info "Skipping Caddy update (YunoHost uses Nginx)"
+    fi
+
     # Update state
     set_active_stack "$DEPLOY_STACK"
-    
-    # Stop old stack
-    if [ "$ACTIVE_STACK" != "none" ]; then
+
+    # Stop old stack (for standard deployments)
+    if [ "$IS_YUNOHOST" = false ] && [ "$ACTIVE_STACK" != "none" ] && [ "$ACTIVE_STACK" != "$DEPLOY_STACK" ]; then
         log_info "Stopping old $ACTIVE_STACK stack..."
         stop_stack "$ACTIVE_STACK"
     fi
@@ -389,10 +448,12 @@ if health_check "$DEPLOY_STACK"; then
 else
     if [ "$FORCE" = true ]; then
         log_warn "Health check failed but --force was specified. Continuing..."
-        update_caddy "$DEPLOY_STACK"
+        if [ "$IS_YUNOHOST" = false ]; then
+            update_caddy "$DEPLOY_STACK"
+        fi
         set_active_stack "$DEPLOY_STACK"
         
-        if [ "$ACTIVE_STACK" != "none" ]; then
+        if [ "$IS_YUNOHOST" = false ] && [ "$ACTIVE_STACK" != "none" ] && [ "$ACTIVE_STACK" != "$DEPLOY_STACK" ]; then
             stop_stack "$ACTIVE_STACK"
         fi
     else
