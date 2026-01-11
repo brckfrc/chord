@@ -5,7 +5,9 @@
     "prepare": "husky",
     "lint:frontend": "cd frontend && npm run lint",
     "build:frontend": "cd frontend && npm run build",
-    "lint:backend": "cd backend && dotnet build --no-restore"
+    "lint:backend": "cd backend && dotnet build --no-restore",
+    "test:load": "k6 run k6/load-test.js",
+    "test:load:smoke": "k6 run k6/load-test.js --vus 10 --duration 30s"
   },
   "lint-staged": {
     "frontend/src/**/*.{ts,tsx}": [

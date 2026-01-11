@@ -14,6 +14,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment scenarios, CI/CD, production setup       |
 | [docs/ER_DIAGRAM.md](docs/ER_DIAGRAM.md) | Database schema ER diagram (Mermaid)                |
 | [docs/DEMO.md](docs/DEMO.md)             | Complete demo scenario covering all features        |
+| [docs/LOAD-TESTING.md](docs/LOAD-TESTING.md) | K6 load testing guide (1K concurrent users)        |
 | [chord_roadmap.md](chord_roadmap.md)     | Development phases and feature roadmap              |
 
 ---
@@ -210,6 +211,14 @@ npm run test:e2e:ui   # Run tests in UI mode
 ```
 
 E2E tests use an isolated Docker Compose test environment. See [frontend/README.md](frontend/README.md) for details.
+
+**Load Testing:**
+```bash
+npm run test:load        # Full load test (1K concurrent users, ~8 minutes)
+npm run test:load:smoke  # Smoke test (10 users, 30 seconds)
+```
+
+Load tests validate API performance under high concurrent load. See [docs/LOAD-TESTING.md](docs/LOAD-TESTING.md) for details.
 ### API Documentation
 
 - **Swagger UI**: http://localhost:5049/swagger

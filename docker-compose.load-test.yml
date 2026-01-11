@@ -1,0 +1,34 @@
+# K6 Load Testing Docker Compose Configuration
+# 
+# Purpose: Run K6 load tests in an isolated Docker container
+# Usage: 
+#   Production (default):
+#     docker compose -f docker-compose.load-test.yml run --rm k6-load-test run load-test.js --vus 10 --duration 30s
+#   
+#   Test environment:
+#     # First: Start test environment (creates network)
+#     docker compose -f docker-compose.test.yml up -d
+#     # Then: Run K6 with test environment URL
+#     K6_VU_API_URL=http://api-test:80 docker compose -f docker-compose.test.yml -f docker-compose.load-test.yml run --rm k6-load-test run load-test.js --vus 10 --duration 30s
+#
+# Prerequisites:
+# - For production: No prerequisites, connects to https://chord.borak.dev
+# - For test environment: Test environment must be running (creates chord-test-network)
+
+services:
+  k6-load-test:
+    image: grafana/k6:latest
+    container_name: chord-k6-load-test
+    environment:
+      # API URL - defaults to production (https://chord.borak.dev)
+      # Override with K6_VU_API_URL for test environment or other URLs
+      - K6_VU_API_URL=${K6_VU_API_URL:-https://chord.borak.dev}
+    volumes:
+      # Mount K6 test scripts
+      - ./k6:/scripts
+      # Mount results directory (optional, for exporting results)
+      - ./k6/results:/results
+    working_dir: /scripts
+    entrypoint: ["k6"]
+    # Default command (can be overridden with docker compose run)
+    command: ["run", "load-test.js"]

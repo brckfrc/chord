@@ -921,6 +921,7 @@ TURN_REALM=chord.local
 #### ⭐ Audit Log (Backend Tamamlandı)
 
 **Backend:**
+
 - [x] AuditLog entity (Id, GuildId, UserId, Action, TargetType, TargetId, Changes, IpAddress, Timestamp) ✅
 - [x] AuditAction enum (MemberJoin, MemberKick, ChannelCreate, MessageDelete, RoleUpdate, etc.) ✅
 - [x] Middleware: AuditLogMiddleware (önemli işlemleri logla) ✅
@@ -930,6 +931,7 @@ TURN_REALM=chord.local
 - [x] Integration with services (logging important actions) ✅
 
 **Frontend:**
+
 - [ ] AuditLogPanel component (guild settings)
 - [ ] API client: auditLogs.ts
 - [ ] Redux slice: auditLogsSlice
@@ -973,11 +975,11 @@ TURN_REALM=chord.local
 ## 🏗️ FAZ 11: PERFORMANCE & SECURITY
 
 **Süre**: ~4-5 gün (Notification Settings eklendi)  
-**DURUM**: ⏳ Başlanmadı
+**DURUM**: 🟡 Kısmen Tamamlandı (Load Testing ✅)
 
 ### Görevler (Mevcut)
 
-- [ ] Load testing (K6 veya Locust): 1K eşzamanlı bağlantı
+- [x] Load testing (K6 veya Locust): 1K eşzamanlı bağlantı ✅
 - [ ] Rate limiting iyileştirme (Redis-based distributed)
 - [ ] Input validation sertleştirme
 - [ ] CORS politikası güncelleme (production domain)
@@ -1141,12 +1143,14 @@ TURN_REALM=chord.local
 ### FAZ 9.5: Direct Messages & Friends ✅
 
 **Friend System:**
+
 - Friendship entity (RequesterId, AddresseeId, Status)
 - FriendshipStatus enum (Pending, Accepted, Blocked)
 - FriendsController: 9 endpoints (send, accept, decline, block, unfriend, list)
 - IFriendshipService + FriendshipService (business logic)
 
 **Direct Messages:**
+
 - DirectMessageChannel entity (User1Id, User2Id)
 - DirectMessage entity (content, soft delete)
 - DMController: 7 endpoints (create/get DM, list DMs, send/edit/delete messages, mark read)
@@ -1155,11 +1159,13 @@ TURN_REALM=chord.local
 - Unread tracking per DM channel
 
 **SignalR Events:**
+
 - JoinDM, LeaveDM
 - SendDMMessage, TypingInDM, StopTypingInDM, MarkDMAsRead
 - Server → Client: DMReceiveMessage, DMMessageEdited, DMMessageDeleted, DMUserTyping, DMUserStoppedTyping, DMMarkAsRead
 
 **Frontend:**
+
 - FriendsHome: Online/All/Pending tabs
 - FriendsSidebar: Friends + DM list
 - DMView: Full conversation UI
@@ -1171,6 +1177,7 @@ TURN_REALM=chord.local
 ### FAZ 10: Audit Logs Backend ✅
 
 **Backend Implementation:**
+
 - AuditLog entity with full tracking (User, Action, Target, Changes, IP, Timestamp)
 - AuditAction enum (19 action types)
 - AuditLogService + IAuditLogService
@@ -1182,6 +1189,7 @@ TURN_REALM=chord.local
 ### FAZ 12: Deployment & Documentation (8/10) 🟡
 
 **Completed:**
+
 - Docker Compose configs (3 deployment scenarios)
 - GitHub Actions CI/CD with blue-green deployment
 - Deployment scripts (deploy.sh, rollback.sh, setup-infra.sh)
