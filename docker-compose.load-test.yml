@@ -2,8 +2,12 @@
 # 
 # Purpose: Run K6 load tests in an isolated Docker container
 # Usage: 
-#   Production (default):
+#   Production (external, default):
 #     docker compose -f docker-compose.load-test.yml run --rm k6-load-test run load-test.js --vus 10 --duration 30s
+#   
+#   Production (internal, server-side):
+#     # Connect to production API container via Docker network
+#     K6_VU_API_URL=http://chord-api-green:80 docker compose -f docker-compose.load-test.yml run --rm k6-load-test run load-test.js --vus 10 --duration 30s
 #   
 #   Test environment:
 #     # First: Start test environment (creates network)
@@ -12,7 +16,8 @@
 #     K6_VU_API_URL=http://api-test:80 docker compose -f docker-compose.test.yml -f docker-compose.load-test.yml run --rm k6-load-test run load-test.js --vus 10 --duration 30s
 #
 # Prerequisites:
-# - For production: No prerequisites, connects to https://chord.borak.dev
+# - For production (external): No prerequisites, connects to https://chord.borak.dev
+# - For production (internal): Production stack must be running with chord-network
 # - For test environment: Test environment must be running (creates chord-test-network)
 
 services:
@@ -20,8 +25,10 @@ services:
     image: grafana/k6:latest
     container_name: chord-k6-load-test
     environment:
-      # API URL - defaults to production (https://chord.borak.dev)
-      # Override with K6_VU_API_URL for test environment or other URLs
+      # API URL - defaults to production external (https://chord.borak.dev)
+      # Override with K6_VU_API_URL for:
+      #   - Internal production: http://chord-api-green:80 (requires chord-network)
+      #   - Test environment: http://api-test:80 (requires chord-test-network)
       - K6_VU_API_URL=${K6_VU_API_URL:-https://chord.borak.dev}
     volumes:
       # Mount K6 test scripts
@@ -32,3 +39,11 @@ services:
     entrypoint: ["k6"]
     # Default command (can be overridden with docker compose run)
     command: ["run", "load-test.js"]
+    networks:
+      # Connect to production network when using internal API URL
+      # This allows K6 to reach chord-api-green container
+      - chord-network
+
+networks:
+  chord-network:
+    external: true

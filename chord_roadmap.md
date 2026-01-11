@@ -979,7 +979,7 @@ TURN_REALM=chord.local
 
 ### Görevler (Mevcut)
 
-- [x] Load testing (K6 veya Locust): 1K eşzamanlı bağlantı ✅
+- [x] Load testing (K6 veya Locust): 1K eşzamanlı bağlantı ✅ ⚠️ Push sonrası server-side test edilmeli (chord-network üzerinden)
 - [ ] Rate limiting iyileştirme (Redis-based distributed)
 - [ ] Input validation sertleştirme
 - [ ] CORS politikası güncelleme (production domain)

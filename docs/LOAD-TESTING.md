@@ -183,6 +183,17 @@ docker compose -f docker-compose.load-test.yml run --rm k6-load-test run load-te
 
 If you need to test production, run K6 **inside the production server** to bypass Cloudflare:
 
+**Option 4a: Using Docker Compose (Recommended)**
+
+```bash
+# On production server
+# Connect to production API container via Docker network (chord-network)
+# This uses the internal Docker hostname (chord-api-green:80) instead of localhost
+K6_VU_API_URL=http://chord-api-green:80 docker compose -f docker-compose.load-test.yml run --rm k6-load-test run load-test.js --vus 10 --duration 30s
+```
+
+**Option 4b: Using Native K6 Installation**
+
 ```bash
 # On production server
 # 1. Install K6
@@ -190,10 +201,12 @@ curl https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-am
 sudo mv k6-v0.47.0-linux-amd64/k6 /usr/local/bin/
 
 # 2. Clone/copy K6 scripts to server
-# 3. Run test against localhost API
+# 3. Run test against production API (use the port exposed by Docker, e.g., 5003)
 cd /path/to/k6
-K6_VU_API_URL=http://localhost:5049 k6 run load-test.js --vus 10 --duration 30s
+K6_VU_API_URL=http://localhost:5003 k6 run load-test.js --vus 10 --duration 30s
 ```
+
+**Note:** Option 4a is recommended as it uses Docker networking and doesn't require exposing ports or installing K6 natively.
 
 **Note:** 
 - **Option 1** is recommended: K6 uses `chord-test-network` to connect to `api-test:80` (works on Linux, no `host.docker.internal` needed)
