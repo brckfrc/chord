@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   fetchFriends,
@@ -8,6 +9,7 @@ import {
   declineFriendRequest,
   setActiveTab,
 } from "@/store/slices/friendsSlice"
+import { createOrGetDM } from "@/store/slices/dmsSlice"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { Plus, User } from "lucide-react"
@@ -26,7 +28,12 @@ const UserStatus = {
 } as const
 
 function FriendItem({ friend }: { friend: FriendshipResponseDto }) {
+  const dispatch = useAppDispatch()
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
   const otherUser = friend.otherUser
+
   const getStatusColor = (status: number) => {
     switch (status) {
       case UserStatus.Online:
@@ -40,13 +47,29 @@ function FriendItem({ friend }: { friend: FriendshipResponseDto }) {
     }
   }
 
+  const handleFriendClick = async () => {
+    if (!otherUser?.id || isLoading) return
+
+    setIsLoading(true)
+    try {
+      const result = await dispatch(createOrGetDM(otherUser.id)).unwrap()
+      navigate(`/me/dm/${result.id}`)
+    } catch (error) {
+      toast({
+        title: "Failed to open DM",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <button
-      className="w-full px-4 py-2 flex items-center gap-3 hover:bg-accent transition-colors rounded group"
-      onClick={() => {
-        // TODO: Navigate to DM when backend is ready
-        console.log("Open DM with", friend.id)
-      }}
+      className="w-full px-4 py-2 flex items-center gap-3 hover:bg-accent transition-colors rounded group disabled:opacity-50 disabled:cursor-not-allowed"
+      onClick={handleFriendClick}
+      disabled={isLoading}
     >
       <div className="relative flex-shrink-0">
         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
@@ -66,6 +89,11 @@ function FriendItem({ friend }: { friend: FriendshipResponseDto }) {
           </p>
         )}
       </div>
+      {isLoading && (
+        <div className="flex-shrink-0">
+          <Spinner className="w-4 h-4" />
+        </div>
+      )}
     </button>
   )
 }
@@ -311,4 +339,3 @@ export function FriendsHome() {
     </div>
   )
 }
-
