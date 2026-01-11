@@ -176,6 +176,7 @@ docker compose -f docker-compose.load-test.yml run --rm k6-load-test run load-te
 ```
 
 **⚠️ Important Warning:**
+
 - **Cloudflare/DDoS Protection**: Production URLs behind Cloudflare or DDoS protection will block high-volume load tests from external IPs
 - **Rate Limiting**: You'll see high error rates (90%+) due to rate limiting
 - **Recommended**: Use **Option 1** (test environment) instead for accurate load testing
@@ -238,7 +239,8 @@ K6_VU_API_URL=http://chord-api-green:80 docker compose -f docker-compose.load-te
 
 **Note:** Method 1 is recommended as it persists across deployments. Method 2 is temporary and will be lost after the next auto-deploy.
 
-**Note:** 
+**Note:**
+
 - **Option 1** is recommended: K6 uses `chord-test-network` to connect to `api-test:80` (works on Linux, no `host.docker.internal` needed)
 - To override the default command, provide the full K6 command after the service name (e.g., `run load-test.js --vus 10`)
 - Default API URL is `https://chord.borak.dev` (production). Override with `K6_VU_API_URL` for test environment
@@ -481,13 +483,17 @@ For YunoHost production deployments, load tests require rate limiting bypass to 
 This method persists across deployments and is managed via GitHub:
 
 1. **Add Repository Variable:**
+
    - Go to: `https://github.com/YOUR_USERNAME/chord/settings/variables/actions`
    - Click "New repository variable"
-   - Name: `RateLimiting__AllowLoadTestBypass`
+   - Name: `RateLimiting__AllowLoadTestBypass` (or `RATELIMITING__ALLOWLOADTESTBYPASS` - case-insensitive)
    - Value: `true` (to enable) or `false` (to disable)
    - Save
+   
+   **Note:** Variable name is case-insensitive. GitHub may convert to uppercase, but both formats work.
 
 2. **Next Auto-Deploy Will Apply:**
+
    - GitHub Actions will automatically pass this variable to the deployment script
    - API containers will start with bypass enabled/disabled based on the variable
    - No manual intervention needed
@@ -503,15 +509,17 @@ This method persists across deployments and is managed via GitHub:
 For one-time testing without waiting for auto-deploy:
 
 1. **Enable Bypass in API Container:**
+
    ```bash
    # Set environment variable
    export RateLimiting__AllowLoadTestBypass=true
-   
+
    # Restart API container with bypass enabled
    docker compose -f docker-compose.deploy.yml -f docker-compose.yunohost.yml --profile green up -d --force-recreate
    ```
 
 2. **Verify Bypass is Enabled:**
+
    ```bash
    # Check environment variable
    docker exec chord-api-green printenv | grep RATE
@@ -525,6 +533,7 @@ For one-time testing without waiting for auto-deploy:
    ```
 
 **Important Notes:**
+
 - **Method 1 is recommended** - persists across deployments, no manual steps needed
 - **Method 2 is temporary** - will be lost after next auto-deploy
 - **Security:** Set variable to `false` after testing (Method 1) or restart without variable (Method 2)
@@ -548,6 +557,7 @@ For one-time testing without waiting for auto-deploy:
 Use these commands on the production server to monitor and troubleshoot load tests:
 
 **Check API Logs:**
+
 ```bash
 # View recent API logs
 docker logs --tail 50 chord-api-green
@@ -563,6 +573,7 @@ docker logs chord-api-green | grep -i "bypass"
 ```
 
 **Check Rate Limiting Configuration:**
+
 ```bash
 # Check environment variables
 docker exec chord-api-green printenv | grep RATE
@@ -572,6 +583,7 @@ docker exec chord-api-green cat appsettings.json | grep -A 3 RateLimiting
 ```
 
 **Check Network Connectivity:**
+
 ```bash
 # Verify API container is on chord-network
 docker network inspect chord_chord-network | grep -A 10 chord-api-green
@@ -584,6 +596,7 @@ docker exec chord-k6-load-test curl -v http://chord-api-green:80/health
 ```
 
 **Check Container Status:**
+
 ```bash
 # List all chord containers
 docker ps | grep chord
@@ -596,6 +609,7 @@ docker inspect chord-api-green | grep -A 10 "State"
 ```
 
 **Test API Endpoints:**
+
 ```bash
 # Health check
 curl http://localhost:5003/health
@@ -666,6 +680,7 @@ K6_VU_API_URL=http://your-api-url:port docker compose -f docker-compose.load-tes
 **Problem:** Rate limiting is blocking load test requests.
 
 **Symptoms:**
+
 - 429 status codes in test results
 - "Rate limit exceeded" messages in API logs
 - High `http_req_failed` percentage
@@ -673,29 +688,33 @@ K6_VU_API_URL=http://your-api-url:port docker compose -f docker-compose.load-tes
 **Solutions:**
 
 1. **Enable Rate Limiting Bypass via GitHub Variable (Recommended):**
+
    - Go to: `https://github.com/YOUR_USERNAME/chord/settings/variables/actions`
    - Add variable: `RateLimiting__AllowLoadTestBypass` = `true`
    - Wait for next auto-deploy or trigger manual deploy
    - Variable will be automatically applied to API containers
 
 2. **Enable Rate Limiting Bypass Manually (Temporary):**
+
    ```bash
    export RateLimiting__AllowLoadTestBypass=true
    docker compose -f docker-compose.deploy.yml -f docker-compose.yunohost.yml --profile green up -d --force-recreate
    ```
 
 3. **Verify Bypass is Working:**
+
    ```bash
    # Check environment variable
    docker exec chord-api-green printenv | grep RATE
    # Should show: RateLimiting__AllowLoadTestBypass=true
-   
+
    # Check logs for bypass messages
    docker logs chord-api-green | grep -i "bypass"
    # Should see: "Rate limiting bypassed for load test request"
    ```
 
 4. **Verify K6 Headers:**
+
    - K6 tests automatically include `X-Load-Test: true` header
    - Check test logs to confirm headers are sent
    - Verify API code includes bypass logic (check commit hash matches latest)
@@ -712,6 +731,7 @@ K6_VU_API_URL=http://your-api-url:port docker compose -f docker-compose.load-tes
 **Problem:** Testing against production URL (`https://chord.borak.dev`) from external IP triggers Cloudflare/DDoS protection.
 
 **Symptoms:**
+
 - 90%+ request failures
 - Register/Login endpoints fail
 - Some endpoints work (get me, create guild) but most fail
@@ -719,12 +739,14 @@ K6_VU_API_URL=http://your-api-url:port docker compose -f docker-compose.load-tes
 **Solutions:**
 
 1. **Use Test Environment (Recommended):**
+
    ```bash
    # Test environment bypasses Cloudflare
    docker compose -f docker-compose.test.yml -f docker-compose.load-test.yml run --rm k6-load-test run load-test.js --vus 10 --duration 30s
    ```
 
 2. **Run from Production Server:**
+
    ```bash
    # SSH into production server
    # Run K6 against localhost API (bypasses Cloudflare)

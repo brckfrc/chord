@@ -258,7 +258,9 @@ deploy_stack() {
     
     # Export rate limiting bypass (if set, defaults to false)
     # This allows load tests to bypass rate limiting when enabled
-    export RateLimiting__AllowLoadTestBypass=${RateLimiting__AllowLoadTestBypass:-false}
+    # Support both uppercase and lowercase variable names (GitHub variables may be uppercase)
+    RATE_BYPASS_VALUE="${RateLimiting__AllowLoadTestBypass:-${RATELIMITING__ALLOWLOADTESTBYPASS:-false}}"
+    export RateLimiting__AllowLoadTestBypass="$RATE_BYPASS_VALUE"
     
     # Pull new images
     log_info "Pulling new images..."

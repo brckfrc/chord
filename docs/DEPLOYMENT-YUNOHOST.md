@@ -447,21 +447,23 @@ For automated deployments via GitHub Actions:
 
 This tells GitHub Actions to use YunoHost overrides during deployment.
 
-**Optional Variable: RateLimiting__AllowLoadTestBypass**
+**Optional Variable: RateLimiting\_\_AllowLoadTestBypass**
 
 For load testing, you can enable rate limiting bypass:
 
 1. Go to: `https://github.com/YOUR_USERNAME/chord/settings/variables/actions`
 2. Click "New repository variable"
-3. Name: `RateLimiting__AllowLoadTestBypass`
+3. Name: `RateLimiting__AllowLoadTestBypass` (or `RATELIMITING__ALLOWLOADTESTBYPASS` - case-insensitive)
 4. Value: `true` (to enable) or `false` (to disable, default)
 5. Save
 
-**Important:** 
+**Important:**
+
 - Set to `true` only when you need to run load tests
 - Set back to `false` after testing for security
 - This variable is automatically passed to API containers during deployment
 - K6 tests include `X-Load-Test: true` header to trigger bypass
+- **Note:** Variable name is case-insensitive - both `RateLimiting__AllowLoadTestBypass` and `RATELIMITING__ALLOWLOADTESTBYPASS` work
 
 ### Workflow Will Automatically:
 

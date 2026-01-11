@@ -159,13 +159,13 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_USER: ${{ github.actor }}
           COMPOSE_FILES: ${{ vars.COMPOSE_FILES || '-f docker-compose.deploy.yml' }}
-          RateLimiting__AllowLoadTestBypass: ${{ vars.RateLimiting__AllowLoadTestBypass || 'false' }}
+          RateLimiting__AllowLoadTestBypass: ${{ vars.RateLimiting__AllowLoadTestBypass || vars.RATELIMITING__ALLOWLOADTESTBYPASS || 'false' }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT }}
-          envs: IMAGE_TAG,REGISTRY,REPO,DEPLOY_PATH,GHCR_TOKEN,GHCR_USER,COMPOSE_FILES,RateLimiting__AllowLoadTestBypass
+          envs: IMAGE_TAG,REGISTRY,REPO,DEPLOY_PATH,GHCR_TOKEN,GHCR_USER,COMPOSE_FILES,RateLimiting__AllowLoadTestBypass,RATELIMITING__ALLOWLOADTESTBYPASS
           script: |
             cd "${DEPLOY_PATH:-/opt/chord}"
 
@@ -176,7 +176,9 @@ jobs:
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
             # Export rate limiting bypass (from GitHub variable)
-            export RateLimiting__AllowLoadTestBypass=${RateLimiting__AllowLoadTestBypass:-false}
+            # Support both uppercase and lowercase variable names (GitHub variables may be uppercase)
+            RATE_BYPASS_VALUE="${RateLimiting__AllowLoadTestBypass:-${RATELIMITING__ALLOWLOADTESTBYPASS:-false}}"
+            export RateLimiting__AllowLoadTestBypass="$RATE_BYPASS_VALUE"
 
             # Run blue-green deployment
             chmod +x scripts/deploy.sh
