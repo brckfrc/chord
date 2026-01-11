@@ -151,6 +151,17 @@ const dmsSlice = createSlice({
     clearDMMessages: (state, action: PayloadAction<string>) => {
       delete state.messages[action.payload]
     },
+    // Update unread count for a DM (for real-time updates via SignalR)
+    updateDMUnreadCount: (
+      state,
+      action: PayloadAction<{ dmId: string; unreadCount: number }>
+    ) => {
+      const { dmId, unreadCount } = action.payload
+      const dm = state.dms.find((d) => d.id === dmId)
+      if (dm) {
+        dm.unreadCount = unreadCount
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -214,6 +225,7 @@ export const {
   addDMTypingUser,
   removeDMTypingUser,
   clearDMMessages,
+  updateDMUnreadCount,
 } = dmsSlice.actions
 
 export default dmsSlice.reducer

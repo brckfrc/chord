@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import { fetchDMs, setSelectedDM } from "@/store/slices/dmsSlice"
+import { fetchDMs, setSelectedDM, addDMMessage, updateDMUnreadCount } from "@/store/slices/dmsSlice"
+import { useSignalR } from "@/hooks/useSignalR"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { AddFriendModal } from "@/components/modals/AddFriendModal"
 import { User, Hash } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatRelativeTime } from "@/lib/dateUtils"
-import type { DirectMessageChannelDto } from "@/lib/api/dms"
+import type { DirectMessageChannelDto, DirectMessageDto } from "@/lib/api/dms"
 
 // UserStatus enum values
 const UserStatus = {
@@ -103,9 +104,44 @@ export function FriendsSidebar() {
 
     const isFriendsActive = location.pathname === "/me"
 
+    // SignalR connection for ChatHub (for real-time DM updates)
+    const { on: chatOn, isConnected: isChatConnected } = useSignalR("/hubs/chat")
+
     useEffect(() => {
         dispatch(fetchDMs())
     }, [dispatch])
+
+    // Global SignalR listeners for DM events (all DMs, not just the open one)
+    useEffect(() => {
+        if (!isChatConnected) return
+
+        // Listen for new DM messages (for all DMs)
+        const handleDMReceiveMessage = (message: DirectMessageDto) => {
+            // Update DM list with new message (lastMessage, lastMessageAt, reorder)
+            dispatch(addDMMessage({ dmId: message.channelId, message }))
+        }
+
+        // Listen for DM mark-as-read events (unread count updates)
+        const handleDMMarkAsRead = (data: {
+            dmChannelId: string
+            lastReadMessageId?: string
+            unreadCount: number
+        }) => {
+            // Update unread count for the DM in the list
+            dispatch(updateDMUnreadCount({
+                dmId: data.dmChannelId,
+                unreadCount: data.unreadCount
+            }))
+        }
+
+        const cleanupReceiveMessage = chatOn("DMReceiveMessage", handleDMReceiveMessage)
+        const cleanupMarkAsRead = chatOn("DMMarkAsRead", handleDMMarkAsRead)
+
+        return () => {
+            cleanupReceiveMessage()
+            cleanupMarkAsRead()
+        }
+    }, [isChatConnected, chatOn, dispatch])
 
     const handleFriendsClick = () => {
         dispatch(setSelectedDM(null))

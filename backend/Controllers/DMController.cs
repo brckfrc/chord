@@ -1,9 +1,11 @@
 using ChordAPI.Models.DTOs;
 using ChordAPI.Services;
 using ChordAPI.Hubs;
+using ChordAPI.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace ChordAPI.Controllers;
@@ -17,6 +19,7 @@ public class DMController : ControllerBase
     private readonly IDirectMessageService _dmMessageService;
     private readonly IDMReadStateService _dmReadStateService;
     private readonly IHubContext<ChatHub> _chatHub;
+    private readonly AppDbContext _context;
     private readonly ILogger<DMController> _logger;
 
     public DMController(
@@ -24,12 +27,14 @@ public class DMController : ControllerBase
         IDirectMessageService dmMessageService,
         IDMReadStateService dmReadStateService,
         IHubContext<ChatHub> chatHub,
+        AppDbContext context,
         ILogger<DMController> logger)
     {
         _dmChannelService = dmChannelService;
         _dmMessageService = dmMessageService;
         _dmReadStateService = dmReadStateService;
         _chatHub = chatHub;
+        _context = context;
         _logger = logger;
     }
 
@@ -134,8 +139,22 @@ public class DMController : ControllerBase
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var result = await _dmMessageService.SendMessageAsync(userId, id, dto.Content);
 
-            // Broadcast message to DM channel via SignalR (handled in ChatHub)
-            await _chatHub.Clients.Group($"dm_{id}")
+            // Get DM channel entity to find the other user's ID
+            var dmChannel = await _context.DirectMessageChannels
+                .FirstOrDefaultAsync(dmc => dmc.Id == id);
+
+            if (dmChannel == null)
+            {
+                throw new KeyNotFoundException("DM channel not found");
+            }
+
+            var otherUserId = dmChannel.User1Id == userId ? dmChannel.User2Id : dmChannel.User1Id;
+
+            // Broadcast message to both users via SignalR using Clients.User()
+            // Send to sender (userId) and receiver (otherUserId)
+            await _chatHub.Clients.User(userId.ToString())
+                .SendAsync("DMReceiveMessage", result);
+            await _chatHub.Clients.User(otherUserId.ToString())
                 .SendAsync("DMReceiveMessage", result);
 
             return Ok(result);
@@ -227,6 +246,39 @@ public class DMController : ControllerBase
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             await _dmReadStateService.MarkDMAsReadAsync(id, userId, messageId);
+
+            // Get DM channel entity to find the other user's ID
+            var dmChannel = await _context.DirectMessageChannels
+                .FirstOrDefaultAsync(dmc => dmc.Id == id);
+
+            if (dmChannel != null)
+            {
+                var otherUserId = dmChannel.User1Id == userId ? dmChannel.User2Id : dmChannel.User1Id;
+
+                // Get unread count for the current user (who marked it as read) - should be 0 after marking
+                var currentUserUnreadInfo = await _dmReadStateService.GetDMUnreadCountAsync(id, userId);
+
+                // Notify the current user about their own unread count change (for real-time UI update)
+                await _chatHub.Clients.User(userId.ToString())
+                    .SendAsync("DMMarkAsRead", new
+                    {
+                        dmChannelId = id,
+                        lastReadMessageId = messageId,
+                        unreadCount = currentUserUnreadInfo.UnreadCount
+                    });
+
+                // Also notify the other user (so they know this user has read the messages)
+                // Get their unread count (which doesn't change, but we send it for consistency)
+                var otherUserUnreadInfo = await _dmReadStateService.GetDMUnreadCountAsync(id, otherUserId);
+                await _chatHub.Clients.User(otherUserId.ToString())
+                    .SendAsync("DMMarkAsRead", new
+                    {
+                        dmChannelId = id,
+                        lastReadMessageId = messageId,
+                        unreadCount = otherUserUnreadInfo.UnreadCount
+                    });
+            }
+
             return NoContent();
         }
         catch (KeyNotFoundException ex)
