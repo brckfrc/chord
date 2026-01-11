@@ -256,6 +256,10 @@ deploy_stack() {
     export GITHUB_REPO
     export IMAGE_TAG
     
+    # Export rate limiting bypass (if set, defaults to false)
+    # This allows load tests to bypass rate limiting when enabled
+    export RateLimiting__AllowLoadTestBypass=${RateLimiting__AllowLoadTestBypass:-false}
+    
     # Pull new images
     log_info "Pulling new images..."
     docker pull "${REGISTRY}/${GITHUB_REPO}/api:${IMAGE_TAG}"

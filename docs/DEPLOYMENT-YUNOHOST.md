@@ -435,7 +435,9 @@ Deploy to blue (now inactive), test, then update green stack with new images. No
 
 For automated deployments via GitHub Actions:
 
-### Set Repository Variable
+### Set Repository Variables
+
+**Required Variable: COMPOSE_FILES**
 
 1. Go to: `https://github.com/YOUR_USERNAME/chord/settings/variables/actions`
 2. Click "New repository variable"
@@ -444,6 +446,22 @@ For automated deployments via GitHub Actions:
 5. Save
 
 This tells GitHub Actions to use YunoHost overrides during deployment.
+
+**Optional Variable: RateLimiting__AllowLoadTestBypass**
+
+For load testing, you can enable rate limiting bypass:
+
+1. Go to: `https://github.com/YOUR_USERNAME/chord/settings/variables/actions`
+2. Click "New repository variable"
+3. Name: `RateLimiting__AllowLoadTestBypass`
+4. Value: `true` (to enable) or `false` (to disable, default)
+5. Save
+
+**Important:** 
+- Set to `true` only when you need to run load tests
+- Set back to `false` after testing for security
+- This variable is automatically passed to API containers during deployment
+- K6 tests include `X-Load-Test: true` header to trigger bypass
 
 ### Workflow Will Automatically:
 

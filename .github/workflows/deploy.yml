@@ -159,12 +159,13 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_USER: ${{ github.actor }}
           COMPOSE_FILES: ${{ vars.COMPOSE_FILES || '-f docker-compose.deploy.yml' }}
+          RateLimiting__AllowLoadTestBypass: ${{ vars.RateLimiting__AllowLoadTestBypass || 'false' }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT }}
-          envs: IMAGE_TAG,REGISTRY,REPO,DEPLOY_PATH,GHCR_TOKEN,GHCR_USER,COMPOSE_FILES
+          envs: IMAGE_TAG,REGISTRY,REPO,DEPLOY_PATH,GHCR_TOKEN,GHCR_USER,COMPOSE_FILES,RateLimiting__AllowLoadTestBypass
           script: |
             cd "${DEPLOY_PATH:-/opt/chord}"
 
@@ -173,6 +174,9 @@ jobs:
 
             # Login to GHCR
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+            # Export rate limiting bypass (from GitHub variable)
+            export RateLimiting__AllowLoadTestBypass=${RateLimiting__AllowLoadTestBypass:-false}
 
             # Run blue-green deployment
             chmod +x scripts/deploy.sh

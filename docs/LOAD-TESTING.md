@@ -211,7 +211,19 @@ K6_VU_API_URL=http://localhost:5003 k6 run load-test.js --vus 10 --duration 30s
 
 **Important for YunoHost Deployment:**
 
-When testing against YunoHost production server, you must enable rate limiting bypass:
+When testing against YunoHost production server, you must enable rate limiting bypass. There are two ways to do this:
+
+**Method 1: GitHub Repository Variable (Recommended - Automatic)**
+
+1. Go to your GitHub repository: `https://github.com/YOUR_USERNAME/chord/settings/variables/actions`
+2. Click "New repository variable"
+3. Name: `RateLimiting__AllowLoadTestBypass`
+4. Value: `true` (or `false` to disable)
+5. Save
+
+The next auto-deploy will automatically enable/disable bypass based on this variable.
+
+**Method 2: Manual (One-time)**
 
 ```bash
 # Set environment variable to enable bypass
@@ -223,6 +235,8 @@ docker compose -f docker-compose.deploy.yml -f docker-compose.yunohost.yml --pro
 # Then run K6 test
 K6_VU_API_URL=http://chord-api-green:80 docker compose -f docker-compose.load-test.yml run --rm k6-load-test run load-test.js --vus 10 --duration 30s
 ```
+
+**Note:** Method 1 is recommended as it persists across deployments. Method 2 is temporary and will be lost after the next auto-deploy.
 
 **Note:** 
 - **Option 1** is recommended: K6 uses `chord-test-network` to connect to `api-test:80` (works on Linux, no `host.docker.internal` needed)
@@ -460,7 +474,33 @@ jobs:
 
 For YunoHost production deployments, load tests require rate limiting bypass to avoid 429 (Too Many Requests) errors.
 
-**Configuration:**
+**Configuration Methods:**
+
+**Method 1: GitHub Repository Variable (Recommended - Automatic)**
+
+This method persists across deployments and is managed via GitHub:
+
+1. **Add Repository Variable:**
+   - Go to: `https://github.com/YOUR_USERNAME/chord/settings/variables/actions`
+   - Click "New repository variable"
+   - Name: `RateLimiting__AllowLoadTestBypass`
+   - Value: `true` (to enable) or `false` (to disable)
+   - Save
+
+2. **Next Auto-Deploy Will Apply:**
+   - GitHub Actions will automatically pass this variable to the deployment script
+   - API containers will start with bypass enabled/disabled based on the variable
+   - No manual intervention needed
+
+3. **Run Load Test:**
+   ```bash
+   # Connect via Docker network (bypasses Cloudflare)
+   K6_VU_API_URL=http://chord-api-green:80 docker compose -f docker-compose.load-test.yml run --rm k6-load-test run load-test.js --vus 10 --duration 30s
+   ```
+
+**Method 2: Manual (Temporary)**
+
+For one-time testing without waiting for auto-deploy:
 
 1. **Enable Bypass in API Container:**
    ```bash
@@ -483,6 +523,12 @@ For YunoHost production deployments, load tests require rate limiting bypass to 
    # Connect via Docker network (bypasses Cloudflare)
    K6_VU_API_URL=http://chord-api-green:80 docker compose -f docker-compose.load-test.yml run --rm k6-load-test run load-test.js --vus 10 --duration 30s
    ```
+
+**Important Notes:**
+- **Method 1 is recommended** - persists across deployments, no manual steps needed
+- **Method 2 is temporary** - will be lost after next auto-deploy
+- **Security:** Set variable to `false` after testing (Method 1) or restart without variable (Method 2)
+- **Default:** Bypass is disabled (`false`) by default for security
 
 **How It Works:**
 
@@ -626,23 +672,40 @@ K6_VU_API_URL=http://your-api-url:port docker compose -f docker-compose.load-tes
 
 **Solutions:**
 
-1. **Enable Rate Limiting Bypass (YunoHost):**
+1. **Enable Rate Limiting Bypass via GitHub Variable (Recommended):**
+   - Go to: `https://github.com/YOUR_USERNAME/chord/settings/variables/actions`
+   - Add variable: `RateLimiting__AllowLoadTestBypass` = `true`
+   - Wait for next auto-deploy or trigger manual deploy
+   - Variable will be automatically applied to API containers
+
+2. **Enable Rate Limiting Bypass Manually (Temporary):**
    ```bash
    export RateLimiting__AllowLoadTestBypass=true
    docker compose -f docker-compose.deploy.yml -f docker-compose.yunohost.yml --profile green up -d --force-recreate
    ```
 
-2. **Verify Bypass is Working:**
+3. **Verify Bypass is Working:**
    ```bash
+   # Check environment variable
+   docker exec chord-api-green printenv | grep RATE
+   # Should show: RateLimiting__AllowLoadTestBypass=true
+   
    # Check logs for bypass messages
    docker logs chord-api-green | grep -i "bypass"
-   
    # Should see: "Rate limiting bypassed for load test request"
    ```
 
-3. **Verify K6 Headers:**
+4. **Verify K6 Headers:**
    - K6 tests automatically include `X-Load-Test: true` header
    - Check test logs to confirm headers are sent
+   - Verify API code includes bypass logic (check commit hash matches latest)
+
+5. **Check if New Code is Deployed:**
+   ```bash
+   # Check container commit hash
+   docker inspect chord-api-green | grep -i "revision"
+   # Should match latest commit with bypass logic
+   ```
 
 #### 2a. High Error Rate on Production URL (90%+ failures)
 
