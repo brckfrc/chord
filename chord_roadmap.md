@@ -1033,6 +1033,9 @@ TURN_REALM=chord.local
   - ✅ Blue-green deployment strategy
   - ✅ Health checks
   - ✅ Automatic rollback on failure
+  - ✅ paths-ignore: Docs-only değişikliklerde CI skip (**.md, docs/**, chord_roadmap.md, .cursorrules, LICENSE)
+  - ✅ Commit mesajı kontrolü: [skip ci], [skip deploy] desteği
+  - ✅ Smart skip logic: Hem kod hem docs değişirse CI çalışır → Deploy çalışır
 - [x] Deployment scripts ✅
   - ✅ `scripts/deploy.sh` (blue-green automation)
   - ✅ `scripts/rollback.sh`
