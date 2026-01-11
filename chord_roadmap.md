@@ -950,7 +950,7 @@ TURN_REALM=chord.local
 ✅ xUnit testler tamamlandı (88 test case, tüm testler geçiyor)  
 ✅ Test coverage ≥70% (core services: AuthService %100, GuildService ~95%, ChannelService ~80%, MessageService ~75%)  
 ✅ Coverage raporu oluşturuldu (Coverlet, XML format: `ChordAPI.Tests/TestResults/*/coverage.cobertura.xml`)  
-⏳ E2E testler ana akışı kapsıyor  
+✅ E2E testler ana akışı kapsıyor (Playwright, Docker Compose test environment, Login → Guild → Message flow)  
 ⏳ Metrik/trace dashboard görünür
 
 ### 📝 Test Notları

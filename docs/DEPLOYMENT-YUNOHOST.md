@@ -348,11 +348,13 @@ api-green:
 This ensures uploaded files are accessible via `https://chord.your-domain.com/uploads/...` instead of internal Docker hostname (`http://minio:9000/...`).
 
 **To customize the domain**, set `MINIO_PUBLIC_ENDPOINT` in your `.env` file:
+
 ```
 MINIO_PUBLIC_ENDPOINT=https://your-custom-domain.com/uploads
 ```
 
 **Why this is needed:**
+
 - Backend generates file URLs using `MINIO_PUBLIC_ENDPOINT`
 - Without this, URLs use internal Docker hostname (`minio:9000`) which browsers cannot resolve
 - Nginx `/uploads` location proxies requests to MinIO on port 9000
@@ -360,6 +362,7 @@ MINIO_PUBLIC_ENDPOINT=https://your-custom-domain.com/uploads
 ## Step 9: Blue-Green Deployment Workflow
 
 **YunoHost Blue-Green Strategy:**
+
 - **Green stack (5003/3003)**: Production stack - Nginx always routes to green
 - **Blue stack (5002/3002)**: Staging/test stack - deploy new versions here first
 - After testing blue, update green stack with new images
@@ -753,12 +756,14 @@ sudo nano /etc/nginx/conf.d/chord.borak.dev.conf
 In both server blocks (port 80 and 443), comment out or remove:
 
 **A) SSO Lua directive:**
+
 ```nginx
 # Comment out this line:
 #access_by_lua_file /usr/share/ssowat/access.lua;
 ```
 
 **B) SSO include:**
+
 ```nginx
 # Comment out this line:
 #include /etc/nginx/conf.d/yunohost_sso.conf.inc;
@@ -807,6 +812,7 @@ sudo chattr +i /etc/nginx/conf.d/chord.borak.dev.conf
 ```
 
 **To unlock later (if needed):**
+
 ```bash
 sudo chattr -i /etc/nginx/conf.d/chord.borak.dev.conf
 ```
