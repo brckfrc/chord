@@ -2,9 +2,8 @@
 # Builds and deploys to production after CI passes on main
 # Uses Blue-Green deployment strategy
 #
-# Skip CI: Use [skip ci], [ci skip], [no ci], [skip actions], or [actions skip] in commit message
-# Skip Deploy: Use [skip deploy] or [deploy skip] in commit message
-# Note: Deploy also skips if CI workflow is skipped
+# Skip: Use [skip ci], [ci skip], [no ci], [skip actions], or [actions skip] in commit message
+# Note: This also skips if CI workflow is skipped
 
 name: Deploy
 
@@ -28,31 +27,11 @@ env:
 jobs:
   # Check if CI passed (for manual triggers)
   check-ci:
-    name: Check CI Status & Deploy Skip
+    name: Check CI Status
     runs-on: ubuntu-latest
     outputs:
       ci_passed: ${{ steps.check-dispatch.outputs.passed || steps.check-run.outputs.passed }}
-      should_deploy: ${{ steps.check-deploy.outputs.should_deploy }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6.0.1
-        with:
-          fetch-depth: 1
-
-      - name: Check commit message for skip deploy
-        id: check-deploy
-        run: |
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          echo "Commit message: $COMMIT_MSG"
-          
-          # Check for skip deploy keywords (case-insensitive)
-          if echo "$COMMIT_MSG" | grep -qiE "\[skip deploy\]|\[deploy skip\]"; then
-            echo "Deploy skipped due to commit message"
-            echo "should_deploy=false" >> $GITHUB_OUTPUT
-          else
-            echo "should_deploy=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Check last CI workflow status
         id: check-dispatch
         if: github.event_name == 'workflow_dispatch'
@@ -91,8 +70,8 @@ jobs:
     name: Build & Push Images
     runs-on: ubuntu-latest
     needs: check-ci
-    # Only run if CI passed and deploy is not skipped
-    if: needs.check-ci.outputs.ci_passed == 'true' && needs.check-ci.outputs.should_deploy == 'true'
+    # Only run if CI passed
+    if: needs.check-ci.outputs.ci_passed == 'true'
     permissions:
       contents: read
       packages: write
@@ -164,7 +143,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [check-ci, build-and-push] # check-ci added
     environment: production
-    if: needs.check-ci.outputs.should_deploy == 'true'
+    if: true
 
     steps:
       - name: Checkout code
