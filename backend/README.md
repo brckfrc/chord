@@ -355,7 +355,7 @@ const connection = new HubConnectionBuilder()
 | `DMMessageDeleted`       | `messageId`                                                       | DM message deleted           |
 | `DMUserTyping`           | `{userId, username, dmChannelId}`                                 | User typing in DM            |
 | `DMUserStoppedTyping`    | `{userId, dmChannelId}`                                           | User stopped typing in DM    |
-| `DMMarkAsRead`           | `{dmChannelId, lastReadMessageId}`                                | DM marked as read            |
+| `DMMarkAsRead`           | `{dmChannelId, lastReadMessageId, unreadCount}`                   | DM marked as read            |
 | `Error`                  | `message`                                                         | Error message                |
 
 ---
