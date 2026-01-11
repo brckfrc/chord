@@ -157,6 +157,7 @@ services:
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
       - LIVEKIT_URL=${LIVEKIT_URL:-ws://livekit:7880}
       - LIVEKIT_PUBLIC_URL=${LIVEKIT_PUBLIC_URL:-wss://chord.borak.dev/livekit}
+      - RateLimiting__AllowLoadTestBypass=${RateLimiting__AllowLoadTestBypass:-false}
     ports:
       - "5002:80"
     networks:
@@ -216,6 +217,7 @@ services:
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
       - LIVEKIT_URL=${LIVEKIT_URL:-ws://livekit:7880}
       - LIVEKIT_PUBLIC_URL=${LIVEKIT_PUBLIC_URL:-wss://chord.borak.dev/livekit}
+      - RateLimiting__AllowLoadTestBypass=${RateLimiting__AllowLoadTestBypass:-false}
     ports:
       - "5003:80"
     networks:
