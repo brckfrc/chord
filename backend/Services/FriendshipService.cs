@@ -78,7 +78,13 @@ public class FriendshipService : IFriendshipService
             .Include(f => f.Addressee)
             .FirstAsync(f => f.Id == friendship.Id);
 
-        return MapToDto(friendshipWithUsers, userId);
+        var dto = MapToDto(friendshipWithUsers, userId);
+        if (dto == null)
+        {
+            throw new InvalidOperationException("Failed to map friendship: user data is missing");
+        }
+
+        return dto;
     }
 
     public async Task<FriendshipResponseDto> AcceptRequestAsync(Guid userId, Guid requestId)
@@ -109,7 +115,13 @@ public class FriendshipService : IFriendshipService
 
         await _context.SaveChangesAsync();
 
-        return MapToDto(friendship, userId);
+        var dto = MapToDto(friendship, userId);
+        if (dto == null)
+        {
+            throw new InvalidOperationException("Failed to map friendship: user data is missing");
+        }
+
+        return dto;
     }
 
     public async Task DeclineRequestAsync(Guid userId, Guid requestId)
@@ -188,7 +200,13 @@ public class FriendshipService : IFriendshipService
             .Include(f => f.Addressee)
             .FirstAsync(f => f.Id == existingFriendship.Id);
 
-        return MapToDto(friendshipWithUsers, userId);
+        var dto = MapToDto(friendshipWithUsers, userId);
+        if (dto == null)
+        {
+            throw new InvalidOperationException("Failed to map friendship: user data is missing");
+        }
+
+        return dto;
     }
 
     public async Task UnblockUserAsync(Guid userId, Guid targetUserId)
@@ -235,7 +253,17 @@ public class FriendshipService : IFriendshipService
                 f.Status == FriendshipStatus.Accepted)
             .ToListAsync();
 
-        return friendships.Select(f => MapToDto(f, userId)).ToList();
+        var validFriendships = new List<FriendshipResponseDto>();
+        foreach (var friendship in friendships)
+        {
+            var dto = MapToDto(friendship, userId);
+            if (dto != null)
+            {
+                validFriendships.Add(dto);
+            }
+        }
+
+        return validFriendships;
     }
 
     public async Task<List<FriendshipResponseDto>> GetPendingRequestsAsync(Guid userId)
@@ -248,7 +276,17 @@ public class FriendshipService : IFriendshipService
                 f.Status == FriendshipStatus.Pending)
             .ToListAsync();
 
-        return friendships.Select(f => MapToDto(f, userId)).ToList();
+        var validFriendships = new List<FriendshipResponseDto>();
+        foreach (var friendship in friendships)
+        {
+            var dto = MapToDto(friendship, userId);
+            if (dto != null)
+            {
+                validFriendships.Add(dto);
+            }
+        }
+
+        return validFriendships;
     }
 
     public async Task<List<FriendshipResponseDto>> GetBlockedUsersAsync(Guid userId)
@@ -261,7 +299,17 @@ public class FriendshipService : IFriendshipService
                 f.Status == FriendshipStatus.Blocked)
             .ToListAsync();
 
-        return friendships.Select(f => MapToDto(f, userId)).ToList();
+        var validFriendships = new List<FriendshipResponseDto>();
+        foreach (var friendship in friendships)
+        {
+            var dto = MapToDto(friendship, userId);
+            if (dto != null)
+            {
+                validFriendships.Add(dto);
+            }
+        }
+
+        return validFriendships;
     }
 
     public async Task<bool> IsBlockedAsync(Guid userId, Guid otherUserId)
@@ -275,11 +323,33 @@ public class FriendshipService : IFriendshipService
 
     /// <summary>
     /// Maps a Friendship entity to DTO, with the "other user" being the user who is not the current user
+    /// Returns null if the other user is missing (orphan friendship record)
     /// </summary>
-    private FriendshipResponseDto MapToDto(Friendship friendship, Guid currentUserId)
+    private FriendshipResponseDto? MapToDto(Friendship friendship, Guid currentUserId)
     {
         var isRequester = friendship.RequesterId == currentUserId;
         var otherUser = isRequester ? friendship.Addressee : friendship.Requester;
+
+        // Check if other user is null (orphan friendship record)
+        if (otherUser == null)
+        {
+            _logger.LogWarning(
+                "Orphan friendship record detected. FriendshipId: {FriendshipId}, RequesterId: {RequesterId}, AddresseeId: {AddresseeId}, CurrentUserId: {CurrentUserId}, IsRequester: {IsRequester}",
+                friendship.Id, friendship.RequesterId, friendship.AddresseeId, currentUserId, isRequester);
+
+            // Optionally clean up orphan record
+            try
+            {
+                _context.Friendships.Remove(friendship);
+                _context.SaveChangesAsync().Wait(TimeSpan.FromSeconds(1)); // Fire and forget cleanup
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to remove orphan friendship record {FriendshipId}", friendship.Id);
+            }
+
+            return null;
+        }
 
         return new FriendshipResponseDto
         {
