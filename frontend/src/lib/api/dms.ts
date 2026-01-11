@@ -102,5 +102,13 @@ export const dmsApi = {
   deleteDMMessage: async (dmId: string, messageId: string): Promise<void> => {
     await api.delete(`/dms/${dmId}/messages/${messageId}`)
   },
+
+  /**
+   * Mark a DM channel as read
+   */
+  markDMAsRead: async (dmId: string, messageId?: string): Promise<void> => {
+    const params = messageId ? { messageId } : {}
+    await api.post(`/dms/${dmId}/mark-read`, null, { params })
+  },
 }
 

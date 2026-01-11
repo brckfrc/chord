@@ -23,6 +23,7 @@ public class AppDbContext : DbContext
     public DbSet<Friendship> Friendships { get; set; }
     public DbSet<DirectMessageChannel> DirectMessageChannels { get; set; }
     public DbSet<DirectMessage> DirectMessages { get; set; }
+    public DbSet<DirectMessageReadState> DirectMessageReadStates { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -306,6 +307,33 @@ public class AppDbContext : DbContext
             entity.HasIndex(dm => new { dm.ChannelId, dm.CreatedAt });
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // DirectMessageReadState configuration (composite key)
+        modelBuilder.Entity<DirectMessageReadState>(entity =>
+        {
+            entity.HasKey(dmrs => new { dmrs.UserId, dmrs.ChannelId });
+
+            entity.HasOne(dmrs => dmrs.User)
+                .WithMany()
+                .HasForeignKey(dmrs => dmrs.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(dmrs => dmrs.Channel)
+                .WithMany()
+                .HasForeignKey(dmrs => dmrs.ChannelId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(dmrs => dmrs.LastReadMessage)
+                .WithMany()
+                .HasForeignKey(dmrs => dmrs.LastReadMessageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(dmrs => dmrs.ChannelId);
+            entity.HasIndex(dmrs => dmrs.UserId);
+            entity.HasIndex(dmrs => dmrs.LastReadAt);
+
+            entity.Property(e => e.LastReadAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
         // AuditLog configuration

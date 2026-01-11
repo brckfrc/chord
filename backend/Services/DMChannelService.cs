@@ -10,15 +10,18 @@ public class DMChannelService : IDMChannelService
 {
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IDMReadStateService _dmReadStateService;
     private readonly ILogger<DMChannelService> _logger;
 
     public DMChannelService(
         AppDbContext context,
         IMapper mapper,
+        IDMReadStateService dmReadStateService,
         ILogger<DMChannelService> logger)
     {
         _context = context;
         _mapper = mapper;
+        _dmReadStateService = dmReadStateService;
         _logger = logger;
     }
 
@@ -121,20 +124,25 @@ public class DMChannelService : IDMChannelService
 
     /// <summary>
     /// Maps a DirectMessageChannel to DTO, with the "other user" being the user who is not the current user
-    /// Also calculates unread count
+    /// Also calculates unread count using read state tracking
     /// </summary>
     private async Task<DirectMessageChannelDto> MapToDtoAsync(DirectMessageChannel channel, Guid currentUserId)
     {
         var otherUser = channel.User1Id == currentUserId ? channel.User2 : channel.User1;
 
-        // Calculate unread count: messages sent by other user after the current user's last read
-        // For now, we'll use a simple approach: count all messages from other user
-        // TODO: Implement proper read tracking in future phase
-        var unreadCount = await _context.DirectMessages
-            .Where(dm => dm.ChannelId == channel.Id && 
-                         dm.SenderId != currentUserId && 
-                         !dm.IsDeleted)
-            .CountAsync();
+        // Calculate unread count using read state tracking
+        int unreadCount = 0;
+        try
+        {
+            var unreadInfo = await _dmReadStateService.GetDMUnreadCountAsync(channel.Id, currentUserId);
+            unreadCount = unreadInfo.UnreadCount;
+        }
+        catch (Exception ex)
+        {
+            // If read state service fails, fall back to 0 (shouldn't happen, but handle gracefully)
+            _logger.LogWarning(ex, "Failed to get unread count for DM channel {ChannelId}, defaulting to 0", channel.Id);
+            unreadCount = 0;
+        }
 
         DirectMessageDto? lastMessageDto = null;
         if (channel.Messages.Any())

@@ -13,19 +13,22 @@ public class ChannelService : IChannelService
     private readonly ILogger<ChannelService> _logger;
     private readonly IPermissionService _permissionService;
     private readonly IAuditLogService _auditLogService;
+    private readonly IReadStateService _readStateService;
 
     public ChannelService(
         AppDbContext context,
         IMapper mapper,
         ILogger<ChannelService> logger,
         IPermissionService permissionService,
-        IAuditLogService auditLogService)
+        IAuditLogService auditLogService,
+        IReadStateService readStateService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
         _permissionService = permissionService;
         _auditLogService = auditLogService;
+        _readStateService = readStateService;
     }
 
     public async Task<ChannelResponseDto> CreateChannelAsync(Guid guildId, Guid userId, CreateChannelDto dto)
@@ -97,7 +100,29 @@ public class ChannelService : IChannelService
             .ThenBy(c => c.CreatedAt)
             .ToListAsync();
 
-        return _mapper.Map<IEnumerable<ChannelResponseDto>>(channels);
+        // Map to DTOs and calculate unread count for each channel
+        var channelDtos = new List<ChannelResponseDto>();
+        foreach (var channel in channels)
+        {
+            var dto = _mapper.Map<ChannelResponseDto>(channel);
+            
+            // Calculate unread count for this channel
+            try
+            {
+                var unreadInfo = await _readStateService.GetUnreadCountAsync(channel.Id, userId);
+                dto.UnreadCount = unreadInfo.UnreadCount;
+            }
+            catch (Exception ex)
+            {
+                // If read state service fails, default to 0 (shouldn't happen, but handle gracefully)
+                _logger.LogWarning(ex, "Failed to get unread count for channel {ChannelId}, defaulting to 0", channel.Id);
+                dto.UnreadCount = 0;
+            }
+            
+            channelDtos.Add(dto);
+        }
+
+        return channelDtos;
     }
 
     public async Task<ChannelResponseDto?> GetChannelByIdAsync(Guid channelId, Guid userId)

@@ -15,17 +15,20 @@ public class DMController : ControllerBase
 {
     private readonly IDMChannelService _dmChannelService;
     private readonly IDirectMessageService _dmMessageService;
+    private readonly IDMReadStateService _dmReadStateService;
     private readonly IHubContext<ChatHub> _chatHub;
     private readonly ILogger<DMController> _logger;
 
     public DMController(
         IDMChannelService dmChannelService,
         IDirectMessageService dmMessageService,
+        IDMReadStateService dmReadStateService,
         IHubContext<ChatHub> chatHub,
         ILogger<DMController> logger)
     {
         _dmChannelService = dmChannelService;
         _dmMessageService = dmMessageService;
+        _dmReadStateService = dmReadStateService;
         _chatHub = chatHub;
         _logger = logger;
     }
@@ -200,6 +203,30 @@ public class DMController : ControllerBase
             await _chatHub.Clients.Group($"dm_{id}")
                 .SendAsync("DMMessageDeleted", new { messageId, channelId = id });
 
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    /// <summary>
+    /// Mark a DM channel as read (update last read position)
+    /// </summary>
+    [HttpPost("{id}/mark-read")]
+    public async Task<IActionResult> MarkDMAsRead(
+        Guid id,
+        [FromQuery] Guid? messageId = null)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            await _dmReadStateService.MarkDMAsReadAsync(id, userId, messageId);
             return NoContent();
         }
         catch (KeyNotFoundException ex)

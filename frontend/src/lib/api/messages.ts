@@ -92,5 +92,13 @@ export const messagesApi = {
   ): Promise<void> => {
     await api.delete(`/channels/${channelId}/messages/${messageId}`)
   },
+
+  /**
+   * Mark a channel as read
+   */
+  markChannelAsRead: async (channelId: string, messageId?: string): Promise<void> => {
+    const params = messageId ? { messageId } : {}
+    await api.post(`/channels/${channelId}/mark-read`, null, { params })
+  },
 }
 

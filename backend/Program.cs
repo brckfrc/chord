@@ -71,6 +71,7 @@ builder.Services.AddScoped<IChannelService, ChannelService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IReactionService, ReactionService>();
 builder.Services.AddScoped<IReadStateService, ReadStateService>();
+builder.Services.AddScoped<IDMReadStateService, DMReadStateService>();
 builder.Services.AddScoped<IMentionService, MentionService>();
 builder.Services.AddScoped<IStorageService, StorageService>();
 builder.Services.AddScoped<IImageService, ImageService>();

@@ -984,7 +984,8 @@ TURN_REALM=chord.local
   - ✅ Docker Compose yapılandırması (`docker-compose.load-test.yml`)
   - ✅ Server-side testing için network yapılandırması (`chord_chord-network`)
   - ✅ Dokümantasyon (`docs/LOAD-TESTING.md`)
-  - ⚠️ **TODO: Server'da test edilmeli** - `K6_VU_API_URL=http://chord-api-green:80 docker compose -f docker-compose.load-test.yml run --rm k6-load-test run load-test.js --vus 10 --duration 30s`
+  - ✅ Rate limiting bypass implementasyonu (`X-Load-Test: true` header, `RateLimiting__AllowLoadTestBypass` env var)
+  - ✅ Server-side test başarıyla tamamlandı (10 VU, 30s, 0% error rate, tüm endpoint'ler çalışıyor)
 - [ ] Rate limiting iyileştirme (Redis-based distributed)
 - [ ] Input validation sertleştirme
 - [ ] CORS politikası güncelleme (production domain)

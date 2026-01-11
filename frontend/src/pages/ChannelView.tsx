@@ -20,6 +20,7 @@ import { Hash, Mic, Megaphone, Bell } from "lucide-react"
 import { ChannelType } from "@/lib/api/channels"
 import { Button } from "@/components/ui/button"
 import type { MessageDto } from "@/lib/api/messages"
+import { messagesApi } from "@/lib/api/messages"
 import { VoiceRoom } from "@/components/voice"
 
 export function ChannelView() {
@@ -29,6 +30,7 @@ export function ChannelView() {
   }>()
   const dispatch = useAppDispatch()
   const { channels } = useAppSelector((state) => state.channels)
+  const { messagesByChannel } = useAppSelector((state) => state.messages)
   const { user } = useAppSelector((state) => state.auth)
   const { unreadCount } = useAppSelector((state) => state.mentions)
   const previousChannelIdRef = useRef<string | undefined>(undefined)
@@ -223,6 +225,26 @@ export function ChannelView() {
       cleanupError()
     }
   }, [channelId, isChatConnected, chatOn, dispatch, user?.id])
+
+  // Mark channel as read when messages are loaded
+  useEffect(() => {
+    if (channelId && isTextChannel && messagesByChannel[channelId] && messagesByChannel[channelId].length > 0) {
+      // Get the latest message ID (messages are ordered by createdAt, newest at the end)
+      const messages = messagesByChannel[channelId]
+      const latestMessage = messages[messages.length - 1]
+      if (latestMessage) {
+        // Mark as read with the latest message ID
+        messagesApi.markChannelAsRead(channelId, latestMessage.id).catch((error) => {
+          console.error("Failed to mark channel as read:", error)
+        })
+      } else {
+        // If no valid message, just mark as read without messageId
+        messagesApi.markChannelAsRead(channelId).catch((error) => {
+          console.error("Failed to mark channel as read:", error)
+        })
+      }
+    }
+  }, [channelId, isTextChannel, messagesByChannel])
 
   // Show VoiceRoom for voice channels
   if (!isTextChannel) {

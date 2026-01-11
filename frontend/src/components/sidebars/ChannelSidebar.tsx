@@ -308,7 +308,7 @@ export function ChannelSidebar() {
                                     key={channel.id}
                                     onClick={() => handleChannelClick(channel)}
                                     className={cn(
-                                        "w-full px-2 py-1.5 rounded flex items-center gap-2 text-sm transition-colors group cursor-pointer",
+                                        "w-full px-2 py-1.5 rounded flex items-center gap-2 text-sm transition-colors group cursor-pointer relative",
                                         channelId === channel.id
                                             ? "bg-[#1e1f22] text-foreground"
                                             : "hover:!bg-[#3f4147]"
@@ -316,6 +316,11 @@ export function ChannelSidebar() {
                                 >
                                     <Megaphone className="h-4 w-4 text-muted-foreground" />
                                     <span className="flex-1 text-left truncate">{channel.name}</span>
+                                    {channel.unreadCount && channel.unreadCount > 0 && (
+                                        <span className="flex-shrink-0 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                                            {channel.unreadCount > 99 ? "99+" : channel.unreadCount}
+                                        </span>
+                                    )}
                                 </button>
                             ))}
                         </div>
@@ -347,7 +352,7 @@ export function ChannelSidebar() {
                                     key={channel.id}
                                     onClick={() => handleChannelClick(channel)}
                                     className={cn(
-                                        "w-full px-2 py-1.5 rounded flex items-center gap-2 text-sm transition-colors group cursor-pointer",
+                                        "w-full px-2 py-1.5 rounded flex items-center gap-2 text-sm transition-colors group cursor-pointer relative",
                                         channelId === channel.id
                                             ? "bg-[#1e1f22] text-foreground"
                                             : "hover:!bg-[#3f4147]"
@@ -355,6 +360,11 @@ export function ChannelSidebar() {
                                 >
                                     <Hash className="h-4 w-4 text-muted-foreground" />
                                     <span className="flex-1 text-left truncate">{channel.name}</span>
+                                    {channel.unreadCount && channel.unreadCount > 0 && (
+                                        <span className="flex-shrink-0 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                                            {channel.unreadCount > 99 ? "99+" : channel.unreadCount}
+                                        </span>
+                                    )}
                                 </button>
                             ))}
                         </div>

@@ -11,6 +11,7 @@ public class ChannelResponseDto
     public string? Topic { get; set; }
     public int Position { get; set; }
     public DateTime CreatedAt { get; set; }
+    public int UnreadCount { get; set; }
 }
 
 

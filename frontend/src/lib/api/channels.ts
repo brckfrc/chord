@@ -27,6 +27,7 @@ export interface ChannelDto {
   topic?: string
   position: number
   createdAt: string
+  unreadCount?: number
 }
 
 export const channelsApi = {

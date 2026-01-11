@@ -113,6 +113,25 @@ export function DMView() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [currentMessages])
 
+  // Mark DM as read when messages are loaded
+  useEffect(() => {
+    if (channelId && currentMessages && currentMessages.length > 0) {
+      // Get the latest message ID (messages are ordered by createdAt, newest at the end)
+      const latestMessage = currentMessages[currentMessages.length - 1]
+      if (latestMessage && !latestMessage.isDeleted) {
+        // Mark as read with the latest message ID
+        dmsApi.markDMAsRead(channelId, latestMessage.id).catch((error) => {
+          console.error("Failed to mark DM as read:", error)
+        })
+      } else {
+        // If no valid message, just mark as read without messageId
+        dmsApi.markDMAsRead(channelId).catch((error) => {
+          console.error("Failed to mark DM as read:", error)
+        })
+      }
+    }
+  }, [channelId, currentMessages])
+
   const currentDM = dms.find((dm) => dm.id === channelId)
   const otherUser = currentDM?.otherUser
   const dmMessages = messages[channelId || ""] || []
