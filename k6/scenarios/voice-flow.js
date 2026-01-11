@@ -31,6 +31,7 @@ export function voiceFlow(accessToken, guildId) {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
+      'X-Load-Test': 'true'  // Bypass rate limiting for load tests
     },
   };
   

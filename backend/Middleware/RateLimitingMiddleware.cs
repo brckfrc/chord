@@ -10,6 +10,7 @@ public class RateLimitingMiddleware
     private static readonly ConcurrentDictionary<string, ClientRequestInfo> _clients = new();
     private readonly int _requestLimit;
     private readonly TimeSpan _timeWindow;
+    private readonly bool _allowLoadTestBypass;
 
     public RateLimitingMiddleware(
         RequestDelegate next,
@@ -22,6 +23,7 @@ public class RateLimitingMiddleware
         // Default: 100 requests per minute
         _requestLimit = configuration.GetValue<int>("RateLimiting:RequestLimit", 100);
         _timeWindow = TimeSpan.FromSeconds(configuration.GetValue<int>("RateLimiting:TimeWindowSeconds", 60));
+        _allowLoadTestBypass = configuration.GetValue<bool>("RateLimiting:AllowLoadTestBypass", false);
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -29,6 +31,14 @@ public class RateLimitingMiddleware
         // Skip rate limiting for health checks
         if (context.Request.Path.StartsWithSegments("/health"))
         {
+            await _next(context);
+            return;
+        }
+
+        // Skip rate limiting for load tests if bypass is enabled
+        if (_allowLoadTestBypass && ShouldBypassRateLimit(context))
+        {
+            _logger.LogDebug("Rate limiting bypassed for load test request from {ClientId}", GetClientIdentifier(context));
             await _next(context);
             return;
         }
@@ -107,6 +117,31 @@ public class RateLimitingMiddleware
         {
             _clients.TryRemove(key, out _);
         }
+    }
+
+    private bool ShouldBypassRateLimit(HttpContext context)
+    {
+        // Check for X-Load-Test header
+        if (context.Request.Headers.TryGetValue("X-Load-Test", out var loadTestHeader))
+        {
+            if (loadTestHeader.ToString().Equals("true", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        // Check request body for loadtest user prefix (for register/login endpoints)
+        if (context.Request.Method == "POST" && 
+            (context.Request.Path.StartsWithSegments("/api/auth/register") || 
+             context.Request.Path.StartsWithSegments("/api/auth/login")))
+        {
+            // Note: Reading request body here would consume the stream
+            // Instead, we'll check the username/email after the request is processed
+            // This is handled by checking the user prefix in the request body parsing
+            // For now, we rely on the X-Load-Test header
+        }
+
+        return false;
     }
 }
 

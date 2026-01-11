@@ -25,6 +25,7 @@ export function authFlow() {
   const params = {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
+      'X-Load-Test': 'true'  // Bypass rate limiting for load tests
     },
   };
   

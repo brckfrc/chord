@@ -17,6 +17,7 @@ export function guildFlow(accessToken) {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
+      'X-Load-Test': 'true'  // Bypass rate limiting for load tests
     },
   };
   

@@ -32,7 +32,10 @@ export function authenticateUser(user) {
   });
   
   const registerParams = {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'X-Load-Test': 'true'  // Bypass rate limiting for load tests
+    },
   };
   
   const registerRes = http.post(`${baseUrl}/api/auth/register`, registerPayload, registerParams);
@@ -94,6 +97,7 @@ export function createTestGuild(accessToken) {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
+      'X-Load-Test': 'true'  // Bypass rate limiting for load tests
     },
   };
   
@@ -120,6 +124,7 @@ export function getDefaultChannel(accessToken, guildId) {
   const params = {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
+      'X-Load-Test': 'true'  // Bypass rate limiting for load tests
     },
   };
   
@@ -155,6 +160,7 @@ export function getVoiceChannel(accessToken, guildId) {
   const params = {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
+      'X-Load-Test': 'true'  // Bypass rate limiting for load tests
     },
   };
   

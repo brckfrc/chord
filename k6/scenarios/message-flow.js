@@ -26,13 +26,12 @@ export function messageFlow(accessToken, guildId) {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
+      'X-Load-Test': 'true'  // Bypass rate limiting for load tests
     },
   };
   
   // List messages (paginated)
-  const listRes = http.get(`${baseUrl}/api/channels/${channelId}/messages?page=1&pageSize=50`, {
-    headers: params.headers,
-  });
+  const listRes = http.get(`${baseUrl}/api/channels/${channelId}/messages?page=1&pageSize=50`, params);
   
   check(listRes, {
     'list messages status is 200': (r) => r.status === 200,

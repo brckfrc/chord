@@ -8,12 +8,14 @@ export const config = {
   testUserPrefix: 'loadtest',
   
   // Load pattern stages (ramp-up to 1K users)
+  // Optimized for YunoHost deployment with slower ramp-up
   stages: [
+    { duration: '1m', target: 50 },    // Slow start (50 users)
     { duration: '2m', target: 200 },   // Ramp up to 200 users
-    { duration: '1m', target: 500 },   // Ramp up to 500 users
-    { duration: '2m', target: 1000 },  // Ramp up to 1K users
-    { duration: '2m', target: 1000 },  // Hold at 1K
-    { duration: '1m', target: 0 },     // Ramp down
+    { duration: '1m', target: 500 },   // Continue ramp to 500 users
+    { duration: '2m', target: 1000 },  // Ramp up to 1K users (peak load)
+    { duration: '2m', target: 1000 },  // Hold at 1K users
+    { duration: '1m', target: 0 },     // Ramp down to 0
   ],
   
   // Performance thresholds
