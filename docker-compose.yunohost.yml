@@ -19,7 +19,9 @@ services:
   api-blue:
     environment:
       - MINIO_PUBLIC_ENDPOINT=${MINIO_PUBLIC_ENDPOINT:-https://chord.borak.dev/uploads}
+      - RateLimiting__AllowLoadTestBypass=${RateLimiting__AllowLoadTestBypass:-false}
 
   api-green:
     environment:
       - MINIO_PUBLIC_ENDPOINT=${MINIO_PUBLIC_ENDPOINT:-https://chord.borak.dev/uploads}
+      - RateLimiting__AllowLoadTestBypass=${RateLimiting__AllowLoadTestBypass:-false}
