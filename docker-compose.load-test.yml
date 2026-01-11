@@ -47,3 +47,4 @@ services:
 networks:
   chord-network:
     external: true
+    name: chord_chord-network
