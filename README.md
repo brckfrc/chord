@@ -9,15 +9,15 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 
 ## Documentation
 
-| Document                                 | Description                                         |
-| ---------------------------------------- | --------------------------------------------------- |
-| [backend/README.md](backend/README.md)   | API endpoints, SignalR, LiveKit, mobile integration |
-| [frontend/README.md](frontend/README.md) | React components, state management, UI              |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment scenarios, CI/CD, production setup       |
-| [docs/ER_DIAGRAM.md](docs/ER_DIAGRAM.md) | Database schema ER diagram (Mermaid)                |
-| [docs/DEMO.md](docs/DEMO.md)             | Complete demo scenario covering all features        |
-| [docs/LOAD-TESTING.md](docs/LOAD-TESTING.md) | K6 load testing guide (1K concurrent users)        |
-| [chord_roadmap.md](chord_roadmap.md)     | Development phases and feature roadmap              |
+| Document                                     | Description                                         |
+| -------------------------------------------- | --------------------------------------------------- |
+| [backend/README.md](backend/README.md)       | API endpoints, SignalR, LiveKit, mobile integration |
+| [frontend/README.md](frontend/README.md)     | React components, state management, UI              |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)     | Deployment scenarios, CI/CD, production setup       |
+| [docs/ER_DIAGRAM.md](docs/ER_DIAGRAM.md)     | Database schema ER diagram (Mermaid)                |
+| [docs/DEMO.md](docs/DEMO.md)                 | Complete demo scenario covering all features        |
+| [docs/LOAD-TESTING.md](docs/LOAD-TESTING.md) | K6 load testing guide (1K concurrent users)         |
+| [chord_roadmap.md](chord_roadmap.md)         | Development phases and feature roadmap              |
 
 ---
 
@@ -204,6 +204,7 @@ npm run dev      # Development server
 npm run build    # Production build
 npm run lint     # ESLint
 ```
+
 ### Testing
 
 ```bash
@@ -215,12 +216,14 @@ npm run test:e2e:ui   # Run tests in UI mode
 E2E tests use an isolated Docker Compose test environment. See [frontend/README.md](frontend/README.md) for details.
 
 **Load Testing:**
+
 ```bash
 npm run test:load        # Full load test (1K concurrent users, ~8 minutes)
 npm run test:load:smoke  # Smoke test (10 users, 30 seconds)
 ```
 
 Load tests validate API performance under high concurrent load. See [docs/LOAD-TESTING.md](docs/LOAD-TESTING.md) for details.
+
 ### API Documentation
 
 - **Swagger UI**: http://localhost:5049/swagger
@@ -232,13 +235,14 @@ Load tests validate API performance under high concurrent load. See [docs/LOAD-T
 
 Three deployment scenarios with blue-green support:
 
-| Scenario | When to Use | Guide |
-|----------|-------------|-------|
-| **Standalone** | Fresh server, no existing infrastructure | [DEPLOYMENT-STANDALONE.md](docs/DEPLOYMENT-STANDALONE.md) |
-| **Standard VPS** | Have Nginx, Traefik, or Apache | [DEPLOYMENT-STANDARD.md](docs/DEPLOYMENT-STANDARD.md) |
-| **YunoHost** | Using YunoHost for self-hosting | [DEPLOYMENT-YUNOHOST.md](docs/DEPLOYMENT-YUNOHOST.md) |
+| Scenario         | When to Use                              | Guide                                                     |
+| ---------------- | ---------------------------------------- | --------------------------------------------------------- |
+| **Standalone**   | Fresh server, no existing infrastructure | [DEPLOYMENT-STANDALONE.md](docs/DEPLOYMENT-STANDALONE.md) |
+| **Standard VPS** | Have Nginx, Traefik, or Apache           | [DEPLOYMENT-STANDARD.md](docs/DEPLOYMENT-STANDARD.md)     |
+| **YunoHost**     | Using YunoHost for self-hosting          | [DEPLOYMENT-YUNOHOST.md](docs/DEPLOYMENT-YUNOHOST.md)     |
 
 **YunoHost Note:** YunoHost uses an automated blue-green strategy where:
+
 - **Blue stack (5002/3002)**: Staging environment - deploy new versions here first
 - **Green stack (5003/3003)**: Production - Nginx always routes to green
 - After blue stack health checks pass, automatically deploy to green, then stop blue
