@@ -5,6 +5,8 @@
 
 Chord is a modern, real-time chat application inspired by Discord, built with .NET 9 and React.
 
+🌐 **Live Demo:** [chord.borak.dev](https://chord.borak.dev)
+
 ## Documentation
 
 | Document                                 | Description                                         |
