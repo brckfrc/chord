@@ -27,13 +27,13 @@ export function VoiceRoom() {
     (state) => state.voice.error,
     shallowEqual
   )
-  
+
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
   const maxRetries = 3
   const isMountedRef = useRef(false)
   const hasAttemptedConnectRef = useRef(false)
-  
+
   const {
     connect,
     disconnect,
