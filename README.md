@@ -3,6 +3,10 @@
 > **Purpose:** Main project overview, features, and quick start guide.
 > For detailed documentation, see the specific README files below.
 
+> **Note:** The project final report is available in the root directory: [21290270.pdf](./21290270.pdf)
+
+> **Video Demo:** [YouTube - Project Introduction Video](https://youtu.be/o0pG1QwQ9CI)
+
 Chord is a modern, real-time chat application inspired by Discord, built with .NET 9 and React.
 
 🌐 **Live Demo:** [chord.borak.dev](https://chord.borak.dev)
