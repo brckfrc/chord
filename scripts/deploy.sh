@@ -262,9 +262,9 @@ deploy_stack() {
     docker pull "${REGISTRY}/${GITHUB_REPO}/api:${IMAGE_TAG}"
     docker pull "${REGISTRY}/${GITHUB_REPO}/frontend:${IMAGE_TAG}"
     
-    # Start the stack
+    # Start the stack (include infra so sqlserver etc. are in the project for depends_on)
     log_info "Starting $stack stack..."
-    docker compose "${COMPOSE_FILES[@]}" --profile "$stack" up -d
+    docker compose "${COMPOSE_FILES[@]}" --profile infra --profile "$stack" up -d
     
     return 0
 }
@@ -288,7 +288,7 @@ rollback() {
     # Ensure active stack is still running
     if [ "$active_stack" != "none" ]; then
         log_info "Ensuring $active_stack stack is running..."
-        docker compose "${COMPOSE_FILES[@]}" --profile "$active_stack" up -d
+        docker compose "${COMPOSE_FILES[@]}" --profile infra --profile "$active_stack" up -d
 
         # Only update Caddy if not YunoHost
         if ! is_yunohost_deployment; then
