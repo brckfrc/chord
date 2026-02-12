@@ -32,13 +32,13 @@ services:
         aliases:
           - sqlserver
           - chord-sqlserver
-    mem_limit: 1g
+    mem_limit: 2g
     healthcheck:
       test: ["CMD-SHELL", "/bin/bash /healthcheck-sql.sh || exit 1"]
-      interval: 10s
-      timeout: 3s
+      interval: 15s
+      timeout: 15s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
   redis-test:
     image: redis:7-alpine
