@@ -136,6 +136,9 @@ services:
     image: ${REGISTRY:-ghcr.io}/${GITHUB_REPO:-chord}/api:${IMAGE_TAG:-latest}
     container_name: chord-api-blue
     profiles: ["blue"]
+    depends_on:
+      sqlserver:
+        condition: service_healthy
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:80
@@ -196,6 +199,9 @@ services:
     image: ${REGISTRY:-ghcr.io}/${GITHUB_REPO:-chord}/api:${IMAGE_TAG:-latest}
     container_name: chord-api-green
     profiles: ["green"]
+    depends_on:
+      sqlserver:
+        condition: service_healthy
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:80
