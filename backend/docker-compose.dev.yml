@@ -10,11 +10,13 @@ services:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
+      - ../scripts/healthcheck-sql.sh:/healthcheck-sql.sh:ro
     networks:
       - chord-network
     restart: unless-stopped
+    mem_limit: 1g
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$SA_PASSWORD\" -Q 'SELECT 1' -C -l 5 || exit 1"]
+      test: ["CMD-SHELL", "/bin/bash /healthcheck-sql.sh || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 10

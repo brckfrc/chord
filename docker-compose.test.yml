@@ -25,13 +25,16 @@ services:
       MSSQL_PID: "Developer"
     # No ports exposed (internal only, like YunoHost)
     # No volumes (fresh DB each run)
+    volumes:
+      - ./scripts/healthcheck-sql.sh:/healthcheck-sql.sh:ro
     networks:
       chord-test-network:
         aliases:
           - sqlserver
           - chord-sqlserver
+    mem_limit: 1g
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$SA_PASSWORD\" -Q 'SELECT 1' -C || exit 1"]
+      test: ["CMD-SHELL", "/bin/bash /healthcheck-sql.sh || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 5

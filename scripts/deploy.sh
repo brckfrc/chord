@@ -163,25 +163,20 @@ health_check() {
 check_infra() {
     log_info "Checking infrastructure services..."
     
-    # Check if infra containers are running
+    # Ensure infra is up and matches current compose config (volumes, mem_limit, healthcheck, etc.)
+    # Always run 'up -d' so config changes (e.g. new healthcheck script, mem_limit) are applied
+    log_info "Ensuring infrastructure is up to date..."
+    docker compose "${COMPOSE_FILES[@]}" --profile infra up -d
+    sleep 10
+
     local infra_containers=("chord-sqlserver" "chord-redis" "chord-minio" "chord-livekit")
-    local all_running=true
-    
     for container in "${infra_containers[@]}"; do
         if docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
             echo "  ✓ $container running"
         else
             echo "  ✗ $container not running"
-            all_running=false
         fi
     done
-    
-    if [ "$all_running" = false ]; then
-        log_warn "Some infrastructure services are not running"
-        log_info "Starting infrastructure..."
-        docker compose "${COMPOSE_FILES[@]}" --profile infra up -d
-        sleep 10
-    fi
 }
 
 update_caddy() {
