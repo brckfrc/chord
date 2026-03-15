@@ -36,7 +36,13 @@ api.interceptors.response.use(
       _retry?: boolean;
     };
 
-    if (error.response.status === 401 && !originalRequest._retry) {
+    const requestUrl = originalRequest.url || "";
+    const isAuthEndpoint =
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/register") ||
+      requestUrl.includes("/auth/refresh");
+
+    if (error.response.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
       try {
