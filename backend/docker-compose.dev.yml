@@ -1,6 +1,6 @@
 services:
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/mssql/server:2022-latest@sha256:e07b9699a2b749969f19d86563ceeea22bd3a69f7f1db85a8d1ac4bdaf0c6f56
     container_name: chord-sqlserver
     environment:
       ACCEPT_EULA: "Y"
@@ -23,7 +23,7 @@ services:
       start_period: 60s
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     container_name: chord-redis
     ports:
       - "6379:6379"
@@ -40,7 +40,7 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     container_name: chord-minio
     environment:
       MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
@@ -62,7 +62,7 @@ services:
       start_period: 10s
 
   livekit:
-    image: livekit/livekit-server:latest
+    image: livekit/livekit-server:latest@sha256:2c6869d2d5ff6c9c0166f47be1c92dad6928bfecfa5e4060a6ece48db8accfa3
     container_name: chord-livekit
     environment:
       # Format must be "key: secret" with a space after colon
@@ -83,7 +83,7 @@ services:
       - redis
 
   coturn:
-    image: coturn/coturn:latest
+    image: coturn/coturn:latest@sha256:161cedd63c5414c2136f306098e02e9aede74606cedad8b9b8581aae1da4e732
     container_name: chord-coturn
     ports:
       - "${TURN_PORT:-3478}:3478/udp"
