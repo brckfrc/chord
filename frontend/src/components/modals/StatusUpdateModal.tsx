@@ -35,12 +35,29 @@ export function StatusUpdateModal({ open, onOpenChange, anchorRef }: StatusUpdat
   const [isLoading, setIsLoading] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState(user?.status ?? UserStatus.Online)
   const modalRef = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState<{ bottom: string; left: string }>({
+    bottom: "60px",
+    left: "12px",
+  })
 
   useEffect(() => {
     if (open && user) {
-      setSelectedStatus(user.status ?? UserStatus.Online)
+      setTimeout(() => setSelectedStatus(user.status ?? UserStatus.Online), 0)
     }
   }, [open, user])
+
+  // Calculate position when modal opens
+  useEffect(() => {
+    if (open && anchorRef?.current) {
+      const rect = anchorRef.current.getBoundingClientRect()
+      setPosition({
+        bottom: `${window.innerHeight - rect.top + 8}px`,
+        left: `${rect.left}px`,
+      })
+    } else if (open) {
+      setPosition({ bottom: "60px", left: "12px" })
+    }
+  }, [open, anchorRef])
 
   useEffect(() => {
     if (!open) return
@@ -123,20 +140,7 @@ export function StatusUpdateModal({ open, onOpenChange, anchorRef }: StatusUpdat
 
   if (!open) return null
 
-  // Calculate position - above the anchor element
-  const getPosition = () => {
-    if (!anchorRef?.current) {
-      return { bottom: "60px", left: "12px" }
-    }
-
-    const rect = anchorRef.current.getBoundingClientRect()
-    return {
-      bottom: `${window.innerHeight - rect.top + 8}px`,
-      left: `${rect.left}px`,
-    }
-  }
-
-  const position = getPosition()
+  const positionStyle = position
 
   return (
     <>
@@ -150,7 +154,7 @@ export function StatusUpdateModal({ open, onOpenChange, anchorRef }: StatusUpdat
       <div
         ref={modalRef}
         className="fixed z-50 w-56 bg-[#2b2d31] rounded-lg shadow-xl border border-border p-2"
-        style={position}
+        style={positionStyle}
       >
         <div className="space-y-1">
           {statusOptions.map((option) => (

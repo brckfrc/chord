@@ -49,7 +49,7 @@ export function InviteModal({ open, onOpenChange, guildId, onInviteCreated }: In
   useEffect(() => {
     if (open) {
       reset()
-      setCreatedInviteCode(null)
+      setTimeout(() => setCreatedInviteCode(null), 0)
     }
   }, [open, reset])
 

@@ -22,7 +22,7 @@ export function AuditLogPanel({ guildId }: AuditLogPanelProps) {
 
   // Reset to page 1 when guildId changes
   useEffect(() => {
-    setCurrentPage(1)
+    setTimeout(() => setCurrentPage(1), 0)
   }, [guildId])
 
   useEffect(() => {

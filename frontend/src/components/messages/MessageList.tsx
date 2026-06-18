@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from "react"
+import { useEffect, useRef, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useAppSelector, useAppDispatch } from "@/store/hooks"
 import { fetchMessages } from "@/store/slices/messagesSlice"
@@ -18,6 +18,7 @@ export function MessageList({ channelId }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const isLoadingMoreRef = useRef(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const messages = useMemo(() => messagesByChannel[channelId] || [], [messagesByChannel, channelId])
   const hasMore = hasMoreByChannel[channelId] ?? false
@@ -74,6 +75,7 @@ export function MessageList({ channelId }: MessageListProps) {
     if (isLoadingMoreRef.current || !hasMore || !nextCursor) return
 
     isLoadingMoreRef.current = true
+    setIsLoadingMore(true)
     try {
       await dispatch(
         fetchMessages({ channelId, limit: 50, cursor: nextCursor })
@@ -97,6 +99,7 @@ export function MessageList({ channelId }: MessageListProps) {
       console.error("Failed to load more messages:", error)
     } finally {
       isLoadingMoreRef.current = false
+      setIsLoadingMore(false)
     }
   }
 
@@ -140,10 +143,10 @@ export function MessageList({ channelId }: MessageListProps) {
             variant="ghost"
             size="sm"
             onClick={handleLoadMore}
-            disabled={isLoadingMoreRef.current}
+            disabled={isLoadingMore}
             className="text-xs"
           >
-            {isLoadingMoreRef.current ? (
+            {isLoadingMore ? (
               <>
                 <Spinner className="w-3 h-3 mr-2" />
                 Loading...

@@ -142,7 +142,7 @@ export function CreateGuildModal({ open, onOpenChange }: CreateGuildModalProps) 
   // Reset forms when modal closes or tab changes
   useEffect(() => {
     if (!open) {
-      setActiveTab("create")
+      setTimeout(() => setActiveTab("create"), 0)
       resetCreate()
       resetJoin()
     }
