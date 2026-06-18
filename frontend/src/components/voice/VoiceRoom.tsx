@@ -66,7 +66,11 @@ export function VoiceRoom() {
   useEffect(() => {
     if (liveKitToken) {
       hasAttemptedConnectRef.current = false
-      setRetryCount(0)
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          setRetryCount(0)
+        }
+      }, 0)
     }
   }, [liveKitToken])
 
@@ -122,7 +126,11 @@ export function VoiceRoom() {
   // Reset retry count on successful connection
   useEffect(() => {
     if (connectionState === "connected") {
-      setRetryCount(0)
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          setRetryCount(0)
+        }
+      }, 0)
     }
   }, [connectionState])
 

@@ -34,7 +34,6 @@ export function InviteAcceptPage() {
 
     // Only fetch invite info if authenticated
     if (!isAuthenticated) {
-      setIsLoading(false)
       return
     }
 
