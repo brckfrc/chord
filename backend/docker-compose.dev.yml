@@ -83,7 +83,7 @@ services:
       - redis
 
   coturn:
-    image: coturn/coturn:latest@sha256:161cedd63c5414c2136f306098e02e9aede74606cedad8b9b8581aae1da4e732
+    image: coturn/coturn:latest@sha256:6a1d1a281b8f64ca1a343429bb0232fa70c5f0eae3c8424ba0859b696e880974
     container_name: chord-coturn
     ports:
       - "${TURN_PORT:-3478}:3478/udp"
