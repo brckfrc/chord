@@ -53,7 +53,7 @@ export function MemberRoleManager({
   useEffect(() => {
     if (open && guildId) {
       dispatch(fetchGuildRoles(guildId))
-      loadMemberRoles()
+      setTimeout(() => loadMemberRoles(), 0)
     }
   }, [open, guildId, dispatch, loadMemberRoles])
 

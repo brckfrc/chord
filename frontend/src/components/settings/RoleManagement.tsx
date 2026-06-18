@@ -202,15 +202,17 @@ function RoleModal({ open, onOpenChange, title, role, onSubmit }: RoleModalProps
     const [permissions, setPermissions] = useState<bigint>(BigInt(role?.permissions || 0))
 
     useEffect(() => {
-        if (role) {
-            setName(role.name)
-            setColor(role.color || "#9E9E9E")
-            setPermissions(BigInt(role.permissions))
-        } else {
-            setName("")
-            setColor("#9E9E9E")
-            setPermissions(0n)
-        }
+        setTimeout(() => {
+            if (role) {
+                setName(role.name)
+                setColor(role.color || "#9E9E9E")
+                setPermissions(BigInt(role.permissions))
+            } else {
+                setName("")
+                setColor("#9E9E9E")
+                setPermissions(0n)
+            }
+        }, 0)
     }, [role, open])
 
     const handleSubmit = (e: React.FormEvent) => {

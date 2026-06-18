@@ -58,7 +58,7 @@ export function MemberRolesTab({ guildId }: MemberRolesTabProps) {
   useEffect(() => {
     if (guildId) {
       dispatch(fetchGuildRoles(guildId))
-      loadMembers()
+      setTimeout(() => loadMembers(), 0)
     }
   }, [guildId, dispatch, loadMembers])
 
