@@ -132,7 +132,8 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
   }, [isAuthenticated, user, hubUrl, getAccessToken]);
 
   const invoke = useCallback(
-    async <T = unknown>(methodName: string, ...args: unknown[]): Promise<T> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async <T = any>(methodName: string, ...args: any[]): Promise<T> => {
       const connection = connectionManager.getConnection(hubUrl);
       if (!connection) {
         throw new Error("SignalR connection not initialized");
@@ -148,7 +149,8 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
   );
 
   const on = useCallback(
-    (methodName: string, callback: (...args: unknown[]) => void) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (methodName: string, callback: (...args: any[]) => void) => {
       const connection = connectionManager.getConnection(hubUrl);
       if (!connection) {
         return () => {};
@@ -168,7 +170,8 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
   );
 
   const off = useCallback(
-    (methodName: string, callback?: (...args: unknown[]) => void) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (methodName: string, callback?: (...args: any[]) => void) => {
       const connection = connectionManager.getConnection(hubUrl);
       if (!connection) {
         return;
