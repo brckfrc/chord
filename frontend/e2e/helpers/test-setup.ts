@@ -18,7 +18,7 @@ export async function waitForService(
       if (response.ok) {
         return true;
       }
-    } catch (error) {
+    } catch {
       // Service not ready yet
     }
     await new Promise(resolve => setTimeout(resolve, delayMs));

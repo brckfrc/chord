@@ -55,10 +55,9 @@ export const markMentionAsRead = createAsyncThunk(
     try {
       await mentionsApi.markMentionAsRead(mentionId);
       return mentionId;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to mark mention as read"
-      );
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to mark mention as read";
+      return rejectWithValue(message);
     }
   }
 );

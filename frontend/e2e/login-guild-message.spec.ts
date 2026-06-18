@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { registerUser, getGuilds, getGuildChannels, createGuild } from './helpers/api-helpers';
+import { registerUser, createGuild } from './helpers/api-helpers';
 
 test.describe('Critical User Flow: Login → Guild → Message', () => {
   const testUser = {

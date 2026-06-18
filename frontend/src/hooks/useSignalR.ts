@@ -51,17 +51,25 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
     if (existingConnection && existingState === "Connected") {
       // Connection already exists and is connected
       if (isMounted) {
-        connectionStateRef.current = "Connected";
-        setConnectionState("Connected");
-        setError(null);
+        setTimeout(() => {
+          if (isMounted) {
+            connectionStateRef.current = "Connected";
+            setConnectionState("Connected");
+            setError(null);
+          }
+        }, 0);
       }
     } else if (existingState === "Connecting" || existingState === "Reconnecting") {
       // Connection is already being created/reconnecting, just wait for it via subscription
       // Don't call createConnection again - connection manager will return the existing promise
       // Just subscribe to state changes and wait
       if (isMounted) {
-        connectionStateRef.current = existingState;
-        setConnectionState(existingState);
+        setTimeout(() => {
+          if (isMounted) {
+            connectionStateRef.current = existingState;
+            setConnectionState(existingState);
+          }
+        }, 0);
       }
     } else {
       // Create new connection
@@ -124,7 +132,7 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
   }, [isAuthenticated, user, hubUrl, getAccessToken]);
 
   const invoke = useCallback(
-    async <T = any>(methodName: string, ...args: any[]): Promise<T> => {
+    async <T = unknown>(methodName: string, ...args: unknown[]): Promise<T> => {
       const connection = connectionManager.getConnection(hubUrl);
       if (!connection) {
         throw new Error("SignalR connection not initialized");
@@ -140,7 +148,7 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
   );
 
   const on = useCallback(
-    (methodName: string, callback: (...args: any[]) => void) => {
+    (methodName: string, callback: (...args: unknown[]) => void) => {
       const connection = connectionManager.getConnection(hubUrl);
       if (!connection) {
         return () => {};
@@ -160,7 +168,7 @@ export function useSignalR(hubUrl: string, options: UseSignalROptions = {}) {
   );
 
   const off = useCallback(
-    (methodName: string, callback?: (...args: any[]) => void) => {
+    (methodName: string, callback?: (...args: unknown[]) => void) => {
       const connection = connectionManager.getConnection(hubUrl);
       if (!connection) {
         return;

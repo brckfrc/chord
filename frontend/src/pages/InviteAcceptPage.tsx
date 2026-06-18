@@ -16,9 +16,9 @@ export function InviteAcceptPage() {
   const { isAuthenticated } = useAppSelector((state) => state.auth)
   const { toast } = useToast()
   const [invite, setInvite] = useState<InviteInfoDto | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(!!code)
   const [isAccepting, setIsAccepting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(!code ? "Invalid invite code" : null)
 
   // Redirect to login if not authenticated (preserve invite code)
   useEffect(() => {
@@ -29,8 +29,6 @@ export function InviteAcceptPage() {
 
   useEffect(() => {
     if (!code) {
-      setError("Invalid invite code")
-      setIsLoading(false)
       return
     }
 

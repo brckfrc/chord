@@ -11,7 +11,7 @@ export async function registerUser(
   email: string,
   username: string,
   password: string
-): Promise<{ accessToken: string; refreshToken: string; user: any }> {
+): Promise<{ accessToken: string; refreshToken: string; user: unknown }> {
   const response = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
     headers: {
@@ -64,7 +64,7 @@ export async function loginUser(
  */
 export async function getCurrentUser(
   accessToken: string
-): Promise<any> {
+): Promise<unknown> {
   const response = await fetch(`${API_BASE_URL}/auth/me`, {
     method: 'GET',
     headers: {
@@ -86,7 +86,7 @@ export async function getCurrentUser(
 export async function createGuild(
   accessToken: string,
   name: string
-): Promise<any> {
+): Promise<unknown> {
   const response = await fetch(`${API_BASE_URL}/guilds`, {
     method: 'POST',
     headers: {
@@ -111,7 +111,7 @@ export async function createGuild(
  */
 export async function getGuilds(
   accessToken: string
-): Promise<any[]> {
+): Promise<unknown[]> {
   const response = await fetch(`${API_BASE_URL}/guilds`, {
     method: 'GET',
     headers: {
@@ -133,7 +133,7 @@ export async function getGuilds(
 export async function getGuildChannels(
   accessToken: string,
   guildId: string
-): Promise<any[]> {
+): Promise<unknown[]> {
   const response = await fetch(`${API_BASE_URL}/guilds/${guildId}/channels`, {
     method: 'GET',
     headers: {
@@ -156,7 +156,7 @@ export async function sendMessage(
   accessToken: string,
   channelId: string,
   content: string
-): Promise<any> {
+): Promise<unknown> {
   const response = await fetch(`${API_BASE_URL}/channels/${channelId}/messages`, {
     method: 'POST',
     headers: {

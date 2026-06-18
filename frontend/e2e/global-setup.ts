@@ -30,7 +30,7 @@ async function globalSetup() {
           backendReady = true;
           console.log('Backend is ready');
         }
-      } catch (error) {
+      } catch {
         // Service not ready yet
       }
       if (!backendReady) {
@@ -54,7 +54,7 @@ async function globalSetup() {
           frontendReady = true;
           console.log('Frontend is ready');
         }
-      } catch (error) {
+      } catch {
         // Service not ready yet
       }
       if (!frontendReady) {

@@ -52,10 +52,9 @@ export const fetchMessages = createAsyncThunk(
         hasMore: result.hasMore,
         nextCursor: result.nextCursor,
       };
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch messages"
-      );
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to fetch messages";
+      return rejectWithValue(message);
     }
   }
 );
@@ -69,10 +68,9 @@ export const createMessage = createAsyncThunk(
   ) => {
     try {
       return await messagesApi.createMessage(channelId, data);
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to create message"
-      );
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to create message";
+      return rejectWithValue(message);
     }
   }
 );
@@ -90,10 +88,9 @@ export const updateMessage = createAsyncThunk(
   ) => {
     try {
       return await messagesApi.updateMessage(channelId, messageId, data);
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update message"
-      );
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to update message";
+      return rejectWithValue(message);
     }
   }
 );
@@ -108,10 +105,9 @@ export const deleteMessage = createAsyncThunk(
     try {
       await messagesApi.deleteMessage(channelId, messageId);
       return { channelId, messageId };
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to delete message"
-      );
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to delete message";
+      return rejectWithValue(message);
     }
   }
 );
