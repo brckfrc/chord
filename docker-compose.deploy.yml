@@ -18,7 +18,7 @@ services:
   # ===========================================
   
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest@sha256:e07b9699a2b749969f19d86563ceeea22bd3a69f7f1db85a8d1ac4bdaf0c6f56
+    image: mcr.microsoft.com/mssql/server:2022-latest@sha256:ba4c8329f48fb8f02e1416be6a930ebfd71268caee78aa985f3af4315e457c89
     container_name: chord-sqlserver
     profiles: ["infra"]
     environment:
@@ -89,7 +89,7 @@ services:
       start_period: 10s
 
   livekit:
-    image: livekit/livekit-server:latest@sha256:483b8b7b5b0654f91f1e8bdc7b46fcd37fd9911612ecf627f97e3185a89825bd
+    image: livekit/livekit-server:latest@sha256:189f7c81b704a36642bc5c7e2d3e1ae83744627c11978a23a251bf19fbec64e0
     container_name: chord-livekit
     profiles: ["infra"]
     environment:
