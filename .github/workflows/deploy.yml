@@ -23,7 +23,6 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   DOTNET_VERSION: "9.0.x"
-  NODE_VERSION: "20"
 
 jobs:
   # Check if CI passed (for manual triggers)

@@ -1,6 +1,9 @@
 {
   "name": "chord",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "prepare": "husky",
     "lint:frontend": "cd frontend && npm run lint",

@@ -61,9 +61,15 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 ### Prerequisites
 
 - .NET 9 SDK
-- Node.js 18+ (or nvm)
+- Node.js 20 — pinned in [`.nvmrc`](./.nvmrc); run `nvm use` before working in `frontend/`
 - Docker & Docker Compose
 - Git
+
+> **Bumping the Node version** touches two files, not one. [`.nvmrc`](./.nvmrc) is the
+> source of truth for local shells and for CI (`.github/workflows/ci.yml` reads it via
+> `node-version-file`), but the production image pins its own base in
+> [`frontend/Dockerfile`](./frontend/Dockerfile) (`node:20-alpine`, by digest). Change
+> both together, or local and deployed builds will run different runtimes.
 
 ### Automated Setup (Recommended)
 
