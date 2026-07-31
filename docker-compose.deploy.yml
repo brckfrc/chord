@@ -45,7 +45,7 @@ services:
       start_period: 60s
 
   redis:
-    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
+    image: redis:7-alpine@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
     container_name: chord-redis
     profiles: ["infra"]
     ports:
@@ -89,7 +89,7 @@ services:
       start_period: 10s
 
   livekit:
-    image: livekit/livekit-server:latest@sha256:189f7c81b704a36642bc5c7e2d3e1ae83744627c11978a23a251bf19fbec64e0
+    image: livekit/livekit-server:latest@sha256:3497163e15c48fef6e7830c78716f9e9d5edc28abf7aa90b61c86e93bbc306b1
     container_name: chord-livekit
     profiles: ["infra"]
     environment:
@@ -116,7 +116,7 @@ services:
       start_period: 10s
 
   coturn:
-    image: coturn/coturn:latest@sha256:0feee4fc1f45c7c053c8fee3e1ab941b1a1b9a0429bc01e18126735410770bfd
+    image: coturn/coturn:latest@sha256:01fc8655e7c262fa4ccfb8dca74ff80fb372b0ee021e80370a4d3e3dd01a951e
     container_name: chord-coturn
     profiles: ["infra"]
     ports:
