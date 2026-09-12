@@ -18,7 +18,7 @@ services:
   # ===========================================
   
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest@sha256:ba4c8329f48fb8f02e1416be6a930ebfd71268caee78aa985f3af4315e457c89
+    image: mcr.microsoft.com/mssql/server:2022-latest@sha256:97b448857967be55e005424a660056fe6d51814435804dc07e8f79f028bab5fb
     container_name: chord-sqlserver
     profiles: ["infra"]
     environment:
@@ -89,7 +89,7 @@ services:
       start_period: 10s
 
   livekit:
-    image: livekit/livekit-server:latest@sha256:3497163e15c48fef6e7830c78716f9e9d5edc28abf7aa90b61c86e93bbc306b1
+    image: livekit/livekit-server:latest@sha256:e37d68f172556d02aa77968b9fc55ef481468c0315fa38e4fa6c56ce72e3a815
     container_name: chord-livekit
     profiles: ["infra"]
     environment:
@@ -116,7 +116,7 @@ services:
       start_period: 10s
 
   coturn:
-    image: coturn/coturn:latest@sha256:aa68aab64a3b929d57fc2924c98ea447bf996cf8dade2508e7b71eaf23f1f14e
+    image: coturn/coturn:latest@sha256:bbefd3e1fdfdc0d58770fe01b581fd8b00d9f3a5580d00acb77cf719a6bc78e3
     container_name: chord-coturn
     profiles: ["infra"]
     ports:

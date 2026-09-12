@@ -17,7 +17,7 @@ services:
   # ===========================================
   
   sqlserver-test:
-    image: mcr.microsoft.com/mssql/server:2022-latest@sha256:ba4c8329f48fb8f02e1416be6a930ebfd71268caee78aa985f3af4315e457c89
+    image: mcr.microsoft.com/mssql/server:2022-latest@sha256:97b448857967be55e005424a660056fe6d51814435804dc07e8f79f028bab5fb
     container_name: chord-sqlserver-test
     environment:
       ACCEPT_EULA: "Y"
