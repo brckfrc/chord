@@ -4,7 +4,7 @@
 # ===========================================
 # Stage 1: Build
 # ===========================================
-FROM node:24-alpine@sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31ae06e55a570bd9e1ad43 AS build
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS build
 
 WORKDIR /app
 
@@ -31,7 +31,7 @@ RUN npm run build
 # ===========================================
 # Stage 2: Production
 # ===========================================
-FROM nginx:alpine@sha256:db35bfc6b2951e7f8a72db5db120288c127ffaeeb4a6d4b95a26fead017d5913 AS production
+FROM nginx:alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8 AS production
 
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
