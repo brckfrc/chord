@@ -62,7 +62,7 @@ services:
       start_period: 10s
 
   livekit:
-    image: livekit/livekit-server:latest@sha256:6fd3b7088874c4d119160dd688798dfec852bc014786d392caad15f6f63912a3
+    image: livekit/livekit-server:latest@sha256:d0c04791bf63ca8dcea123571827d56ba9504bd57c8d5de60ee03b5408cc3154
     container_name: chord-livekit
     environment:
       # Format must be "key: secret" with a space after colon

@@ -31,7 +31,7 @@ RUN npm run build
 # ===========================================
 # Stage 2: Production
 # ===========================================
-FROM nginx:alpine@sha256:1ed1b0e1d7652937d6cbdaf4018c7b6fc009a7dd6c3047351e2eddda745de43f AS production
+FROM nginx:alpine@sha256:df221db836e1754089190208cee7eeda94f233197056426eda74a43ab1abeac2 AS production
 
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
