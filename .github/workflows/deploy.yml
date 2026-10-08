@@ -126,10 +126,14 @@ jobs:
       # Build and push Backend
       - name: Build and push Backend
         uses: docker/build-push-action@v6.19.2
+        env:
+          SIXLABORS_LICENSE: ${{ secrets.SIXLABORS_LICENSE }}
         with:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
+          secret-envs: |
+            sixlabors_lic=SIXLABORS_LICENSE
           tags: |
             ${{ env.REGISTRY }}/${{ github.repository }}/api:${{ github.sha }}
             ${{ env.REGISTRY }}/${{ github.repository }}/api:latest

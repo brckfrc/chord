@@ -55,6 +55,19 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
+      # ImageSharp 4 needs a Six Labors license for Release builds. The key lives
+      # only in the SIXLABORS_LICENSE secret (never in the repo); ImageSharp's
+      # build targets pick up backend/**/sixlabors.lic automatically.
+      - name: Write Six Labors license
+        env:
+          SIXLABORS_LICENSE: ${{ secrets.SIXLABORS_LICENSE }}
+        run: |
+          if [ -n "$SIXLABORS_LICENSE" ]; then
+            printf '%s' "$SIXLABORS_LICENSE" > sixlabors.lic
+          else
+            echo "::warning::SIXLABORS_LICENSE secret is not set - Release build will fail"
+          fi
+
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
@@ -105,10 +118,14 @@ jobs:
 
       - name: Build Backend Image (cache only)
         uses: docker/build-push-action@v6.19.2
+        env:
+          SIXLABORS_LICENSE: ${{ secrets.SIXLABORS_LICENSE }}
         with:
           context: ./backend
           file: ./backend/Dockerfile
           push: false
+          secret-envs: |
+            sixlabors_lic=SIXLABORS_LICENSE
           cache-from: |
             type=gha,scope=ci-backend
             type=registry,ref=ghcr.io/${{ github.repository }}/api:latest

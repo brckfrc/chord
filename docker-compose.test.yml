@@ -85,6 +85,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      # ImageSharp 4 license (gitignored file, see backend/README.md)
+      secrets:
+        - sixlabors_lic
     container_name: chord-api-test
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -153,3 +156,7 @@ services:
 networks:
   chord-test-network:
     driver: bridge
+
+secrets:
+  sixlabors_lic:
+    file: ./backend/sixlabors.lic

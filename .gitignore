@@ -85,3 +85,7 @@ backend/Caddyfile
 .deploy-state
 node_modules/
 package-lock.json
+
+# Six Labors (ImageSharp 4) license - NEVER commit (public repo).
+# CI/deploy read it from the SIXLABORS_LICENSE repository secret.
+sixlabors.lic

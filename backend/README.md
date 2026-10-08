@@ -141,6 +141,23 @@ cp .env.example .env
 
 ---
 
+### Six Labors license (ImageSharp 4)
+
+ImageSharp 4 (avatar processing in `Services/ImageService.cs`) checks a Six Labors
+license **at Release build time** (Debug builds only warn). This repo is public, so
+the license is **never committed** — `sixlabors.lic` is in `.gitignore` and
+`backend/.dockerignore`.
+
+- **CI / deploy:** the `SIXLABORS_LICENSE` repository secret holds the content of
+  `sixlabors.lic`. `ci.yml` writes it to `backend/sixlabors.lic` for `dotnet build`;
+  Docker builds receive it as a BuildKit secret (`secret-envs: sixlabors_lic=...`)
+  that is mounted only during `dotnet publish`, so it is not in any image layer.
+- **Local Release / Docker builds:** put your own `sixlabors.lic` in `backend/`, then
+  `docker build --secret id=sixlabors_lic,src=backend/sixlabors.lic ./backend`
+  (`docker-compose.test.yml` does this automatically).
+- Community license, valid until **2028-01-05** — renew before it expires or Release
+  builds will fail.
+
 ## API Endpoints
 
 ### Authentication

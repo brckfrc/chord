@@ -20,4 +20,5 @@
 **/Logs
 LICENSE
 README.md
-
+# License is passed as a BuildKit secret, never copied into the image context
+**/sixlabors.lic

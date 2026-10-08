@@ -8,7 +8,12 @@ RUN dotnet restore
 
 # Copy everything else and build
 COPY . ./
-RUN dotnet publish -c Release -o /app/publish
+# ImageSharp 4 validates a Six Labors license at Release build time. The license
+# is mounted as a BuildKit secret only for this RUN, so it never ends up in any
+# image layer (repo is public). CI/deploy pass it via the SIXLABORS_LICENSE
+# repository secret; locally: docker build --secret id=sixlabors_lic,src=backend/sixlabors.lic
+RUN --mount=type=secret,id=sixlabors_lic,target=/src/sixlabors.lic \
+    dotnet publish -c Release -o /app/publish
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0@sha256:6b29f9d598b387b4b44653408d773cbdbf8f1d6b24289460b228a24f31a38b53 AS runtime
