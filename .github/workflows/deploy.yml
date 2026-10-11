@@ -196,7 +196,11 @@ jobs:
             # Pull latest deploy scripts
             git pull origin main
 
-            # Login to GHCR
+            # Login to GHCR with a throwaway Docker config: GITHUB_TOKEN expires when
+            # this job ends, and a stale login left in ~/.docker/config.json makes
+            # every later ghcr.io pull on the server fail with "denied".
+            export DOCKER_CONFIG="$(mktemp -d)"
+            trap 'rm -rf "$DOCKER_CONFIG"' EXIT
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
             # Export rate limiting bypass (from GitHub variable)
