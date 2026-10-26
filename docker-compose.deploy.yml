@@ -45,7 +45,7 @@ services:
       start_period: 60s
 
   redis:
-    image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    image: redis:7-alpine@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541
     container_name: chord-redis
     profiles: ["infra"]
     ports:
@@ -89,7 +89,7 @@ services:
       start_period: 10s
 
   livekit:
-    image: livekit/livekit-server:latest@sha256:89ca9ce0791e18d6e03bf6e2c49ceb27e1c754eae8bd50c989386c1a5963791a
+    image: livekit/livekit-server:latest@sha256:25cd902de7cacbd5f1f779f6a6ac1eae20ba8f56b0935934ce6b0ab80d1e3d20
     container_name: chord-livekit
     profiles: ["infra"]
     environment:
