@@ -33,6 +33,11 @@ RUN npm run build
 # ===========================================
 FROM nginx:alpine@sha256:a3554c0d0b48177b1413c26e01f695334428020d9df01243fbae3e11cfd17417 AS production
 
+# apk upgrade: nginx:alpine taban imaji Alpine guvenlik yamasindan sonra hemen
+# yeniden derlenmiyor (Ekim 2026: brotli-libs 1.2.0-r1 tasiyordu, yamali
+# 1.2.1-r0 cikmisti) -> derleme aninda guncel Alpine paketleri alinir.
+RUN apk upgrade --no-cache
+
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
