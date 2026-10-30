@@ -31,7 +31,7 @@ RUN npm run build
 # ===========================================
 # Stage 2: Production
 # ===========================================
-FROM nginx:alpine@sha256:a3554c0d0b48177b1413c26e01f695334428020d9df01243fbae3e11cfd17417 AS production
+FROM nginx:alpine@sha256:785835ea65db4bba6f021acc0f3be91b0fef76a53fe41f8588c6698d2aed0606 AS production
 
 # apk upgrade: nginx:alpine taban imaji Alpine guvenlik yamasindan sonra hemen
 # yeniden derlenmiyor (Ekim 2026: brotli-libs 1.2.0-r1 tasiyordu, yamali
