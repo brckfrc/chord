@@ -29,9 +29,9 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="4.1.3" />
-    <PackageReference Include="StackExchange.Redis" Version="2.13.17" />
+    <PackageReference Include="StackExchange.Redis" Version="2.13.23" />
     <PackageReference Include="Minio" Version="6.0.5" />
-    <PackageReference Include="Livekit.Server.Sdk.Dotnet" Version="1.2.3" />
+    <PackageReference Include="Livekit.Server.Sdk.Dotnet" Version="1.2.5" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
     <!-- Microsoft.Data.SqlClient (via EF Core SqlServer) still references a vulnerable 9.0.x
