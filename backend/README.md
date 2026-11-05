@@ -23,8 +23,8 @@ ASP.NET Core backend for Chord, a Discord-like real-time chat application.
 
 ## Tech Stack
 
-- **.NET 9.0** - Web API
-- **Entity Framework Core 9** - ORM
+- **.NET 10** - Web API
+- **Entity Framework Core 10** - ORM
 - **SQL Server** - Database
 - **Redis** - Caching & SignalR backplane
 - **MinIO** - Object storage for file uploads
@@ -33,9 +33,8 @@ ASP.NET Core backend for Chord, a Discord-like real-time chat application.
 - **SignalR** - Real-time communication
 - **JWT 8.2** - Authentication
 - **BCrypt** - Password hashing
-- **Serilog 9** - Logging
+- **Serilog 10** - Logging
 - **AutoMapper 12** - Object mapping
-- **FluentValidation 11** - Input validation
 - **ImageSharp** - Server-side image processing
 
 ---
@@ -751,24 +750,17 @@ docker compose -f docker-compose.dev.yml down -v
 **Run Tests:**
 ```bash
 cd backend
-dotnet test ChordAPI.Tests/ChordAPI.Tests.csproj
+dotnet test --project ChordAPI.Tests
 ```
 
-**Run with Coverage:**
-```bash
-dotnet test ChordAPI.Tests/ChordAPI.Tests.csproj --collect:"XPlat Code Coverage"
-```
-
-**Coverage Report:**
-- Location: `ChordAPI.Tests/TestResults/*/coverage.cobertura.xml`
-- Format: Cobertura XML
-- Tool: Coverlet
+Tests run on Microsoft.Testing.Platform (opted in via `backend/global.json`), so
+`dotnet test` takes `--project`. CI runs the same command on every push and PR.
 
 **Test Statistics:**
 - Total Tests: 88
-- Test Framework: xUnit 2.9.2
-- Mocking: Moq 4.20.72
-- Database: EF Core InMemory 9.0.0
+- Test Framework: xUnit v3 (Microsoft.Testing.Platform)
+- Mocking: Moq
+- Database: EF Core InMemory
 
 **Coverage (Core Services):**
 - AuthService: ~100% (15 tests)

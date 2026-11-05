@@ -1,5 +1,5 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0@sha256:7e3a4bd66701a451823db2028154ae16ff191bc452596ba618ef4d0c58f9cd01 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:de4fe90a98845d75910b9769662465c84de1a934665c431279d1382b2bddc02b AS build
 WORKDIR /src
 
 # Copy csproj and restore dependencies
@@ -16,14 +16,15 @@ RUN --mount=type=secret,id=sixlabors_lic,target=/src/sixlabors.lic \
     dotnet publish -c Release -o /app/publish
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:9.0@sha256:8bbd3f6fcc157792d96f0932107d9d435df814a2c058ce2891a267fe341dea1a AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:de0ee358cdd672f7017a003bed21e9ac9ed48a27c922a59b18175b6e82fa7fee AS runtime
 WORKDIR /app
 
 # Install curl for healthcheck.
-# apt-get upgrade: Microsoft'un aspnet taban imaji Debian guvenlik yamasindan
-# sonra hemen yeniden derlenmiyor (Ekim 2026: guncel 9.0 digest'i bile perl-base
-# deb12u3 tasiyordu, yamali deb12u4 Debian'da cikmisti -> CRITICAL
-# CVE-2026-13221, CyberScan P0). Derleme aninda guvenlik guncellemelerini almak,
+# apt-get upgrade: Microsoft'un aspnet taban imaji (10.0: Ubuntu 24.04) dagitimin
+# guvenlik yamasindan sonra hemen yeniden derlenmiyor (Ekim 2026: Debian tabanli
+# 9.0'in guncel digest'i bile perl-base deb12u3 tasiyordu, yamali deb12u4
+# Debian'da cikmisti -> CRITICAL CVE-2026-13221, CyberScan P0). Derleme aninda
+# guvenlik guncellemelerini almak,
 # Renovate'in digest bump'ini beklemeden bu boslugu kapatir.
 RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y curl \

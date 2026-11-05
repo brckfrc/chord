@@ -17,6 +17,7 @@ public class ChannelServiceTests : IDisposable
     private readonly Mock<ILogger<ChannelService>> _loggerMock;
     private readonly Mock<IPermissionService> _permissionServiceMock;
     private readonly Mock<IAuditLogService> _auditLogServiceMock;
+    private readonly Mock<IReadStateService> _readStateServiceMock;
     private readonly ChannelService _channelService;
 
     public ChannelServiceTests()
@@ -30,6 +31,7 @@ public class ChannelServiceTests : IDisposable
         _loggerMock = new Mock<ILogger<ChannelService>>();
         _permissionServiceMock = new Mock<IPermissionService>();
         _auditLogServiceMock = new Mock<IAuditLogService>();
+        _readStateServiceMock = new Mock<IReadStateService>();
         
         // Setup audit log mock
         _auditLogServiceMock.Setup(x => x.LogActionAsync(
@@ -43,7 +45,8 @@ public class ChannelServiceTests : IDisposable
             _mapperMock.Object,
             _loggerMock.Object,
             _permissionServiceMock.Object,
-            _auditLogServiceMock.Object
+            _auditLogServiceMock.Object,
+            _readStateServiceMock.Object
         );
     }
 
@@ -213,8 +216,8 @@ public class ChannelServiceTests : IDisposable
         await _context.SaveChangesAsync();
 
         _mapperMock
-            .Setup(x => x.Map<IEnumerable<ChannelResponseDto>>(It.IsAny<IEnumerable<Channel>>()))
-            .Returns((IEnumerable<Channel> channels) => channels.Select(c => new ChannelResponseDto
+            .Setup(x => x.Map<ChannelResponseDto>(It.IsAny<Channel>()))
+            .Returns((Channel c) => new ChannelResponseDto
             {
                 Id = c.Id,
                 GuildId = c.GuildId,
@@ -222,7 +225,10 @@ public class ChannelServiceTests : IDisposable
                 Type = c.Type,
                 Position = c.Position,
                 CreatedAt = c.CreatedAt
-            }));
+            });
+        _readStateServiceMock
+            .Setup(x => x.GetUnreadCountAsync(It.IsAny<Guid>(), userId))
+            .ReturnsAsync((Guid channelId, Guid _) => new UnreadCountDto { ChannelId = channelId, UnreadCount = 3 });
 
         // Act
         var result = await _channelService.GetGuildChannelsAsync(guildId, userId);
@@ -233,6 +239,7 @@ public class ChannelServiceTests : IDisposable
         Assert.Equal(2, channels.Count);
         Assert.Contains(channels, c => c.Name == "general");
         Assert.Contains(channels, c => c.Name == "random");
+        Assert.All(channels, c => Assert.Equal(3, c.UnreadCount));
     }
 
     [Fact]

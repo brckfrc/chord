@@ -252,8 +252,7 @@ app.MapGet("/", () => new
     status = "running",
     timestamp = DateTime.UtcNow
 })
-.WithName("Root")
-.WithOpenApi();
+.WithName("Root");
 
 try
 {
