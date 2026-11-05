@@ -7,7 +7,7 @@
 
 > **Project Presentation Video:** [YouTube](https://youtu.be/o0pG1QwQ9CI)
 
-Chord is a modern, real-time chat application inspired by Discord, built with .NET 9 and React.
+Chord is a modern, real-time chat application inspired by Discord, built with .NET 10 and React.
 
 🌐 **Live Demo:** [chord.borak.dev](https://chord.borak.dev)
 
@@ -48,7 +48,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 
 | Layer           | Technologies                                            |
 | --------------- | ------------------------------------------------------- |
-| **Backend**     | .NET 9, EF Core 9, SQL Server, Redis, SignalR, JWT      |
+| **Backend**     | .NET 10, EF Core 10, SQL Server, Redis, SignalR, JWT    |
 | **Frontend**    | React 18, TypeScript, Vite, Redux Toolkit, Tailwind CSS |
 | **Voice/Video** | LiveKit (WebRTC SFU), Coturn (STUN/TURN)                |
 | **Storage**     | MinIO (S3-compatible object storage)                    |
@@ -60,7 +60,7 @@ Chord is a modern, real-time chat application inspired by Discord, built with .N
 
 ### Prerequisites
 
-- .NET 9 SDK
+- .NET 10 SDK
 - Node.js 24 — pinned in [`.nvmrc`](./.nvmrc); run `nvm use` before working in `frontend/`
 - Docker & Docker Compose
 - Git
@@ -110,7 +110,7 @@ See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/REA
 
 ```
 chord/
-├── backend/                       # .NET 9 Web API
+├── backend/                       # .NET 10 Web API
 │   ├── Controllers/               # API endpoints
 │   ├── Hubs/                      # SignalR (ChatHub, PresenceHub)
 │   ├── Services/                  # Business logic
@@ -284,7 +284,7 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the decision tree and detailed 
 - JWT authentication with refresh tokens
 - Rate limiting (100 req/min)
 - CORS protection
-- Input validation (FluentValidation)
+- Input validation (DataAnnotations)
 - SQL injection protection (EF Core)
 
 ---

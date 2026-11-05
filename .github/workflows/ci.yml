@@ -30,7 +30,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DOTNET_VERSION: "9.0.x"
+  DOTNET_VERSION: "10.0.x"
 
 jobs:
   # Backend CI Job
@@ -52,8 +52,10 @@ jobs:
           cache: true
           cache-dependency-path: backend/**/*.csproj
 
+      # The test project references ChordAPI.csproj, so restoring/building it
+      # covers both projects (backend/ has no solution file).
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore ChordAPI.Tests
 
       # ImageSharp 4 needs a Six Labors license for Release builds. The key lives
       # only in the SIXLABORS_LICENSE secret (never in the repo); ImageSharp's
@@ -69,10 +71,11 @@ jobs:
           fi
 
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build ChordAPI.Tests --no-restore --configuration Release
 
+      # Microsoft.Testing.Platform runner (backend/global.json), hence --project.
       - name: Run tests
-        run: dotnet test --no-build --configuration Release --verbosity normal
+        run: dotnet test --project ChordAPI.Tests --no-build --configuration Release
 
   # Frontend CI Job
   frontend:
