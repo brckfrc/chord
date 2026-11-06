@@ -124,7 +124,7 @@ jobs:
 
       # Build and push Backend
       - name: Build and push Backend
-        uses: docker/build-push-action@v6.19.2
+        uses: docker/build-push-action@v7.4.0
         env:
           SIXLABORS_LICENSE: ${{ secrets.SIXLABORS_LICENSE }}
         with:
@@ -145,7 +145,7 @@ jobs:
 
       # Build and push Frontend
       - name: Build and push Frontend
-        uses: docker/build-push-action@v6.19.2
+        uses: docker/build-push-action@v7.4.0
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
