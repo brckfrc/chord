@@ -1,29 +1,26 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using ChordAPI.Mappings;
 
 namespace ChordAPI.Services;
 
 public class MessageService : IMessageService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
     private readonly ILogger<MessageService> _logger;
     private readonly IPermissionService _permissionService;
     private readonly IAuditLogService _auditLogService;
 
     public MessageService(
         AppDbContext context,
-        IMapper mapper,
         ILogger<MessageService> logger,
         IPermissionService permissionService,
         IAuditLogService auditLogService)
     {
         _context = context;
-        _mapper = mapper;
         _logger = logger;
         _permissionService = permissionService;
         _auditLogService = auditLogService;
@@ -83,7 +80,7 @@ public class MessageService : IMessageService
             .Include(m => m.Author)
             .FirstAsync(m => m.Id == message.Id);
 
-        return _mapper.Map<MessageResponseDto>(messageWithAuthor);
+        return messageWithAuthor.ToDto();
     }
 
     /// <summary>
@@ -191,7 +188,7 @@ public class MessageService : IMessageService
             .Take(pageSize)
             .ToListAsync();
 
-        var messageDtos = _mapper.Map<List<MessageResponseDto>>(messages);
+        var messageDtos = messages.Select(x => x.ToDto()).ToList();
 
         return new PaginatedMessagesDto
         {
@@ -224,7 +221,7 @@ public class MessageService : IMessageService
             throw new UnauthorizedAccessException("You are not a member of this guild");
         }
 
-        return _mapper.Map<MessageResponseDto>(message);
+        return message.ToDto();
     }
 
     public async Task<MessageResponseDto> UpdateMessageAsync(Guid messageId, Guid userId, UpdateMessageDto dto)
@@ -252,7 +249,7 @@ public class MessageService : IMessageService
 
         _logger.LogInformation("Message {MessageId} updated by user {UserId}", messageId, userId);
 
-        return _mapper.Map<MessageResponseDto>(message);
+        return message.ToDto();
     }
 
     public async Task DeleteMessageAsync(Guid messageId, Guid userId)
@@ -316,7 +313,7 @@ public class MessageService : IMessageService
         _logger.LogInformation("Message {MessageId} pinned by user {UserId} in channel {ChannelId}",
             messageId, userId, channelId);
 
-        return _mapper.Map<MessageResponseDto>(message);
+        return message.ToDto();
     }
 
     public async Task UnpinMessageAsync(Guid channelId, Guid messageId, Guid userId)
@@ -378,7 +375,7 @@ public class MessageService : IMessageService
             .OrderByDescending(m => m.PinnedAt)
             .ToListAsync();
 
-        return _mapper.Map<List<MessageResponseDto>>(pinnedMessages);
+        return pinnedMessages.Select(x => x.ToDto()).ToList();
     }
 }
 

@@ -1,24 +1,21 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using ChordAPI.Mappings;
 
 namespace ChordAPI.Services;
 
 public class FriendshipService : IFriendshipService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
     private readonly ILogger<FriendshipService> _logger;
 
     public FriendshipService(
         AppDbContext context,
-        IMapper mapper,
         ILogger<FriendshipService> logger)
     {
         _context = context;
-        _mapper = mapper;
         _logger = logger;
     }
 
@@ -359,7 +356,7 @@ public class FriendshipService : IFriendshipService
             Status = friendship.Status,
             CreatedAt = friendship.CreatedAt,
             AcceptedAt = friendship.AcceptedAt,
-            OtherUser = _mapper.Map<UserDto>(otherUser)
+            OtherUser = otherUser.ToDto()
         };
     }
 }

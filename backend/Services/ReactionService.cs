@@ -1,4 +1,3 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
@@ -9,13 +8,11 @@ namespace ChordAPI.Services;
 public class ReactionService : IReactionService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
     private readonly ILogger<ReactionService> _logger;
 
-    public ReactionService(AppDbContext context, IMapper mapper, ILogger<ReactionService> logger)
+    public ReactionService(AppDbContext context, ILogger<ReactionService> logger)
     {
         _context = context;
-        _mapper = mapper;
         _logger = logger;
     }
 

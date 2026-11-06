@@ -1,4 +1,3 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
@@ -16,7 +15,6 @@ public class AuthServiceTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly Mock<IJwtService> _jwtServiceMock;
-    private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<IHubContext<PresenceHub>> _presenceHubMock;
     private readonly Mock<ILogger<AuthService>> _loggerMock;
     private readonly AuthService _authService;
@@ -31,7 +29,6 @@ public class AuthServiceTests : IDisposable
 
         // Setup mocks
         _jwtServiceMock = new Mock<IJwtService>();
-        _mapperMock = new Mock<IMapper>();
         _presenceHubMock = new Mock<IHubContext<PresenceHub>>();
         _loggerMock = new Mock<ILogger<AuthService>>();
 
@@ -39,7 +36,6 @@ public class AuthServiceTests : IDisposable
         _authService = new AuthService(
             _context,
             _jwtServiceMock.Object,
-            _mapperMock.Object,
             _presenceHubMock.Object,
             _loggerMock.Object
         );
@@ -73,17 +69,6 @@ public class AuthServiceTests : IDisposable
         _jwtServiceMock
             .Setup(x => x.GenerateRefreshToken())
             .Returns(expectedRefreshToken);
-
-        _mapperMock
-            .Setup(x => x.Map<UserDto>(It.IsAny<User>()))
-            .Returns(new UserDto
-            {
-                Id = Guid.NewGuid(),
-                Username = registerDto.Username,
-                Email = registerDto.Email,
-                DisplayName = registerDto.DisplayName,
-                CreatedAt = DateTime.UtcNow
-            });
 
         // Act
         var result = await _authService.RegisterAsync(registerDto);
@@ -197,17 +182,6 @@ public class AuthServiceTests : IDisposable
             .Setup(x => x.GenerateRefreshToken())
             .Returns(expectedRefreshToken);
 
-        _mapperMock
-            .Setup(x => x.Map<UserDto>(It.IsAny<User>()))
-            .Returns(new UserDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                DisplayName = user.DisplayName,
-                CreatedAt = user.CreatedAt
-            });
-
         // Act
         var result = await _authService.LoginAsync(loginDto);
 
@@ -295,17 +269,6 @@ public class AuthServiceTests : IDisposable
         _jwtServiceMock
             .Setup(x => x.GenerateRefreshToken())
             .Returns(expectedRefreshToken);
-
-        _mapperMock
-            .Setup(x => x.Map<UserDto>(It.IsAny<User>()))
-            .Returns(new UserDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                DisplayName = user.DisplayName,
-                CreatedAt = user.CreatedAt
-            });
 
         // Act
         var result = await _authService.RefreshTokenAsync(refreshToken);
@@ -407,10 +370,6 @@ public class AuthServiceTests : IDisposable
             CreatedAt = user.CreatedAt
         };
 
-        _mapperMock
-            .Setup(x => x.Map<UserDto>(It.IsAny<User>()))
-            .Returns(expectedUserDto);
-
         // Act
         var result = await _authService.GetCurrentUserAsync(userId);
 
@@ -467,19 +426,6 @@ public class AuthServiceTests : IDisposable
         var mockClientProxy = new Mock<IClientProxy>();
         mockClients.Setup(c => c.All).Returns(mockClientProxy.Object);
         _presenceHubMock.Setup(h => h.Clients).Returns(mockClients.Object);
-
-        _mapperMock
-            .Setup(x => x.Map<UserDto>(It.IsAny<User>()))
-            .Returns(new UserDto
-            {
-                Id = userId,
-                Username = user.Username,
-                Email = user.Email,
-                DisplayName = user.DisplayName,
-                Status = updateDto.Status,
-                CustomStatus = updateDto.CustomStatus,
-                CreatedAt = user.CreatedAt
-            });
 
         // Act
         var result = await _authService.UpdateStatusAsync(userId, updateDto);

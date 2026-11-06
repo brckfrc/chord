@@ -1,26 +1,23 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using ChordAPI.Mappings;
 
 namespace ChordAPI.Services;
 
 public class DirectMessageService : IDirectMessageService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
     private readonly ILogger<DirectMessageService> _logger;
     private readonly IFriendshipService _friendshipService;
 
     public DirectMessageService(
         AppDbContext context,
-        IMapper mapper,
         ILogger<DirectMessageService> logger,
         IFriendshipService friendshipService)
     {
         _context = context;
-        _mapper = mapper;
         _logger = logger;
         _friendshipService = friendshipService;
     }
@@ -62,7 +59,7 @@ public class DirectMessageService : IDirectMessageService
             CreatedAt = dm.CreatedAt,
             EditedAt = dm.EditedAt,
             IsDeleted = dm.IsDeleted,
-            Sender = _mapper.Map<UserDto>(dm.Sender)
+            Sender = dm.Sender.ToDto()
         }).ToList();
     }
 
@@ -129,7 +126,7 @@ public class DirectMessageService : IDirectMessageService
             CreatedAt = messageWithSender.CreatedAt,
             EditedAt = messageWithSender.EditedAt,
             IsDeleted = messageWithSender.IsDeleted,
-            Sender = _mapper.Map<UserDto>(messageWithSender.Sender)
+            Sender = messageWithSender.Sender.ToDto()
         };
     }
 
@@ -177,7 +174,7 @@ public class DirectMessageService : IDirectMessageService
             CreatedAt = message.CreatedAt,
             EditedAt = message.EditedAt,
             IsDeleted = message.IsDeleted,
-            Sender = _mapper.Map<UserDto>(message.Sender)
+            Sender = message.Sender.ToDto()
         };
     }
 

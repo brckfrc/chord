@@ -1,20 +1,18 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using Microsoft.EntityFrameworkCore;
+using ChordAPI.Mappings;
 
 namespace ChordAPI.Services;
 
 public class MentionService : IMentionService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
     private readonly ILogger<MentionService> _logger;
 
-    public MentionService(AppDbContext context, IMapper mapper, ILogger<MentionService> logger)
+    public MentionService(AppDbContext context, ILogger<MentionService> logger)
     {
         _context = context;
-        _mapper = mapper;
         _logger = logger;
     }
 
@@ -38,7 +36,7 @@ public class MentionService : IMentionService
             .OrderByDescending(mm => mm.CreatedAt)
             .ToListAsync();
 
-        return _mapper.Map<IEnumerable<MessageMentionDto>>(mentions);
+        return mentions.Select(x => x.ToDto()).ToList();
     }
 
     public async Task<IEnumerable<MessageMentionDto>> GetMentionsByMessageIdAsync(Guid messageId)
@@ -52,7 +50,7 @@ public class MentionService : IMentionService
             .Include(mm => mm.MentionedUser)
             .ToListAsync();
 
-        return _mapper.Map<IEnumerable<MessageMentionDto>>(mentions);
+        return mentions.Select(x => x.ToDto()).ToList();
     }
 
     public async Task MarkMentionAsReadAsync(Guid mentionId, Guid userId)

@@ -1,15 +1,14 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using ChordAPI.Mappings;
 
 namespace ChordAPI.Services;
 
 public class GuildService : IGuildService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
     private readonly ILogger<GuildService> _logger;
     private readonly IChannelService _channelService;
     private readonly IRoleService _roleService;
@@ -17,14 +16,12 @@ public class GuildService : IGuildService
 
     public GuildService(
         AppDbContext context, 
-        IMapper mapper, 
         ILogger<GuildService> logger,
         IChannelService channelService,
         IRoleService roleService,
         IAuditLogService auditLogService)
     {
         _context = context;
-        _mapper = mapper;
         _logger = logger;
         _channelService = channelService;
         _roleService = roleService;
@@ -112,9 +109,9 @@ public class GuildService : IGuildService
             .Include(g => g.Owner)
             .Include(g => g.Members)
             .Include(g => g.Channels)
-            .FirstOrDefaultAsync(g => g.Id == guild.Id);
+            .FirstAsync(g => g.Id == guild.Id);
 
-        return _mapper.Map<GuildResponseDto>(createdGuild);
+        return createdGuild.ToDto();
     }
 
     public async Task<IEnumerable<GuildResponseDto>> GetUserGuildsAsync(Guid userId)
@@ -132,7 +129,7 @@ public class GuildService : IGuildService
             .Distinct()
             .ToListAsync();
 
-        return _mapper.Map<IEnumerable<GuildResponseDto>>(guilds);
+        return guilds.Select(x => x.ToDto()).ToList();
     }
 
     public async Task<GuildResponseDto?> GetGuildByIdAsync(Guid guildId, Guid userId)
@@ -152,7 +149,7 @@ public class GuildService : IGuildService
             .Include(g => g.Channels)
             .FirstOrDefaultAsync(g => g.Id == guildId);
 
-        return guild == null ? null : _mapper.Map<GuildResponseDto>(guild);
+        return guild?.ToDto();
     }
 
     public async Task<GuildResponseDto> UpdateGuildAsync(Guid guildId, Guid userId, UpdateGuildDto dto)
@@ -198,7 +195,7 @@ public class GuildService : IGuildService
             new { Name = dto.Name, Description = dto.Description, IconUrl = dto.IconUrl },
             guildId);
 
-        return _mapper.Map<GuildResponseDto>(guild);
+        return guild.ToDto();
     }
 
     public async Task DeleteGuildAsync(Guid guildId, Guid userId)
@@ -278,9 +275,9 @@ public class GuildService : IGuildService
         // Reload with navigation properties
         var memberWithUser = await _context.GuildMembers
             .Include(gm => gm.User)
-            .FirstOrDefaultAsync(gm => gm.GuildId == guildId && gm.UserId == userIdToAdd);
+            .FirstAsync(gm => gm.GuildId == guildId && gm.UserId == userIdToAdd);
 
-        return _mapper.Map<GuildMemberDto>(memberWithUser);
+        return memberWithUser.ToDto();
     }
 
     public async Task RemoveMemberAsync(Guid guildId, Guid requesterId, Guid userIdToRemove)
@@ -343,7 +340,7 @@ public class GuildService : IGuildService
             .Include(gm => gm.User)
             .ToListAsync();
 
-        return _mapper.Map<IEnumerable<GuildMemberDto>>(members);
+        return members.Select(x => x.ToDto()).ToList();
     }
 }
 

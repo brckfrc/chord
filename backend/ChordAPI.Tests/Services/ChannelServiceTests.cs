@@ -1,4 +1,3 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
@@ -13,7 +12,6 @@ namespace ChordAPI.Tests.Services;
 public class ChannelServiceTests : IDisposable
 {
     private readonly AppDbContext _context;
-    private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<ILogger<ChannelService>> _loggerMock;
     private readonly Mock<IPermissionService> _permissionServiceMock;
     private readonly Mock<IAuditLogService> _auditLogServiceMock;
@@ -27,7 +25,6 @@ public class ChannelServiceTests : IDisposable
             .Options;
         _context = new AppDbContext(options);
 
-        _mapperMock = new Mock<IMapper>();
         _loggerMock = new Mock<ILogger<ChannelService>>();
         _permissionServiceMock = new Mock<IPermissionService>();
         _auditLogServiceMock = new Mock<IAuditLogService>();
@@ -42,7 +39,6 @@ public class ChannelServiceTests : IDisposable
 
         _channelService = new ChannelService(
             _context,
-            _mapperMock.Object,
             _loggerMock.Object,
             _permissionServiceMock.Object,
             _auditLogServiceMock.Object,
@@ -83,19 +79,6 @@ public class ChannelServiceTests : IDisposable
         _permissionServiceMock
             .Setup(x => x.CheckPermissionAsync(guildId, userId, GuildPermission.ManageChannels, It.IsAny<string>()))
             .Returns(Task.CompletedTask);
-
-        _mapperMock
-            .Setup(x => x.Map<ChannelResponseDto>(It.IsAny<Channel>()))
-            .Returns((Channel c) => new ChannelResponseDto
-            {
-                Id = c.Id,
-                GuildId = c.GuildId,
-                Name = c.Name,
-                Type = c.Type,
-                Topic = c.Topic,
-                Position = c.Position,
-                CreatedAt = c.CreatedAt
-            });
 
         // Act
         var result = await _channelService.CreateChannelAsync(guildId, userId, createDto);
@@ -215,17 +198,6 @@ public class ChannelServiceTests : IDisposable
         _context.Channels.AddRange(channel1, channel2);
         await _context.SaveChangesAsync();
 
-        _mapperMock
-            .Setup(x => x.Map<ChannelResponseDto>(It.IsAny<Channel>()))
-            .Returns((Channel c) => new ChannelResponseDto
-            {
-                Id = c.Id,
-                GuildId = c.GuildId,
-                Name = c.Name,
-                Type = c.Type,
-                Position = c.Position,
-                CreatedAt = c.CreatedAt
-            });
         _readStateServiceMock
             .Setup(x => x.GetUnreadCountAsync(It.IsAny<Guid>(), userId))
             .ReturnsAsync((Guid channelId, Guid _) => new UnreadCountDto { ChannelId = channelId, UnreadCount = 3 });
@@ -321,18 +293,6 @@ public class ChannelServiceTests : IDisposable
         _context.Channels.Add(channel);
         await _context.SaveChangesAsync();
 
-        _mapperMock
-            .Setup(x => x.Map<ChannelResponseDto>(It.IsAny<Channel>()))
-            .Returns((Channel c) => new ChannelResponseDto
-            {
-                Id = c.Id,
-                GuildId = c.GuildId,
-                Name = c.Name,
-                Type = c.Type,
-                Position = c.Position,
-                CreatedAt = c.CreatedAt
-            });
-
         // Act
         var result = await _channelService.GetChannelByIdAsync(channelId, userId);
 
@@ -397,19 +357,6 @@ public class ChannelServiceTests : IDisposable
         _permissionServiceMock
             .Setup(x => x.CheckPermissionAsync(guildId, userId, GuildPermission.ManageChannels, It.IsAny<string>()))
             .Returns(Task.CompletedTask);
-
-        _mapperMock
-            .Setup(x => x.Map<ChannelResponseDto>(It.IsAny<Channel>()))
-            .Returns((Channel c) => new ChannelResponseDto
-            {
-                Id = c.Id,
-                GuildId = c.GuildId,
-                Name = c.Name,
-                Type = c.Type,
-                Topic = c.Topic,
-                Position = c.Position,
-                CreatedAt = c.CreatedAt
-            });
 
         // Act
         var result = await _channelService.UpdateChannelAsync(channelId, userId, updateDto);
@@ -477,18 +424,6 @@ public class ChannelServiceTests : IDisposable
         _permissionServiceMock
             .Setup(x => x.CheckPermissionAsync(guildId, userId, GuildPermission.ManageChannels, It.IsAny<string>()))
             .Returns(Task.CompletedTask);
-
-        _mapperMock
-            .Setup(x => x.Map<ChannelResponseDto>(It.IsAny<Channel>()))
-            .Returns((Channel c) => new ChannelResponseDto
-            {
-                Id = c.Id,
-                GuildId = c.GuildId,
-                Name = c.Name,
-                Type = c.Type,
-                Position = c.Position,
-                CreatedAt = c.CreatedAt
-            });
 
         // Act - Move channel3 from position 2 to position 0
         var updateDto = new UpdateChannelDto
@@ -562,18 +497,6 @@ public class ChannelServiceTests : IDisposable
             .Setup(x => x.CheckPermissionAsync(guildId, userId, GuildPermission.ManageChannels, It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _mapperMock
-            .Setup(x => x.Map<ChannelResponseDto>(It.IsAny<Channel>()))
-            .Returns((Channel c) => new ChannelResponseDto
-            {
-                Id = c.Id,
-                GuildId = c.GuildId,
-                Name = c.Name,
-                Type = c.Type,
-                Position = c.Position,
-                CreatedAt = c.CreatedAt
-            });
-
         // Act - Move channel1 from position 0 to position 2
         var updateDto = new UpdateChannelDto
         {
@@ -634,18 +557,6 @@ public class ChannelServiceTests : IDisposable
         _permissionServiceMock
             .Setup(x => x.CheckPermissionAsync(guildId, userId, GuildPermission.ManageChannels, It.IsAny<string>()))
             .Returns(Task.CompletedTask);
-
-        _mapperMock
-            .Setup(x => x.Map<ChannelResponseDto>(It.IsAny<Channel>()))
-            .Returns((Channel c) => new ChannelResponseDto
-            {
-                Id = c.Id,
-                GuildId = c.GuildId,
-                Name = c.Name,
-                Type = c.Type,
-                Position = c.Position,
-                CreatedAt = c.CreatedAt
-            });
 
         // Act - Update channel1 but keep same position
         var updateDto = new UpdateChannelDto
@@ -718,18 +629,6 @@ public class ChannelServiceTests : IDisposable
         _permissionServiceMock
             .Setup(x => x.CheckPermissionAsync(guildId, userId, GuildPermission.ManageChannels, It.IsAny<string>()))
             .Returns(Task.CompletedTask);
-
-        _mapperMock
-            .Setup(x => x.Map<ChannelResponseDto>(It.IsAny<Channel>()))
-            .Returns((Channel c) => new ChannelResponseDto
-            {
-                Id = c.Id,
-                GuildId = c.GuildId,
-                Name = c.Name,
-                Type = c.Type,
-                Position = c.Position,
-                CreatedAt = c.CreatedAt
-            });
 
         // Act - Move textChannel2 from position 1 to position 0
         var updateDto = new UpdateChannelDto

@@ -1,26 +1,23 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using ChordAPI.Mappings;
 
 namespace ChordAPI.Services;
 
 public class InviteService : IInviteService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
     private readonly ILogger<InviteService> _logger;
     private readonly IRoleService _roleService;
 
     public InviteService(
         AppDbContext context,
-        IMapper mapper,
         ILogger<InviteService> logger,
         IRoleService roleService)
     {
         _context = context;
-        _mapper = mapper;
         _logger = logger;
         _roleService = roleService;
     }
@@ -80,9 +77,9 @@ public class InviteService : IInviteService
         var createdInvite = await _context.GuildInvites
             .Include(i => i.Guild)
             .Include(i => i.CreatedByUser)
-            .FirstOrDefaultAsync(i => i.Id == invite.Id);
+            .FirstAsync(i => i.Id == invite.Id);
 
-        return _mapper.Map<InviteResponseDto>(createdInvite);
+        return createdInvite.ToDto();
     }
 
     public async Task<InviteInfoDto> GetInviteByCodeAsync(string code)
@@ -98,7 +95,7 @@ public class InviteService : IInviteService
             throw new KeyNotFoundException("Invite not found");
         }
 
-        var dto = _mapper.Map<InviteInfoDto>(invite);
+        var dto = invite.ToInfoDto();
         
         // Check if invite is expired
         dto.IsExpired = invite.ExpiresAt.HasValue && invite.ExpiresAt.Value < DateTime.UtcNow;
@@ -178,9 +175,9 @@ public class InviteService : IInviteService
             .Include(g => g.Owner)
             .Include(g => g.Members)
             .Include(g => g.Channels)
-            .FirstOrDefaultAsync(g => g.Id == invite.GuildId);
+            .FirstAsync(g => g.Id == invite.GuildId);
 
-        return _mapper.Map<GuildResponseDto>(guild);
+        return guild.ToDto();
     }
 
     public async Task<IEnumerable<InviteResponseDto>> GetGuildInvitesAsync(Guid guildId, Guid userId)
@@ -201,7 +198,7 @@ public class InviteService : IInviteService
             .OrderByDescending(i => i.CreatedAt)
             .ToListAsync();
 
-        return _mapper.Map<IEnumerable<InviteResponseDto>>(invites);
+        return invites.Select(x => x.ToDto()).ToList();
     }
 
     public async Task RevokeInviteAsync(Guid inviteId, Guid userId)
