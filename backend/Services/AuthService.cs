@@ -1,10 +1,10 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using ChordAPI.Hubs;
+using ChordAPI.Mappings;
 
 namespace ChordAPI.Services;
 
@@ -12,20 +12,17 @@ public class AuthService : IAuthService
 {
     private readonly AppDbContext _context;
     private readonly IJwtService _jwtService;
-    private readonly IMapper _mapper;
     private readonly IHubContext<PresenceHub> _presenceHub;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         AppDbContext context,
         IJwtService jwtService,
-        IMapper mapper,
         IHubContext<PresenceHub> presenceHub,
         ILogger<AuthService> logger)
     {
         _context = context;
         _jwtService = jwtService;
-        _mapper = mapper;
         _presenceHub = presenceHub;
         _logger = logger;
     }
@@ -146,7 +143,7 @@ public class AuthService : IAuthService
         
         await _context.SaveChangesAsync();
 
-        return _mapper.Map<UserDto>(user);
+        return user.ToDto();
     }
 
     public async Task<UserDto> UpdateStatusAsync(Guid userId, UpdateStatusDto dto)
@@ -175,7 +172,7 @@ public class AuthService : IAuthService
             customStatus = dto.CustomStatus
         });
 
-        return _mapper.Map<UserDto>(user);
+        return user.ToDto();
     }
 
     private async Task<TokenResponseDto> GenerateTokenResponseAsync(User user)
@@ -196,7 +193,7 @@ public class AuthService : IAuthService
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             ExpiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes),
-            User = _mapper.Map<UserDto>(user)
+            User = user.ToDto()
         };
     }
 }

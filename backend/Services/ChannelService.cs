@@ -1,15 +1,14 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using ChordAPI.Mappings;
 
 namespace ChordAPI.Services;
 
 public class ChannelService : IChannelService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
     private readonly ILogger<ChannelService> _logger;
     private readonly IPermissionService _permissionService;
     private readonly IAuditLogService _auditLogService;
@@ -17,14 +16,12 @@ public class ChannelService : IChannelService
 
     public ChannelService(
         AppDbContext context,
-        IMapper mapper,
         ILogger<ChannelService> logger,
         IPermissionService permissionService,
         IAuditLogService auditLogService,
         IReadStateService readStateService)
     {
         _context = context;
-        _mapper = mapper;
         _logger = logger;
         _permissionService = permissionService;
         _auditLogService = auditLogService;
@@ -80,7 +77,7 @@ public class ChannelService : IChannelService
             new { Name = channel.Name, Type = channel.Type.ToString(), Topic = channel.Topic },
             guildId);
 
-        return _mapper.Map<ChannelResponseDto>(channel);
+        return channel.ToDto();
     }
 
     public async Task<IEnumerable<ChannelResponseDto>> GetGuildChannelsAsync(Guid guildId, Guid userId)
@@ -104,7 +101,7 @@ public class ChannelService : IChannelService
         var channelDtos = new List<ChannelResponseDto>();
         foreach (var channel in channels)
         {
-            var dto = _mapper.Map<ChannelResponseDto>(channel);
+            var dto = channel.ToDto();
             
             // Calculate unread count for this channel
             try
@@ -144,7 +141,7 @@ public class ChannelService : IChannelService
             throw new UnauthorizedAccessException("You are not a member of this guild");
         }
 
-        return _mapper.Map<ChannelResponseDto>(channel);
+        return channel.ToDto();
     }
 
     public async Task<ChannelResponseDto> UpdateChannelAsync(Guid channelId, Guid userId, UpdateChannelDto dto)
@@ -219,7 +216,7 @@ public class ChannelService : IChannelService
             new { Name = dto.Name, Topic = dto.Topic, Position = newPosition },
             channel.GuildId);
 
-        return _mapper.Map<ChannelResponseDto>(channel);
+        return channel.ToDto();
     }
 
     public async Task DeleteChannelAsync(Guid channelId, Guid userId)

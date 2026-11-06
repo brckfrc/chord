@@ -1,4 +1,3 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
@@ -13,7 +12,6 @@ namespace ChordAPI.Tests.Services;
 public class MessageServiceTests : IDisposable
 {
     private readonly AppDbContext _context;
-    private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<ILogger<MessageService>> _loggerMock;
     private readonly Mock<IPermissionService> _permissionServiceMock;
     private readonly Mock<IAuditLogService> _auditLogServiceMock;
@@ -26,7 +24,6 @@ public class MessageServiceTests : IDisposable
             .Options;
         _context = new AppDbContext(options);
 
-        _mapperMock = new Mock<IMapper>();
         _loggerMock = new Mock<ILogger<MessageService>>();
         _permissionServiceMock = new Mock<IPermissionService>();
         _auditLogServiceMock = new Mock<IAuditLogService>();
@@ -40,7 +37,6 @@ public class MessageServiceTests : IDisposable
 
         _messageService = new MessageService(
             _context,
-            _mapperMock.Object,
             _loggerMock.Object,
             _permissionServiceMock.Object,
             _auditLogServiceMock.Object
@@ -113,19 +109,6 @@ public class MessageServiceTests : IDisposable
         {
             Content = "Hello, world!"
         };
-
-        _mapperMock
-            .Setup(x => x.Map<MessageResponseDto>(It.IsAny<Message>()))
-            .Returns((Message m) => new MessageResponseDto
-            {
-                Id = m.Id,
-                ChannelId = m.ChannelId,
-                AuthorId = m.AuthorId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                IsEdited = m.IsEdited,
-                IsPinned = m.IsPinned
-            });
 
         // Act
         var result = await _messageService.CreateMessageAsync(channelId, userId, createDto);
@@ -203,19 +186,6 @@ public class MessageServiceTests : IDisposable
             Content = "Hello @mentioneduser!"
         };
 
-        _mapperMock
-            .Setup(x => x.Map<MessageResponseDto>(It.IsAny<Message>()))
-            .Returns((Message m) => new MessageResponseDto
-            {
-                Id = m.Id,
-                ChannelId = m.ChannelId,
-                AuthorId = m.AuthorId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                IsEdited = m.IsEdited,
-                IsPinned = m.IsPinned
-            });
-
         // Act
         var result = await _messageService.CreateMessageAsync(channelId, userId, createDto);
 
@@ -239,19 +209,6 @@ public class MessageServiceTests : IDisposable
             Content = "Hello @nonexistentuser!"
         };
 
-        _mapperMock
-            .Setup(x => x.Map<MessageResponseDto>(It.IsAny<Message>()))
-            .Returns((Message m) => new MessageResponseDto
-            {
-                Id = m.Id,
-                ChannelId = m.ChannelId,
-                AuthorId = m.AuthorId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                IsEdited = m.IsEdited,
-                IsPinned = m.IsPinned
-            });
-
         // Act
         var result = await _messageService.CreateMessageAsync(channelId, userId, createDto);
 
@@ -273,19 +230,6 @@ public class MessageServiceTests : IDisposable
         {
             Content = "Hello, world! No mentions here."
         };
-
-        _mapperMock
-            .Setup(x => x.Map<MessageResponseDto>(It.IsAny<Message>()))
-            .Returns((Message m) => new MessageResponseDto
-            {
-                Id = m.Id,
-                ChannelId = m.ChannelId,
-                AuthorId = m.AuthorId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                IsEdited = m.IsEdited,
-                IsPinned = m.IsPinned
-            });
 
         // Act
         var result = await _messageService.CreateMessageAsync(channelId, userId, createDto);
@@ -325,19 +269,6 @@ public class MessageServiceTests : IDisposable
         _context.Messages.AddRange(message1, message2);
         await _context.SaveChangesAsync();
 
-        _mapperMock
-            .Setup(x => x.Map<List<MessageResponseDto>>(It.IsAny<List<Message>>()))
-            .Returns((List<Message> messages) => messages.Select(m => new MessageResponseDto
-            {
-                Id = m.Id,
-                ChannelId = m.ChannelId,
-                AuthorId = m.AuthorId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                IsEdited = m.IsEdited,
-                IsPinned = m.IsPinned
-            }).ToList());
-
         // Act
         var result = await _messageService.GetChannelMessagesAsync(channelId, userId, 1, 50);
 
@@ -353,10 +284,6 @@ public class MessageServiceTests : IDisposable
     {
         // Arrange
         var (userId, _, channelId) = await SetupBasicScenarioAsync();
-
-        _mapperMock
-            .Setup(x => x.Map<List<MessageResponseDto>>(It.IsAny<List<Message>>()))
-            .Returns(new List<MessageResponseDto>());
 
         // Act - negative page (will be normalized to 1)
         var resultNegativePage = await _messageService.GetChannelMessagesAsync(channelId, userId, -1, 50);
@@ -406,19 +333,6 @@ public class MessageServiceTests : IDisposable
         {
             Content = "Updated content"
         };
-
-        _mapperMock
-            .Setup(x => x.Map<MessageResponseDto>(It.IsAny<Message>()))
-            .Returns((Message m) => new MessageResponseDto
-            {
-                Id = m.Id,
-                ChannelId = m.ChannelId,
-                AuthorId = m.AuthorId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                IsEdited = m.IsEdited,
-                IsPinned = m.IsPinned
-            });
 
         // Act
         var result = await _messageService.UpdateMessageAsync(message.Id, userId, updateDto);
@@ -626,19 +540,6 @@ public class MessageServiceTests : IDisposable
             .Setup(x => x.CheckPermissionAsync(guildId, userId, GuildPermission.ManageMessages, It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _mapperMock
-            .Setup(x => x.Map<MessageResponseDto>(It.IsAny<Message>()))
-            .Returns((Message m) => new MessageResponseDto
-            {
-                Id = m.Id,
-                ChannelId = m.ChannelId,
-                AuthorId = m.AuthorId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                IsEdited = m.IsEdited,
-                IsPinned = m.IsPinned
-            });
-
         // Act
         var result = await _messageService.PinMessageAsync(channelId, message.Id, userId);
 
@@ -680,19 +581,6 @@ public class MessageServiceTests : IDisposable
         _context.Messages.AddRange(message1, message2);
         await _context.SaveChangesAsync();
 
-        _mapperMock
-            .Setup(x => x.Map<List<MessageResponseDto>>(It.IsAny<List<Message>>()))
-            .Returns((List<Message> messages) => messages.Select(m => new MessageResponseDto
-            {
-                Id = m.Id,
-                ChannelId = m.ChannelId,
-                AuthorId = m.AuthorId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                IsEdited = m.IsEdited,
-                IsPinned = m.IsPinned
-            }).ToList());
-
         // Act
         var result = await _messageService.GetPinnedMessagesAsync(channelId, userId);
 
@@ -720,19 +608,6 @@ public class MessageServiceTests : IDisposable
         };
         _context.Messages.Add(message);
         await _context.SaveChangesAsync();
-
-        _mapperMock
-            .Setup(x => x.Map<MessageResponseDto>(It.IsAny<Message>()))
-            .Returns((Message m) => new MessageResponseDto
-            {
-                Id = m.Id,
-                ChannelId = m.ChannelId,
-                AuthorId = m.AuthorId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                IsEdited = m.IsEdited,
-                IsPinned = m.IsPinned
-            });
 
         // Act
         var result = await _messageService.GetMessageByIdAsync(message.Id, userId);

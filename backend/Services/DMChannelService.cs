@@ -1,26 +1,23 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using ChordAPI.Mappings;
 
 namespace ChordAPI.Services;
 
 public class DMChannelService : IDMChannelService
 {
     private readonly AppDbContext _context;
-    private readonly IMapper _mapper;
     private readonly IDMReadStateService _dmReadStateService;
     private readonly ILogger<DMChannelService> _logger;
 
     public DMChannelService(
         AppDbContext context,
-        IMapper mapper,
         IDMReadStateService dmReadStateService,
         ILogger<DMChannelService> logger)
     {
         _context = context;
-        _mapper = mapper;
         _dmReadStateService = dmReadStateService;
         _logger = logger;
     }
@@ -159,7 +156,7 @@ public class DMChannelService : IDMChannelService
                     CreatedAt = lastMessage.CreatedAt,
                     EditedAt = lastMessage.EditedAt,
                     IsDeleted = lastMessage.IsDeleted,
-                    Sender = _mapper.Map<UserDto>(lastMessage.Sender)
+                    Sender = lastMessage.Sender.ToDto()
                 };
             }
         }
@@ -169,7 +166,7 @@ public class DMChannelService : IDMChannelService
             Id = channel.Id,
             CreatedAt = channel.CreatedAt,
             LastMessageAt = channel.LastMessageAt,
-            OtherUser = _mapper.Map<UserDto>(otherUser),
+            OtherUser = otherUser.ToDto(),
             LastMessage = lastMessageDto,
             UnreadCount = unreadCount
         };

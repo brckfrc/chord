@@ -1,4 +1,3 @@
-using AutoMapper;
 using ChordAPI.Data;
 using ChordAPI.Models.DTOs;
 using ChordAPI.Models.Entities;
@@ -13,7 +12,6 @@ namespace ChordAPI.Tests.Services;
 public class GuildServiceTests : IDisposable
 {
     private readonly AppDbContext _context;
-    private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<ILogger<GuildService>> _loggerMock;
     private readonly Mock<IChannelService> _channelServiceMock;
     private readonly Mock<IRoleService> _roleServiceMock;
@@ -29,7 +27,6 @@ public class GuildServiceTests : IDisposable
         _context = new AppDbContext(options);
 
         // Setup mocks
-        _mapperMock = new Mock<IMapper>();
         _loggerMock = new Mock<ILogger<GuildService>>();
         _channelServiceMock = new Mock<IChannelService>();
         _roleServiceMock = new Mock<IRoleService>();
@@ -45,7 +42,6 @@ public class GuildServiceTests : IDisposable
         // Create service
         _guildService = new GuildService(
             _context,
-            _mapperMock.Object,
             _loggerMock.Object,
             _channelServiceMock.Object,
             _roleServiceMock.Object,
@@ -81,21 +77,6 @@ public class GuildServiceTests : IDisposable
         };
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
-
-        _mapperMock
-            .Setup(x => x.Map<GuildResponseDto>(It.IsAny<Guild>()))
-            .Returns((Guild g) => new GuildResponseDto
-            {
-                Id = g.Id,
-                Name = g.Name,
-                Description = g.Description,
-                IconUrl = g.IconUrl,
-                OwnerId = g.OwnerId,
-                CreatedAt = g.CreatedAt,
-                UpdatedAt = g.UpdatedAt,
-                MemberCount = 1,
-                ChannelCount = 0
-            });
 
         // Act
         var result = await _guildService.CreateGuildAsync(userId, createDto);
@@ -156,19 +137,6 @@ public class GuildServiceTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        _mapperMock
-            .Setup(x => x.Map<IEnumerable<GuildResponseDto>>(It.IsAny<IEnumerable<Guild>>()))
-            .Returns((IEnumerable<Guild> guilds) => guilds.Select(g => new GuildResponseDto
-            {
-                Id = g.Id,
-                Name = g.Name,
-                OwnerId = g.OwnerId,
-                CreatedAt = g.CreatedAt,
-                UpdatedAt = g.UpdatedAt,
-                MemberCount = 1,
-                ChannelCount = 0
-            }));
-
         // Act
         var result = await _guildService.GetUserGuildsAsync(userId);
 
@@ -228,19 +196,6 @@ public class GuildServiceTests : IDisposable
             JoinedAt = DateTime.UtcNow
         });
         await _context.SaveChangesAsync();
-
-        _mapperMock
-            .Setup(x => x.Map<GuildResponseDto>(It.IsAny<Guild>()))
-            .Returns((Guild g) => new GuildResponseDto
-            {
-                Id = g.Id,
-                Name = g.Name,
-                OwnerId = g.OwnerId,
-                CreatedAt = g.CreatedAt,
-                UpdatedAt = g.UpdatedAt,
-                MemberCount = 1,
-                ChannelCount = 0
-            });
 
         // Act
         var result = await _guildService.GetGuildByIdAsync(guildId, userId);
@@ -331,21 +286,6 @@ public class GuildServiceTests : IDisposable
             Description = "New Description",
             IconUrl = "http://example.com/icon.png"
         };
-
-        _mapperMock
-            .Setup(x => x.Map<GuildResponseDto>(It.IsAny<Guild>()))
-            .Returns((Guild g) => new GuildResponseDto
-            {
-                Id = g.Id,
-                Name = g.Name,
-                Description = g.Description,
-                IconUrl = g.IconUrl,
-                OwnerId = g.OwnerId,
-                CreatedAt = g.CreatedAt,
-                UpdatedAt = g.UpdatedAt,
-                MemberCount = 0,
-                ChannelCount = 0
-            });
 
         // Act
         var result = await _guildService.UpdateGuildAsync(guildId, userId, updateDto);
@@ -520,25 +460,6 @@ public class GuildServiceTests : IDisposable
         };
         _context.Guilds.Add(guild);
         await _context.SaveChangesAsync();
-
-        _mapperMock
-            .Setup(x => x.Map<GuildMemberDto>(It.IsAny<GuildMember>()))
-            .Returns((GuildMember gm) => new GuildMemberDto
-            {
-                UserId = gm.UserId,
-                GuildId = gm.GuildId,
-                JoinedAt = gm.JoinedAt,
-                Nickname = gm.Nickname,
-                Role = "Member",
-                User = gm.User != null ? new UserDto
-                {
-                    Id = gm.User.Id,
-                    Username = gm.User.Username,
-                    Email = gm.User.Email,
-                    DisplayName = gm.User.DisplayName,
-                    CreatedAt = gm.User.CreatedAt
-                } : null
-            });
 
         _roleServiceMock
             .Setup(x => x.AssignGeneralRoleAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
@@ -790,25 +711,6 @@ public class GuildServiceTests : IDisposable
             new GuildMember { GuildId = guildId, UserId = user2Id, JoinedAt = DateTime.UtcNow }
         );
         await _context.SaveChangesAsync();
-
-        _mapperMock
-            .Setup(x => x.Map<IEnumerable<GuildMemberDto>>(It.IsAny<IEnumerable<GuildMember>>()))
-            .Returns((IEnumerable<GuildMember> members) => members.Select(gm => new GuildMemberDto
-            {
-                UserId = gm.UserId,
-                GuildId = gm.GuildId,
-                JoinedAt = gm.JoinedAt,
-                Nickname = gm.Nickname,
-                Role = "Member",
-                User = gm.User != null ? new UserDto
-                {
-                    Id = gm.User.Id,
-                    Username = gm.User.Username,
-                    Email = gm.User.Email,
-                    DisplayName = gm.User.DisplayName,
-                    CreatedAt = gm.User.CreatedAt
-                } : null
-            }));
 
         // Act
         var result = await _guildService.GetGuildMembersAsync(guildId, userId);

@@ -59,9 +59,6 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// AutoMapper
-builder.Services.AddAutoMapper(typeof(Program));
-
 // Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();

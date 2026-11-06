@@ -34,7 +34,7 @@ ASP.NET Core backend for Chord, a Discord-like real-time chat application.
 - **JWT 8.2** - Authentication
 - **BCrypt** - Password hashing
 - **Serilog 10** - Logging
-- **AutoMapper 12** - Object mapping
+- **Mapperly** - Compile-time object mapping
 - **ImageSharp** - Server-side image processing
 
 ---
