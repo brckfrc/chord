@@ -23,7 +23,7 @@ services:
       start_period: 60s
 
   redis:
-    image: redis:7-alpine@sha256:8da19c7399dca900c6822a1cf30f9d2285585e2c4b457ff4095b0f4500054d3f
+    image: redis:7-alpine@sha256:c5d34a98396a4775e223c74e929162c35c5a2182901ba26b50ade939941ce14b
     container_name: chord-redis
     ports:
       - "6379:6379"
