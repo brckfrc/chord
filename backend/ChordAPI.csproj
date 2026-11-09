@@ -31,7 +31,7 @@
     <PackageReference Include="StackExchange.Redis" Version="2.13.23" />
     <PackageReference Include="Minio" Version="6.0.5" />
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
-    <PackageReference Include="Livekit.Server.Sdk.Dotnet" Version="1.2.5" />
+    <PackageReference Include="Livekit.Server.Sdk.Dotnet" Version="1.2.6" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
     <!-- Microsoft.Data.SqlClient (via EF Core SqlServer) still references a vulnerable 9.0.x
