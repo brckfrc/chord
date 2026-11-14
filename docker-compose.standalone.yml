@@ -16,7 +16,7 @@ services:
   # ===========================================
   
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest@sha256:11927f5edc5122658e90b3a80ee36e8aef779310bf771415c1d89271859c73fd
+    image: mcr.microsoft.com/mssql/server:2022-latest@sha256:4525e3efac9f3e241cb003bb2ff2a82818b502f37e12049d788b1a9fa7e13b7f
     container_name: chord-sqlserver
     profiles: ["infra"]
     environment:
@@ -114,7 +114,7 @@ services:
       start_period: 10s
 
   coturn:
-    image: coturn/coturn:latest@sha256:bbefd3e1fdfdc0d58770fe01b581fd8b00d9f3a5580d00acb77cf719a6bc78e3
+    image: coturn/coturn:latest@sha256:0a3c026baaab092c79c9005823a72747bd09bf211071d537bb0865d95eae4638
     container_name: chord-coturn
     profiles: ["infra"]
     ports:
