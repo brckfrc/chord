@@ -22,7 +22,7 @@
 
 services:
   k6-load-test:
-    image: grafana/k6:latest@sha256:3e4186aea62e11a45560bfc51e19eeafe82fc07ce069c78aff44b7ff893d9a5e
+    image: grafana/k6:latest@sha256:3d8e5c7f1d53ec59408c2ffbd9943602a0985ffcbd4a2430ec00f3ffca89796e
     container_name: chord-k6-load-test
     environment:
       # API URL - defaults to production external (https://chord.borak.dev)
