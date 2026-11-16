@@ -23,7 +23,7 @@ services:
       start_period: 60s
 
   redis:
-    image: redis:7-alpine@sha256:c5d34a98396a4775e223c74e929162c35c5a2182901ba26b50ade939941ce14b
+    image: redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
     container_name: chord-redis
     ports:
       - "6379:6379"
@@ -83,7 +83,7 @@ services:
       - redis
 
   coturn:
-    image: coturn/coturn:latest@sha256:0a3c026baaab092c79c9005823a72747bd09bf211071d537bb0865d95eae4638
+    image: coturn/coturn:latest@sha256:81f69dc7cb672eb73ab3414afbb199637c37ab8069919d1c6caaed96ff16fb88
     container_name: chord-coturn
     ports:
       - "${TURN_PORT:-3478}:3478/udp"
